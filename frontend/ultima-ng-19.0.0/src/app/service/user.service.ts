@@ -1897,6 +1897,7 @@ export class UserService {
     // Verification d'un numero de membre dans SAF production, a la saisie d'une demande (26/10/2026).
     verifierMembreSaf$ = (numero: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/membres/${encodeURIComponent(numero)}/verification`).pipe(catchError(this.handleError));
+    getMembresInconnus$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/membres/inconnus`).pipe(catchError(this.handleError));
     // Etat du jour de la plateforme (lot 3) : poste de supervision de la DSIG.
     getEtatDuJour$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/usage/etat-du-jour`).pipe(catchError(this.handleError));
     getMatriceHabilitations$ = (service?: string) =>

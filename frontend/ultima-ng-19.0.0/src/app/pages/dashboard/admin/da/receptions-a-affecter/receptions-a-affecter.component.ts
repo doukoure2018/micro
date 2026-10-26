@@ -101,7 +101,7 @@ import { TooltipModule } from 'primeng/tooltip';
                 <ng-template pTemplate="body" let-d>
                     <!-- Ligne cliquable : ouvre le detail de la demande -->
                     <tr class="cursor-pointer" (click)="voirDetail(d)">
-                        <td>{{ d.prenom }} {{ d.nom }}<br /><span class="text-xs text-gray-500">{{ d.numeroMembre }}</span></td>
+                        <td>{{ d.prenom }} {{ d.nom }}<br /><span class="text-xs text-gray-500">{{ d.numeroMembre }}</span><span *ngIf="d?.membreInconnuSaf" class="ml-2 text-xs font-semibold text-red-600" pTooltip="SAF a confirmé que ce numéro n'existe pas : à corriger"><i class="pi pi-times-circle mr-1"></i>Inconnu de SAF</span><span *ngIf="d?.membreVerifieSaf && !d?.membreInconnuSaf" class="ml-2 text-xs text-green-700" [pTooltip]="'Nom dans SAF : ' + (d?.membreNomSaf || '')"><i class="pi pi-check-circle mr-1"></i>Vérifié SAF</span><span *ngIf="d?.membreVerifieSaf === false && !d?.membreInconnuSaf" class="ml-2 text-xs text-gray-500" pTooltip="SAF ne répondait pas à la saisie : revérifié chaque heure"><i class="pi pi-clock mr-1"></i>Non vérifié</span></td>
                         <td>{{ d.pointventeLibele || d.pos }}</td>
                         <td><p-tag [value]="labelNature(d.natureClient)" [severity]="severiteNature(d.natureClient)"></p-tag></td>
                         <td>{{ d.montantDemande | currency: 'GNF ' : 'symbol' : '1.0-0' }}</td>

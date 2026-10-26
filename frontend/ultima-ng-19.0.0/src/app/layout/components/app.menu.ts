@@ -400,6 +400,17 @@ export class AppMenu {
                 routerLink: ['/dashboards/rapport-activite']
             });
         }
+        // Membres et SAF (26/10/2026) : verifier un numero sans ouvrir une demande, et voir les
+        // dossiers de son perimetre dont le numero est inconnu de SAF. Ouvert a tous les profils
+        // du credit ; le serveur decide du perimetre de la liste.
+        if (['AGENT_CREDIT', 'AGENT_ACCUEIL', 'DA', 'RA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '')
+            || this.estManager('DE') || this.estManager('DI') || this.peut('CREDITS_SUIVI') || this.peut('FICHE_RAPPROCHEMENT')) {
+            items.push({
+                label: 'Membres et SAF',
+                icon: 'pi pi-fw pi-verified',
+                routerLink: ['/dashboards/membres-saf']
+            });
+        }
         // Contacts verifies des agents (V173) : le DA relance et saisit, les niveaux au-dessus suivent.
         // La regle vit desormais dans la matrice d'habilitations (V178), plus dans cette ligne.
         if (this.peut('CONTACTS_AGENTS')) {

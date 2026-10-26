@@ -158,7 +158,7 @@
                     </div>
                 </td>
                 <td>
-                    <span class="font-medium">{{ demande.numeroMembre }}</span>
+                    <span class="font-medium">{{ demande.numeroMembre }}</span><span *ngIf="demande?.membreInconnuSaf" class="ml-2 text-xs font-semibold text-red-600" pTooltip="SAF a confirmé que ce numéro n'existe pas : à corriger"><i class="pi pi-times-circle mr-1"></i>Inconnu de SAF</span><span *ngIf="demande?.membreVerifieSaf && !demande?.membreInconnuSaf" class="ml-2 text-xs text-green-700" [pTooltip]="'Nom dans SAF : ' + (demande?.membreNomSaf || '')"><i class="pi pi-check-circle mr-1"></i>Vérifié SAF</span><span *ngIf="demande?.membreVerifieSaf === false && !demande?.membreInconnuSaf" class="ml-2 text-xs text-gray-500" pTooltip="SAF ne répondait pas à la saisie : revérifié chaque heure"><i class="pi pi-clock mr-1"></i>Non vérifié</span>
                 </td>
                 <td>
                     <p-tag [value]="labelNature(demande.natureClient)" [severity]="severiteNature(demande.natureClient)"></p-tag>

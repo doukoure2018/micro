@@ -316,6 +316,11 @@ export interface DemandeIndividuel {
     telephone: string;
     email?: string; // NOUVEAU V80
     numeroMembre: string;
+    /** Vérification SAF (V180/V181) : true trouvé, false non vérifié (SAF muet), absent = antérieur au contrôle. */
+    membreVerifieSaf?: boolean | null;
+    /** true : la reprise a confirmé que le numéro n'existe pas dans SAF. */
+    membreInconnuSaf?: boolean | null;
+    membreNomSaf?: string | null;
     age?: number;
 
     // ==================== LOCALISATION ADMINISTRATIVE ====================

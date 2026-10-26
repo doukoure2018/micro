@@ -19,3 +19,27 @@ export interface VerificationMembre {
 export function verificationBloquante(v: VerificationMembre | null | undefined): boolean {
     return !!v && (v.etat === 'INCONNU' || v.etat === 'FORME_INVALIDE');
 }
+
+/** Un dossier en cours dont SAF a confirmé que le numéro de membre n'existe pas. */
+export interface DossierInconnu {
+    id: number;
+    numeroMembre: string;
+    client: string;
+    pointVente: string | null;
+    agence: string | null;
+    delegation: string | null;
+    etat: string;
+    montant: number | null;
+    agent: string | null;
+    creeLe: string;
+    signaleLe: string | null;
+    reverifieLe: string | null;
+}
+
+export interface MembresInconnus {
+    perimetre: string;
+    trouves: number;
+    inconnus: number;
+    aVerifier: number;
+    dossiers: DossierInconnu[];
+}
