@@ -54,9 +54,9 @@ public class MembreSafRepriseRepository {
                 """)
                 .param("limite", limite)
                 .query((rs, n) -> new Dossier(rs.getLong("demandeindividuel_id"), rs.getString("numero_membre"),
-                        rs.getString("nom"), rs.getString("prenom"), (Long) rs.getObject("agence"),
+                        rs.getString("nom"), rs.getString("prenom"), entierLong(rs, "agence"),
                         rs.getString("agence_libelle"), rs.getString("point_vente"), rs.getString("validation_state"),
-                        (Long) rs.getObject("agent_credit_affecte"),
+                        entierLong(rs, "agent_credit_affecte"),
                         rs.getObject("createdat", java.time.LocalDateTime.class), rs.getBoolean("deja_signale")))
                 .list();
     }
@@ -217,6 +217,16 @@ public class MembreSafRepriseRepository {
             spec = spec.param("agent", agentId);
         }
         return spec.query((rs, n) -> new int[]{rs.getInt("trouves"), rs.getInt("inconnus"), rs.getInt("a_verifier")}).single();
+    }
+
+    /**
+     * Identifiant nullable, quel que soit le type rendu par le pilote : {@code agence} est un
+     * INTEGER et {@code agent_credit_affecte} un BIGINT, et un transtypage direct en Long a fait
+     * echouer le premier passage de la reprise (26/10/2026 13h20).
+     */
+    private static Long entierLong(java.sql.ResultSet rs, String col) throws java.sql.SQLException {
+        Object v = rs.getObject(col);
+        return v == null ? null : ((Number) v).longValue();
     }
 
     public int resteAReverifier() {
