@@ -190,6 +190,24 @@ public class CreditNegatifRepository {
                 .query((rs, n) -> new Cle(rs.getLong("id"), rs.getString("cod_agencia"), rs.getLong("num_credito"))).optional();
     }
 
+    /** Une ligne deja close, pour completer sa preuve apres coup. */
+    public Optional<Cle> cleClose(Long id) {
+        return jdbcClient.sql("SELECT id, cod_agencia, num_credito FROM credit_negatif WHERE id = :id AND corrige_at IS NOT NULL")
+                .param("id", id)
+                .query((rs, n) -> new Cle(rs.getLong("id"), rs.getString("cod_agencia"), rs.getLong("num_credito"))).optional();
+    }
+
+    /** Complete la preuve d'une cloture anterieure a la V183, sans toucher a la date de cloture. */
+    public void completerPreuve(Long id, BigDecimal soldeApres, String etatApres, String conclusion) {
+        jdbcClient.sql("""
+                UPDATE credit_negatif
+                SET verifie_saf_at = CURRENT_TIMESTAMP, solde_apres = :solde, etat_apres = :etat,
+                    conclusion = COALESCE(conclusion, :conclusion)
+                WHERE id = :id AND corrige_at IS NOT NULL
+                """)
+                .param("solde", soldeApres).param("etat", etatApres).param("conclusion", conclusion).param("id", id).update();
+    }
+
     /** Les lignes prises en charge et toujours ouvertes. */
     public List<Cle> prisesEnChargeOuvertes() {
         return jdbcClient.sql("SELECT id, cod_agencia, num_credito FROM credit_negatif WHERE corrige_at IS NULL AND traite_at IS NOT NULL ORDER BY traite_at")
