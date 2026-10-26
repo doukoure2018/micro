@@ -47,7 +47,9 @@ public class SupervisionService {
             new Attendu("CREDIT_NEGATIF", "Surveillance des crédits négatifs",
                     LocalTime.of(6, 10), Cadence.HORAIRE),
             new Attendu("USAGE_HEBDO", "Baromètre d'usage hebdomadaire",
-                    LocalTime.of(7, 5), Cadence.HEBDO_LUNDI));
+                    LocalTime.of(7, 5), Cadence.HEBDO_LUNDI),
+            new Attendu("MEMBRE_SAF_REPRISE", "Reprise des numéros de membre non vérifiés",
+                    LocalTime.of(6, 20), Cadence.HORAIRE));
 
     /** Derniere heure de la surveillance horaire des credits negatifs. */
     private static final int HORAIRE_FIN = 20;
@@ -244,6 +246,7 @@ public class SupervisionService {
             case "CREDIT_NEGATIF" -> "Alerte crédits négatifs";
             case "TT1_MENSUEL" -> "État TT1 mensuel";
             case "SAF_SANTE" -> "Sonde de disponibilité SAF";
+            case "MEMBRE_SAF_REPRISE" -> "Reprise des numéros de membre non vérifiés";
             default -> type;
         };
     }
