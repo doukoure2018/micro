@@ -60,6 +60,28 @@ public class CreditNegatifResource {
         return ResponseEntity.ok(getResponse(request, Map.of("id", id), message, OK));
     }
 
+    /** Confronte un credit pris en charge a SAF production, a l'instant (V183). */
+    @PostMapping("/{id}/verifier")
+    public ResponseEntity<Response> verifier(@NotNull Authentication authentication,
+                                             @PathVariable("id") Long id,
+                                             HttpServletRequest request) {
+        var v = service.verifier(authentication.getName(), id);
+        return ResponseEntity.ok(getResponse(request, Map.of("verification", v), v.libelle(), OK));
+    }
+
+    /** Tous les credits pris en charge encore ouverts, confrontes a SAF d'un coup. */
+    @PostMapping("/verifier-pris-en-charge")
+    public ResponseEntity<Response> verifierPrisesEnCharge(@NotNull Authentication authentication,
+                                                           HttpServletRequest request) {
+        var liste = service.verifierPrisesEnCharge(authentication.getName());
+        long corriges = liste.stream().filter(v -> CreditNegatifService.CORRIGE.equals(v.conclusion())).count();
+        long clos = liste.stream().filter(v -> CreditNegatifService.CLOS_SAF.equals(v.conclusion())).count();
+        long toujours = liste.size() - corriges - clos;
+        return ResponseEntity.ok(getResponse(request, Map.of("verifications", liste),
+                liste.isEmpty() ? "Aucun crédit pris en charge à vérifier"
+                        : corriges + " corrigé(s), " + clos + " clos dans SAF, " + toujours + " toujours négatif(s)", OK));
+    }
+
     /** Le meme tableau en classeur Excel, feuille de travail pour la correction dans SAF. */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,

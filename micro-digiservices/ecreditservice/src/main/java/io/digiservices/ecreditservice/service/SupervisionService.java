@@ -65,6 +65,7 @@ public class SupervisionService {
 
     private final SupervisionRepository repository;
     private final DonneesSafService donneesSaf;
+    private final io.digiservices.ecreditservice.repository.CreditNegatifRepository creditsNegatifs;
 
     public Map<String, Object> etatDuJour() {
         LocalDate jour = LocalDate.now(ZoneOffset.UTC);
@@ -146,6 +147,7 @@ public class SupervisionService {
         Map<String, Object> a = new LinkedHashMap<>();
         a.put("creditsNegatifsOuverts", repository.creditsNegatifsOuverts());
         a.put("creditsNegatifsDuJour", repository.creditsNegatifsDuJour(jour));
+        a.put("creditsNegatifsPrisEnChargeAnciens", creditsNegatifs.prisesEnChargeAnciennes(CreditNegatifService.JOURS_RAPPEL));
         a.put("contactsEnEchec", repository.contactsEnEchec());
         a.put("correctionsEnAttente", repository.correctionsEnAttente());
         a.put("dossiersSansTitulaire", repository.dossiersSansTitulaire());

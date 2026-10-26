@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Journal des credits SAF a solde negatif (V177). Une ligne ouverte par credit, fermee quand le
@@ -25,7 +26,13 @@ public class CreditNegatifRepository {
                         String nomCliente, Integer tipCredito, BigDecimal monCredito, BigDecimal monSaldo,
                         BigDecimal pireSolde, LocalDate fecApertura, String indEstado, String codEjecutivo,
                         OffsetDateTime detecteAt, OffsetDateTime signaleAt, OffsetDateTime corrigeAt,
-                        String traitePar, OffsetDateTime traiteAt, String commentaire) {
+                        String traitePar, OffsetDateTime traiteAt, String commentaire,
+                        OffsetDateTime verifieSafAt, BigDecimal soldeApres, String etatApres,
+                        String corrigeMode, String corrigePar, String conclusion) {
+    }
+
+    /** Une ligne ouverte a confronter a SAF : sa cle et son identifiant. */
+    public record Cle(Long id, String codAgencia, Long numCredito) {
     }
 
     private final JdbcClient jdbcClient;
@@ -136,9 +143,12 @@ public class CreditNegatifRepository {
                        c.tip_credito, c.mon_credito, c.mon_saldo, c.pire_solde, c.fec_apertura,
                        c.ind_estado, c.cod_ejecutivo, c.detecte_at, c.signale_at, c.corrige_at,
                        TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS traite_par,
-                       c.traite_at, c.commentaire
+                       c.traite_at, c.commentaire,
+                       c.verifie_saf_at, c.solde_apres, c.etat_apres, c.corrige_mode, c.conclusion,
+                       TRIM(COALESCE(v.first_name,'') || ' ' || COALESCE(v.last_name,'')) AS corrige_par
                 FROM credit_negatif c
                 LEFT JOIN users u ON u.user_id = c.traite_par_user_id
+                LEFT JOIN users v ON v.user_id = c.corrige_par_user_id
                 WHERE :inclureCorriges OR c.corrige_at IS NULL
                 ORDER BY c.corrige_at NULLS FIRST, c.mon_saldo ASC
                 """)
@@ -154,7 +164,69 @@ public class CreditNegatifRepository {
                         rs.getObject("signale_at", OffsetDateTime.class),
                         rs.getObject("corrige_at", OffsetDateTime.class),
                         rs.getString("traite_par"), rs.getObject("traite_at", OffsetDateTime.class),
-                        rs.getString("commentaire")))
+                        rs.getString("commentaire"),
+                        rs.getObject("verifie_saf_at", OffsetDateTime.class), rs.getBigDecimal("solde_apres"),
+                        rs.getString("etat_apres"), rs.getString("corrige_mode"), rs.getString("corrige_par"),
+                        rs.getString("conclusion")))
                 .list();
+    }
+
+    // ==================== Preuve de la correction (V183) ====================
+
+    /** Les lignes ouvertes dont la cle n'est plus dans la liste des negatifs : a confronter a SAF avant de clore. */
+    public List<Cle> ouvertesAbsentes(Collection<String> clesPresentes) {
+        var spec = clesPresentes.isEmpty()
+                ? jdbcClient.sql("SELECT id, cod_agencia, num_credito FROM credit_negatif WHERE corrige_at IS NULL")
+                : jdbcClient.sql("""
+                        SELECT id, cod_agencia, num_credito FROM credit_negatif
+                        WHERE corrige_at IS NULL AND (cod_agencia || '-' || num_credito) NOT IN (:cles)
+                        """).param("cles", List.copyOf(clesPresentes));
+        return spec.query((rs, n) -> new Cle(rs.getLong("id"), rs.getString("cod_agencia"), rs.getLong("num_credito"))).list();
+    }
+
+    public Optional<Cle> cle(Long id) {
+        return jdbcClient.sql("SELECT id, cod_agencia, num_credito FROM credit_negatif WHERE id = :id AND corrige_at IS NULL")
+                .param("id", id)
+                .query((rs, n) -> new Cle(rs.getLong("id"), rs.getString("cod_agencia"), rs.getLong("num_credito"))).optional();
+    }
+
+    /** Les lignes prises en charge et toujours ouvertes. */
+    public List<Cle> prisesEnChargeOuvertes() {
+        return jdbcClient.sql("SELECT id, cod_agencia, num_credito FROM credit_negatif WHERE corrige_at IS NULL AND traite_at IS NOT NULL ORDER BY traite_at")
+                .query((rs, n) -> new Cle(rs.getLong("id"), rs.getString("cod_agencia"), rs.getLong("num_credito"))).list();
+    }
+
+    /** Clot avec la preuve : ce que SAF montrait a l'instant, qui a conclu, et comment. */
+    public void clore(Long id, BigDecimal soldeApres, String etatApres, String conclusion, String mode, Long parUserId) {
+        jdbcClient.sql("""
+                UPDATE credit_negatif
+                SET corrige_at = CURRENT_TIMESTAMP, verifie_saf_at = CURRENT_TIMESTAMP,
+                    solde_a_la_correction = COALESCE(:solde, 0), solde_apres = :solde, etat_apres = :etat,
+                    conclusion = :conclusion, corrige_mode = :mode, corrige_par_user_id = :par
+                WHERE id = :id AND corrige_at IS NULL
+                """)
+                .param("solde", soldeApres).param("etat", etatApres).param("conclusion", conclusion)
+                .param("mode", mode).param("par", parUserId).param("id", id).update();
+    }
+
+    /** SAF le voit toujours negatif : on garde la date de la verification et le solde du moment. */
+    public void toujoursNegatif(Long id, BigDecimal solde, String etat) {
+        jdbcClient.sql("""
+                UPDATE credit_negatif
+                SET verifie_saf_at = CURRENT_TIMESTAMP, dernier_vu_at = CURRENT_TIMESTAMP,
+                    mon_saldo = COALESCE(:solde, mon_saldo), ind_estado = COALESCE(:etat, ind_estado),
+                    pire_solde = LEAST(pire_solde, COALESCE(:solde, pire_solde))
+                WHERE id = :id
+                """)
+                .param("solde", solde).param("etat", etat).param("id", id).update();
+    }
+
+    /** Pris en charge depuis plus de N jours et toujours negatifs : le rappel du poste de supervision. */
+    public int prisesEnChargeAnciennes(int jours) {
+        Integer n = jdbcClient.sql("""
+                SELECT count(*) FROM credit_negatif
+                WHERE corrige_at IS NULL AND traite_at IS NOT NULL AND traite_at < CURRENT_TIMESTAMP - make_interval(days => :jours)
+                """).param("jours", jours).query(Integer.class).single();
+        return n == null ? 0 : n;
     }
 }

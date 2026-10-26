@@ -44,6 +44,17 @@ public final class CreditNegatifDtos {
         private String traitePar;
         private OffsetDateTime traiteAt;
         private String commentaire;
+        /** Preuve de la correction (V183). */
+        private OffsetDateTime verifieSafAt;
+        private BigDecimal soldeApres;
+        private String etatApres;
+        private String etatApresLibelle;
+        private String corrigeMode;
+        private String corrigePar;
+        /** CORRIGE, CLOS_SAF, TOUJOURS_NEGATIF, ARRONDI, ou null si jamais confronte. */
+        private String conclusion;
+        private String conclusionLibelle;
+        private Long joursDepuisPriseEnCharge;
     }
 
     /** Un etat SAF et ce qu'il pese. */
@@ -69,6 +80,9 @@ public final class CreditNegatifDtos {
         private int nbNonTraites;
         private int nbCorrigesCeMois;
         private int nbDetectesAujourdhui;
+        /** Pris en charge depuis plus de sept jours et toujours negatifs. */
+        private int nbPrisEnChargeAnciens;
+        private int nbArrondis;
         /** Repartition par etat, sur les credits ouverts. */
         @Builder.Default
         private List<EtatDto> parEtat = new ArrayList<>();
