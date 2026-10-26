@@ -44,6 +44,8 @@ import { TooltipModule } from 'primeng/tooltip';
                 </div>
                 <div class="flex flex-wrap gap-2 items-center">
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()" pTooltip="Recharger"></button>
+                    <button pButton icon="pi pi-sync" label="Vérifier tous les pris en charge" class="p-button-outlined" [loading]="verificationEnCours()" [disabled]="!data()" (click)="verifierTous()"
+                            pTooltip="Confronte à SAF production, à l'instant, chaque crédit pris en charge : corrigé, clos dans SAF ou toujours négatif. Lecture seule."></button>
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined" [loading]="exportEnCours()" [disabled]="!data()" (click)="exporter()"></button>
                 </div>
             </div>
@@ -67,6 +69,16 @@ import { TooltipModule } from 'primeng/tooltip';
                     <div class="border rounded p-3">
                         <div class="text-xs text-gray-500 uppercase">Corrigés ce mois</div>
                         <div class="text-2xl font-bold text-green-700">{{ d.nbCorrigesCeMois }}</div>
+                    </div>
+                    <div class="border rounded p-3" [class.border-red-400]="d.nbPrisEnChargeAnciens > 0">
+                        <div class="text-xs text-gray-500 uppercase">Pris en charge depuis + de 7 jours</div>
+                        <div class="text-2xl font-bold" [class.text-red-600]="d.nbPrisEnChargeAnciens > 0">{{ d.nbPrisEnChargeAnciens }}</div>
+                        <div class="text-xs text-gray-500">toujours négatifs dans SAF</div>
+                    </div>
+                    <div class="border rounded p-3">
+                        <div class="text-xs text-gray-500 uppercase">Arrondis</div>
+                        <div class="text-2xl font-bold text-gray-600">{{ d.nbArrondis }}</div>
+                        <div class="text-xs text-gray-500">moins d'un franc : écriture de régularisation</div>
                     </div>
                 </div>
 
@@ -108,13 +120,32 @@ import { TooltipModule } from 'primeng/tooltip';
                             <td><p-tag [value]="c.etat" [severity]="severiteEtat(c)"></p-tag></td>
                             <td class="text-xs">{{ c.codEjecutivo }}</td>
                             <td>
-                                <span *ngIf="c.corrigeAt" class="text-green-700 text-xs">Corrigé le {{ c.corrigeAt | date: 'dd/MM' }}</span>
-                                <span *ngIf="!c.corrigeAt && c.traiteAt" class="text-xs">{{ c.traitePar }} · {{ c.traiteAt | date: 'dd/MM' }}</span>
-                                <span *ngIf="!c.corrigeAt && !c.traiteAt" class="text-xs text-gray-400">à traiter</span>
+                                <ng-container *ngIf="c.corrigeAt">
+                                    <p-tag *ngIf="c.conclusion === 'CORRIGE'" value="Corrigé" severity="success"></p-tag>
+                                    <p-tag *ngIf="c.conclusion === 'CLOS_SAF'" value="Clos dans SAF" severity="secondary" pTooltip="Le crédit a disparu de SAF sans preuve de régularisation"></p-tag>
+                                    <p-tag *ngIf="!c.conclusion" value="Corrigé (sans preuve)" severity="secondary" pTooltip="Clôture antérieure à la preuve de correction"></p-tag>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        le {{ c.corrigeAt | date: 'dd/MM HH:mm' }}
+                                        <span *ngIf="c.corrigeMode === 'AUTO'"> · passage horaire</span>
+                                        <span *ngIf="c.corrigeMode === 'MANUEL' && c.corrigePar"> · {{ c.corrigePar }}</span>
+                                        <span *ngIf="c.soldeApres !== null"> · solde {{ c.soldeApres | number: '1.0-2' }}</span>
+                                        <span *ngIf="c.etatApresLibelle"> · {{ c.etatApresLibelle }}</span>
+                                    </div>
+                                </ng-container>
+                                <ng-container *ngIf="!c.corrigeAt">
+                                    <p-tag *ngIf="c.conclusion === 'ARRONDI'" value="Arrondi" severity="secondary" pTooltip="Moins d'un franc : seule une écriture de régularisation dans SAF le corrigera"></p-tag>
+                                    <p-tag *ngIf="c.conclusion === 'TOUJOURS_NEGATIF'" value="Toujours négatif" severity="danger" [pTooltip]="'Vérifié dans SAF le ' + (c.verifieSafAt | date: 'dd/MM HH:mm')"></p-tag>
+                                    <div class="text-xs mt-1" *ngIf="c.traiteAt">
+                                        {{ c.traitePar }} · pris en charge le {{ c.traiteAt | date: 'dd/MM' }}
+                                        <span *ngIf="c.joursDepuisPriseEnCharge !== null && c.joursDepuisPriseEnCharge >= 7" class="text-red-600 font-semibold"> · {{ c.joursDepuisPriseEnCharge }} j</span>
+                                    </div>
+                                    <span *ngIf="!c.traiteAt && c.conclusion !== 'ARRONDI'" class="text-xs text-gray-400">à traiter</span>
+                                </ng-container>
                                 <div class="text-xs text-gray-500" *ngIf="c.commentaire">{{ c.commentaire }}</div>
                             </td>
-                            <td>
+                            <td class="whitespace-nowrap">
                                 <button *ngIf="!c.corrigeAt && !c.traiteAt" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" (click)="ouvrirSuivi(c)" pTooltip="Je m'en occupe"></button>
+                                <button *ngIf="!c.corrigeAt && c.traiteAt" pButton icon="pi pi-sync" class="p-button-text p-button-sm" [loading]="verificationLigne() === c.id" (click)="verifierUn(c)" pTooltip="Vérifier dans SAF maintenant"></button>
                                 <button *ngIf="!c.corrigeAt && c.traiteAt" pButton icon="pi pi-times" class="p-button-text p-button-sm" (click)="retirerSuivi(c)" pTooltip="Retirer la prise en charge"></button>
                             </td>
                         </tr>
@@ -227,6 +258,52 @@ export class CreditsNegatifsComponent implements OnInit {
         if (c.indEstado === 'I') return 'secondary';
         if (c.indEstado === 'J') return 'warn';
         return 'danger';
+    }
+
+    /** Confrontation à SAF production (V183) : lecture seule, l'état digi change selon la réponse. */
+    verificationEnCours = signal(false);
+    verificationLigne = signal<number | null>(null);
+
+    verifierUn(c: LigneCreditNegatif): void {
+        this.verificationLigne.set(c.id);
+        this.userService
+            .verifierCreditNegatif$(c.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.verificationLigne.set(null);
+                    const v = (res.data as any)?.verification;
+                    this.messageService.add({
+                        severity: v?.conclusion === 'CORRIGE' ? 'success' : v?.conclusion === 'TOUJOURS_NEGATIF' ? 'warn' : 'info',
+                        summary: 'Vérification SAF',
+                        detail: res.message || v?.libelle || 'Vérifié',
+                        life: 6000
+                    });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.verificationLigne.set(null);
+                    this.messageService.add({ severity: 'error', summary: 'Vérification SAF', detail: err?.message || err || 'Vérification impossible', life: 6000 });
+                }
+            });
+    }
+
+    verifierTous(): void {
+        this.verificationEnCours.set(true);
+        this.userService
+            .verifierCreditsNegatifsPrisEnCharge$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.verificationEnCours.set(false);
+                    this.messageService.add({ severity: 'info', summary: 'Vérification SAF', detail: res.message || 'Terminé', life: 8000 });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.verificationEnCours.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Vérification SAF', detail: err?.message || err || 'Vérification impossible', life: 6000 });
+                }
+            });
     }
 
     ouvrirSuivi(c: LigneCreditNegatif): void {

@@ -21,6 +21,16 @@ export interface LigneCreditNegatif {
     traitePar: string | null;
     traiteAt: string | null;
     commentaire: string | null;
+    /** Preuve de la correction (V183). */
+    verifieSafAt: string | null;
+    soldeApres: number | null;
+    etatApres: string | null;
+    etatApresLibelle: string | null;
+    corrigeMode: 'AUTO' | 'MANUEL' | null;
+    corrigePar: string | null;
+    conclusion: 'CORRIGE' | 'CLOS_SAF' | 'TOUJOURS_NEGATIF' | 'ARRONDI' | null;
+    conclusionLibelle: string | null;
+    joursDepuisPriseEnCharge: number | null;
 }
 
 export interface EtatCreditNegatif {
@@ -36,6 +46,9 @@ export interface SituationCreditsNegatifs {
     nbNonTraites: number;
     nbCorrigesCeMois: number;
     nbDetectesAujourdhui: number;
+    /** Pris en charge depuis plus de sept jours et toujours négatifs. */
+    nbPrisEnChargeAnciens: number;
+    nbArrondis: number;
     parEtat: EtatCreditNegatif[];
     lignes: LigneCreditNegatif[];
     dernierPassage: string | null;
