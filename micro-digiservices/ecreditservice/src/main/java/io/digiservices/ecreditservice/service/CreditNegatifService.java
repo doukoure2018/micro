@@ -104,6 +104,12 @@ public class CreditNegatifService {
                 .codEjecutivo(l.codEjecutivo()).detecteAt(l.detecteAt()).signaleAt(l.signaleAt())
                 .corrigeAt(l.corrigeAt()).traitePar(l.traitePar()).traiteAt(l.traiteAt())
                 .commentaire(l.commentaire())
+                .verifieSafAt(l.verifieSafAt()).soldeApres(l.soldeApres()).etatApres(l.etatApres())
+                .etatApresLibelle(l.etatApres() == null ? null : libelleEtat(l.etatApres()))
+                .corrigeMode(l.corrigeMode()).corrigePar(l.corrigePar())
+                .conclusion(conclusionDe(l)).conclusionLibelle(libelleConclusion(conclusionDe(l)))
+                .joursDepuisPriseEnCharge(l.traiteAt() == null || l.corrigeAt() != null ? null
+                        : java.time.Duration.between(l.traiteAt(), java.time.OffsetDateTime.now()).toDays())
                 .build()).toList();
 
         List<LigneDto> ouverts = lignes.stream().filter(l -> l.getCorrigeAt() == null).toList();
@@ -123,6 +129,8 @@ public class CreditNegatifService {
                 .nbCorrigesCeMois((int) lignes.stream().filter(l -> l.getCorrigeAt() != null
                         && l.getCorrigeAt().toLocalDate().getMonth() == aujourdhui.getMonth()
                         && l.getCorrigeAt().toLocalDate().getYear() == aujourdhui.getYear()).count())
+                .nbPrisEnChargeAnciens(repository.prisesEnChargeAnciennes(JOURS_RAPPEL))
+                .nbArrondis((int) ouverts.stream().filter(l -> ARRONDI.equals(l.getConclusion())).count())
                 .nbDetectesAujourdhui((int) lignes.stream().filter(l -> l.getDetecteAt() != null
                         && l.getDetecteAt().toLocalDate().isEqual(aujourdhui)).count())
                 .parEtat(new ArrayList<>(parEtat.values()))
@@ -132,6 +140,95 @@ public class CreditNegatifService {
                 .message(seuilGnf > 0 ? "Alerte par courriel au-delà de " + seuilGnf
                         + " GNF, sur les crédits en cours ; la page montre tous les états." : null)
                 .build();
+    }
+
+    // ==================== Preuve de la correction (V183) ====================
+
+    public static final String CORRIGE = "CORRIGE";
+    public static final String CLOS_SAF = "CLOS_SAF";
+    public static final String TOUJOURS_NEGATIF = "TOUJOURS_NEGATIF";
+    public static final String ARRONDI = "ARRONDI";
+    /** En deca d'un franc, aucun remboursement ne corrigera jamais : seule une ecriture de regularisation le peut. */
+    private static final BigDecimal SEUIL_ARRONDI = BigDecimal.ONE;
+    /** Pris en charge depuis plus de sept jours et toujours negatif : rappel au poste de supervision. */
+    public static final int JOURS_RAPPEL = 7;
+
+    /** La conclusion affichee : celle enregistree a la cloture, ou deduite de l'etat courant. */
+    private static String conclusionDe(io.digiservices.ecreditservice.repository.CreditNegatifRepository.Ligne l) {
+        if (l.corrigeAt() != null) {
+            return l.conclusion();
+        }
+        if (l.monSaldo() != null && l.monSaldo().abs().compareTo(SEUIL_ARRONDI) < 0) {
+            return ARRONDI;
+        }
+        if (l.traiteAt() != null && l.verifieSafAt() != null) {
+            return TOUJOURS_NEGATIF;
+        }
+        return null;
+    }
+
+    static String libelleConclusion(String c) {
+        if (c == null) return null;
+        return switch (c) {
+            case CORRIGE -> "Corrigé";
+            case CLOS_SAF -> "Clos dans SAF";
+            case TOUJOURS_NEGATIF -> "Pris en charge, toujours négatif";
+            case ARRONDI -> "Arrondi";
+            default -> c;
+        };
+    }
+
+    /** Resultat d'une confrontation a SAF pour un credit. */
+    public record Verification(Long id, String conclusion, String libelle, BigDecimal soldeApres, String etatApres) {
+    }
+
+    /**
+     * Confronte un credit pris en charge a SAF production, a l'instant. Solde revenu a zero ou
+     * positif et credit en cours : corrige, avec la preuve. Credit clos, annule ou apure : clos
+     * dans SAF, distinct de corrige. Toujours negatif : la ligne reste ouverte, le solde du
+     * moment est garde. Lecture seule : rien n'est ecrit dans SAF.
+     */
+    public Verification verifier(String uuid, Long id) {
+        User user = verifierDsig(uuid);
+        var cle = repository.cle(id).orElseThrow(() -> new ApiException("Crédit introuvable ou déjà clos"));
+        return confronter(cle, "MANUEL", user.getUserId());
+    }
+
+    /** Tous les credits pris en charge et encore ouverts, d'un coup. */
+    public List<Verification> verifierPrisesEnCharge(String uuid) {
+        User user = verifierDsig(uuid);
+        List<Verification> resultats = new ArrayList<>();
+        for (var cle : repository.prisesEnChargeOuvertes()) {
+            resultats.add(confronter(cle, "MANUEL", user.getUserId()));
+        }
+        return resultats;
+    }
+
+    private Verification confronter(io.digiservices.ecreditservice.repository.CreditNegatifRepository.Cle cle,
+                                    String mode, Long parUserId) {
+        io.digiservices.clients.portefeuille.CreditEtatDto etat;
+        try {
+            etat = portefeuilleClient.getEtatCredit(cle.codAgencia(), cle.numCredito());
+        } catch (feign.FeignException.NotFound e) {
+            // Le credit n'existe plus dans SAF : disparu, pas regularise.
+            repository.clore(cle.id(), null, null, CLOS_SAF, mode, parUserId);
+            return new Verification(cle.id(), CLOS_SAF, "Crédit introuvable dans SAF : clos", null, null);
+        } catch (Exception e) {
+            throw new ApiException("SAF ne répond pas : vérification impossible pour le moment");
+        }
+        BigDecimal solde = etat.getMonSaldo() == null ? BigDecimal.ZERO : etat.getMonSaldo();
+        String ind = etat.getIndEstado() == null ? "" : etat.getIndEstado().trim().toUpperCase();
+        if (solde.signum() < 0) {
+            repository.toujoursNegatif(cle.id(), solde, ind);
+            return new Verification(cle.id(), TOUJOURS_NEGATIF, "Toujours négatif dans SAF : " + montant(solde) + " GNF", solde, ind);
+        }
+        boolean enCours = ind.isEmpty() || "D".equals(ind);
+        String conclusion = enCours ? CORRIGE : CLOS_SAF;
+        repository.clore(cle.id(), solde, ind, conclusion, mode, parUserId);
+        return new Verification(cle.id(), conclusion,
+                enCours ? "Corrigé : solde " + montant(solde) + " GNF, crédit en cours"
+                        : "Clos dans SAF : état " + libelleEtat(ind) + ", solde " + montant(solde) + " GNF",
+                solde, ind);
     }
 
     /** Marque un credit comme pris en charge par la DSIG ; rien n'est ecrit dans SAF. */
@@ -180,7 +277,18 @@ public class CreditNegatifService {
                     idsNouveaux.add(id);
                 }
             }
-            int clos = repository.cloreLesAbsents(presents);
+            // Les lignes qui ne sont plus negatives sont confrontees une a une a SAF avant d'etre
+            // closes, pour garder la preuve : regularisees, ou simplement disparues (V183).
+            int clos = 0;
+            for (var cle : repository.ouvertesAbsentes(presents)) {
+                try {
+                    confronter(cle, "AUTO", null);
+                } catch (ApiException e) {
+                    // SAF muet sur ce credit : on clot sans preuve plutot que de le laisser ouvert a tort.
+                    repository.clore(cle.id(), null, null, null, "AUTO", null);
+                }
+                clos++;
+            }
 
             int envoyes = 0;
             if (premierPassage) {

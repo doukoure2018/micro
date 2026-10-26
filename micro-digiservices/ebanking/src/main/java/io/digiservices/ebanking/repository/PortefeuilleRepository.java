@@ -351,6 +351,36 @@ public class PortefeuilleRepository {
         }
     }
 
+    /**
+     * L'etat d'un credit a l'instant, dans la base de PRODUCTION : la preuve qu'un credit negatif
+     * pris en charge a bien ete regularise, ou qu'il ne l'est pas encore.
+     */
+    public java.util.Optional<io.digiservices.clients.portefeuille.CreditEtatDto> findEtatCredit(String codAgencia, Long numCredito) {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            List<io.digiservices.clients.portefeuille.CreditEtatDto> lignes = execute("portefeuille.etatCredit",
+                    () -> primary.query("""
+                            SELECT COD_AGENCIA, NUM_CREDITO, MON_SALDO, IND_ESTADO
+                            FROM PR.PR_CREDITOS
+                            WHERE COD_AGENCIA = :codAgencia AND NUM_CREDITO = :numCredito
+                            """,
+                            new MapSqlParameterSource("codAgencia", codAgencia).addValue("numCredito", numCredito),
+                            (rs, n) -> new io.digiservices.clients.portefeuille.CreditEtatDto(
+                                    str(rs, "COD_AGENCIA"), rs.getLong("NUM_CREDITO"),
+                                    rs.getBigDecimal("MON_SALDO"), str(rs, "IND_ESTADO"))));
+            return lignes.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(lignes.get(0));
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
     /** Echeances non payees tombant exactement a J+joursAvant (credits actifs). */
     public List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> findEcheancesAvenir(int joursAvant) {
         MapSqlParameterSource p = new MapSqlParameterSource()

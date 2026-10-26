@@ -210,6 +210,15 @@ public class PortefeuilleController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /** L'etat d'un credit a l'instant, dans la base de PRODUCTION ; 404 si le credit n'existe pas. */
+    @GetMapping("/credits/{codAgencia}/{numCredito}/etat")
+    public ResponseEntity<io.digiservices.clients.portefeuille.CreditEtatDto> getEtatCredit(
+            @PathVariable("codAgencia") String codAgencia, @PathVariable("numCredito") Long numCredito) {
+        return repository.findEtatCredit(codAgencia, numCredito)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/credits-negatifs")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.CreditNegatifDto>> getCreditsNegatifs() {
         return ResponseEntity.ok(repository.findCreditsNegatifs());

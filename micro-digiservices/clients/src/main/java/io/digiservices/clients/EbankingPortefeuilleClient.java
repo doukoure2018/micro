@@ -54,6 +54,11 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/membres/{codCliente}")
     io.digiservices.clients.portefeuille.MembreSafDto getMembre(@PathVariable("codCliente") String codCliente);
 
+    /** L'etat d'un credit a l'instant, lu dans la base de PRODUCTION ; 404 si le credit n'existe pas. */
+    @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/etat")
+    io.digiservices.clients.portefeuille.CreditEtatDto getEtatCredit(@PathVariable("codAgencia") String codAgencia,
+                                                                     @PathVariable("numCredito") Long numCredito);
+
     @GetMapping("/ebanking/portefeuille/credits-negatifs")
     List<io.digiservices.clients.portefeuille.CreditNegatifDto> getCreditsNegatifs();
 
