@@ -42,6 +42,7 @@ import static org.springframework.http.ResponseEntity.created;
 public class DemandeIndResource {
 
     private final DemandeIndService demandeIndService;
+    private final io.digiservices.ecreditservice.service.MembreSafService membreSaf;
     private final SelectionService selectionService;
     private final UserClient userClient;
     private final EbankingClient ebankingClient;
@@ -117,6 +118,12 @@ public class DemandeIndResource {
                 demandeIndividuel.setValidationState("EN_ATTENTE_DA");
             }
 
+            // Le numero de membre, et ceux des membres d'un groupe, doivent exister dans SAF
+            // (base de production). Inconnu ou mal forme : refus. SAF indisponible : la saisie
+            // passe, marquee pour reverification (26/10/2026).
+            io.digiservices.ecreditservice.service.MembreSafService.Verifications verifications =
+                    membreSaf.controler(demandeIndividuel);
+
             DemandeResponse result = demandeIndService.addDemandeIndWithGaranties(demandeIndividuel);
 
             if (!result.isSuccess() || result.getDemandeId() == null || result.getDemandeId() <= 0) {
@@ -126,6 +133,8 @@ public class DemandeIndResource {
                 throw new ValidationException("La demande n'a PAS été enregistrée : "
                         + (result.getMessage() == null ? "erreur inconnue" : result.getMessage()));
             }
+
+            membreSaf.marquer(result.getDemandeId(), verifications);
 
             if (isGroupe && saisissant != null) {
                 // Trace du saisissant (saisie_par) : indispensable au retour accueil
@@ -972,7 +981,12 @@ public class DemandeIndResource {
             // Re-contrôle bloquant du groupe (somme des parts membres = montant)
             io.digiservices.ecreditservice.validation.CreditGroupeValidator.validateDemande(demandeIndividuel);
 
+            // Le numero de membre reste modifiable en correction : meme controle SAF qu'a la creation.
+            io.digiservices.ecreditservice.service.MembreSafService.Verifications verifications =
+                    membreSaf.controler(demandeIndividuel);
+
             demandeIndService.updateDemandeComplete(demandeIndividuel);
+            membreSaf.marquer(demandeId, verifications);
 
             // Retourner la demande mise a jour
             DemandeIndividuel updated = demandeIndService.getDemandeWithGaranties(demandeId);

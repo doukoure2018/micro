@@ -47,6 +47,13 @@ public interface EbankingPortefeuilleClient {
 
     // ==================== Alertes (phase 3) : balayages reseau ====================
 
+    /**
+     * Un client SAF par son numero de membre, lu dans la base de PRODUCTION. Reponse 404 si le
+     * numero est inconnu : la verification a la saisie s'appuie sur cette distinction.
+     */
+    @GetMapping("/ebanking/portefeuille/membres/{codCliente}")
+    io.digiservices.clients.portefeuille.MembreSafDto getMembre(@PathVariable("codCliente") String codCliente);
+
     @GetMapping("/ebanking/portefeuille/credits-negatifs")
     List<io.digiservices.clients.portefeuille.CreditNegatifDto> getCreditsNegatifs();
 
