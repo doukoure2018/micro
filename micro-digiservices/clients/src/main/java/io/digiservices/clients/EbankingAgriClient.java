@@ -33,6 +33,21 @@ public interface EbankingAgriClient {
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size);
 
+    /**
+     * Portefeuille national pagine (KUMY, lot 1). {@code codes} restreint aux points de service
+     * donnes (codes SAF, separes par des virgules) ; {@code inclureClos} ajoute les credits clos.
+     */
+    @GetMapping("/ebanking/agri/portfolio")
+    PageDto<AgriCreditDto> getPortfolio(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "100") int size,
+            @RequestParam(value = "codes", required = false) String codes,
+            @RequestParam(value = "inclureClos", defaultValue = "false") boolean inclureClos);
+
+    /** De quand datent les donnees servies : date de restauration de la base lue par l'API agricole. */
+    @GetMapping("/ebanking/agri/donnees-saf")
+    java.util.Map<String, Object> getDonneesSaf();
+
     @GetMapping("/ebanking/agri/farmers")
     PageDto<FarmerDto> getFarmers(
             @RequestParam(value = "page", defaultValue = "0") int page,

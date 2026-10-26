@@ -34,4 +34,26 @@ public class CreditAgricoleDto {
     private String groupeSollicitant;
     private String codeAssociation;
     private String association;
+
+    // ---- Tableau de bord DE (KUMY, lot 1 du 26/10/2026) ----
+    /** Jours depuis la plus ancienne echeance impayee ; 0 si a jour. */
+    private Integer joursRetard;
+    /** Total des echeances echues non reglees, capital et interets, GNF. */
+    private BigDecimal montantImpaye;
+    /** true quand joursRetard > 0 : derive, pas un etat SAF. */
+    private Boolean enRetard;
+    private EcheanceDto prochaineEcheance;
+    private BigDecimal montantAttenduMois;
+    private BigDecimal montantPayeMois;
+    /** Gestionnaire SAF du credit. */
+    private String codeAgent;
+    private String nomAgent;
+
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class EcheanceDto {
+        private LocalDate date;
+        private BigDecimal montant;
+    }
 }

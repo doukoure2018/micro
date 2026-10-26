@@ -61,6 +61,16 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     }
 
     @Override
+    public PageDto<AgriCreditDto> getPortfolio(java.util.Collection<String> codes, boolean inclureClos, int page, int size) {
+        long total = agriculteurRepository.countPortfolio(codes, inclureClos);
+        List<AgriCreditDto> content = total == 0
+                ? List.of()
+                : agriculteurRepository.findPortfolio(codes, inclureClos, page * size, size);
+        content.forEach(this::enrichCredit);
+        return PageDto.of(content, page, size, total);
+    }
+
+    @Override
     public PageDto<FarmerDto> getFarmers(int page, int size) {
         long total = agriculteurRepository.countFarmers();
         List<FarmerDto> content = total == 0

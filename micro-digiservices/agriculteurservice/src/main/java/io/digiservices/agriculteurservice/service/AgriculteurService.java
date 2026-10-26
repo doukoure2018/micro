@@ -24,6 +24,15 @@ public interface AgriculteurService {
 
     PageDto<CreditAgricoleDto> getAgencyPortfolio(String codeAgence, int page, int size);
 
+    /** Portefeuille national pagine (KUMY, lot 1) ; delegationId facultatif ; credits vivants par defaut. */
+    PageDto<CreditAgricoleDto> getPortfolio(Long delegationId, boolean inclureClos, int page, int size);
+
+    /** Dictionnaire des statuts de credit. */
+    java.util.List<java.util.Map<String, String>> getStatuts();
+
+    /** De quand datent les donnees servies ; null si inconnu. */
+    String donneesSafAu();
+
     PageDto<AgriculteurDto> getFarmers(int page, int size);
 
     AgriculteurDto getFarmer(String codeClient);

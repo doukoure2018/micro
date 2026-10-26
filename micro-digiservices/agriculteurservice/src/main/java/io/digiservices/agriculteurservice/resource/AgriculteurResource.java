@@ -35,6 +35,8 @@ import java.util.List;
 public class AgriculteurResource {
 
     private static final int MAX_PAGE_SIZE = 100;
+    /** La route nationale accepte des pages plus larges : une lecture de nuit en quelques pages. */
+    private static final int MAX_PAGE_SIZE_PORTFOLIO = 500;
     private static final java.util.regex.Pattern AGENT_ID = java.util.regex.Pattern.compile("CR-\\d{1,10}");
 
     private final AgriculteurService agriculteurService;
@@ -52,7 +54,43 @@ public class AgriculteurResource {
             @RequestParam(defaultValue = "20") int size) {
         validatePagination(page, size);
         log.info("[AGRI] GET /agriculteurs/agencies/{}/portfolio page={} size={}", agencyId, page, size);
-        return ResponseEntity.ok(agriculteurService.getAgencyPortfolio(agencyId, page, size));
+        PageDto<CreditAgricoleDto> resultat = agriculteurService.getAgencyPortfolio(agencyId, page, size);
+        resultat.setDonneesSafAu(agriculteurService.donneesSafAu());
+        return avecDate(resultat);
+    }
+
+    /**
+     * Portefeuille national pagine (KUMY, lot 1) : jusqu'a 500 lignes par page, credits vivants par
+     * defaut, option pour inclure les clos, filtre par delegation. Chaque reponse porte la date des
+     * donnees, en en-tete et dans le corps : l'API lit la sauvegarde de la veille.
+     */
+    @GetMapping("/portfolio")
+    public ResponseEntity<PageDto<CreditAgricoleDto>> getPortfolio(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size,
+            @RequestParam(required = false) Long delegationId,
+            @RequestParam(defaultValue = "false") boolean inclureClos) {
+        if (page < 0) {
+            throw new BadRequestException("Le parametre 'page' doit etre >= 0");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE_PORTFOLIO) {
+            throw new BadRequestException("Le parametre 'size' doit etre compris entre 1 et " + MAX_PAGE_SIZE_PORTFOLIO);
+        }
+        log.info("[AGRI] GET /agriculteurs/portfolio page={} size={} delegationId={} inclureClos={}", page, size, delegationId, inclureClos);
+        PageDto<CreditAgricoleDto> resultat = agriculteurService.getPortfolio(delegationId, inclureClos, page, size);
+        return avecDate(resultat);
+    }
+
+    /** Dictionnaire des statuts de credit : code SAF, libelle, sens, classement. */
+    @GetMapping("/referentiels/statuts")
+    public ResponseEntity<List<java.util.Map<String, String>>> getStatuts() {
+        return ResponseEntity.ok(agriculteurService.getStatuts());
+    }
+
+    private <T> ResponseEntity<PageDto<T>> avecDate(PageDto<T> page) {
+        String date = page.getDonneesSafAu();
+        return date == null ? ResponseEntity.ok(page)
+                : ResponseEntity.ok().header("X-Donnees-SAF-Au", date).body(page);
     }
 
     @GetMapping("/farmers")

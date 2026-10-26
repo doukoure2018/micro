@@ -21,4 +21,6 @@ public class PageDto<T> {
     private int totalPages;
     private boolean hasNext;
     private boolean hasPrevious;
+    /** De quand datent les donnees servies (sauvegarde SAF restauree), AAAA-MM-JJ HH:MM:SS ; aussi dans l'en-tete X-Donnees-SAF-Au. */
+    private String donneesSafAu;
 }
