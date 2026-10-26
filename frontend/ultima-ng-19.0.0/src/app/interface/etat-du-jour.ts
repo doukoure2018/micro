@@ -49,6 +49,7 @@ export interface EtatDuJour {
     anomalies: {
         creditsNegatifsOuverts: number;
         creditsNegatifsDuJour: number;
+        creditsNegatifsPrisEnChargeAnciens: number;
         contactsEnEchec: number;
         correctionsEnAttente: number;
         dossiersSansTitulaire: number;

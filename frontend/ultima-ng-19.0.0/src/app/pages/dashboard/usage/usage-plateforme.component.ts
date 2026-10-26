@@ -123,7 +123,7 @@ import { TooltipModule } from 'primeng/tooltip';
                 <div class="border rounded p-3">
                     <div class="text-xs text-gray-500 uppercase">Crédits négatifs ouverts</div>
                     <div class="text-2xl font-bold">{{ e.anomalies.creditsNegatifsOuverts }}</div>
-                    <div class="text-xs text-gray-500">{{ e.anomalies.creditsNegatifsDuJour }} relevé(s) aujourd'hui</div>
+                    <div class="text-xs text-gray-500">{{ e.anomalies.creditsNegatifsDuJour }} relevé(s) aujourd'hui<span *ngIf="e.anomalies.creditsNegatifsPrisEnChargeAnciens" class="text-red-600"> · {{ e.anomalies.creditsNegatifsPrisEnChargeAnciens }} pris en charge depuis + de 7 j</span></div>
                 </div>
                 <div class="border rounded p-3">
                     <div class="text-xs text-gray-500 uppercase">Adresses en échec</div>
