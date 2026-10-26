@@ -20,17 +20,58 @@
                 <i class="pi pi-user mr-1"></i> &#64;{{ state().user!.username }}
             </div>
             <div class="text-sm mb-3">
+                @if (state().user!.bloque) {
+                <span class="font-medium text-red-700"><i class="pi pi-lock mr-1"></i>Compte bloqué par l'administrateur</span>
+                <div class="text-xs text-gray-500 mt-1" *ngIf="state().user!.bloqueMotif">Motif : {{ state().user!.bloqueMotif }}</div>
+                } @else {
                 <span class="font-medium" [ngClass]="state().user!.enabled ? 'text-green-600' : 'text-red-600'">
                     <i class="pi mr-1" [ngClass]="state().user!.enabled ? 'pi-check-circle' : 'pi-ban'"></i>
                     {{ state().user!.enabled ? 'Compte actif' : 'Compte désactivé' }}
                 </span>
+                }
             </div>
+            @if (state().user!.bloque) {
+            <button pButton pRipple type="button" label="Débloquer le compte" icon="pi pi-lock-open"
+                class="p-button-success w-full" [disabled]="state().submitting" (click)="debloquer()"></button>
+            } @else {
             <button pButton pRipple type="button"
                 [label]="state().user!.enabled ? 'Désactiver le compte' : 'Activer le compte'"
                 [icon]="state().user!.enabled ? 'pi pi-ban' : 'pi pi-check-circle'"
                 [class]="state().user!.enabled ? 'p-button-danger p-button-outlined w-full' : 'p-button-success w-full'"
                 [disabled]="state().submitting"
                 (click)="toggleAccountEnabled()"></button>
+            <button pButton pRipple type="button" label="Bloquer définitivement" icon="pi pi-lock"
+                class="p-button-danger w-full mt-2" [disabled]="state().submitting" (click)="ouvrirBlocage()"
+                pTooltip="Connexion refusée immédiatement, jetons en cours rejetés, renouvellement impossible. Seul un administrateur débloque."></button>
+            }
+            @if (journal().length) {
+            <div class="mt-4 text-xs">
+                <div class="font-semibold text-gray-600 mb-1">Historique du compte</div>
+                @for (t of journal(); track t.id) {
+                <div class="text-gray-600 py-1 border-top-1 surface-border">
+                    <span class="font-medium">{{ libelleAction(t.action) }}</span>
+                    <span> · {{ t.dateAction | date: 'dd/MM/yyyy HH:mm' }}</span>
+                    <span *ngIf="t.parNom"> · par {{ t.parNom }}</span>
+                    <div *ngIf="t.motif" class="text-gray-500">{{ t.motif }}</div>
+                </div>
+                }
+            </div>
+            }
+
+            <p-dialog header="Bloquer définitivement ce compte" [(visible)]="dialogueBlocage" [modal]="true" [style]="{ width: '32rem' }" [draggable]="false">
+                <p class="text-sm mb-3">
+                    La connexion sera refusée immédiatement, les jetons en cours rejetés en moins d'une minute, et le renouvellement impossible.
+                    Seul un administrateur pourra débloquer ce compte.
+                </p>
+                <label class="block text-sm font-medium mb-1" for="motifBlocage">Motif (obligatoire)</label>
+                <textarea pTextarea id="motifBlocage" name="motifBlocage" [(ngModel)]="motifBlocage" rows="3" class="w-full" maxlength="300"
+                    placeholder="Ex. départ de l'institution, usage frauduleux, demande de la DRH…"></textarea>
+                <ng-template pTemplate="footer">
+                    <button pButton type="button" label="Annuler" class="p-button-text" (click)="dialogueBlocage = false"></button>
+                    <button pButton type="button" label="Bloquer" icon="pi pi-lock" class="p-button-danger"
+                        [disabled]="!motifBlocage.trim() || state().submitting" (click)="bloquer()"></button>
+                </ng-template>
+            </p-dialog>
             @if (state().submitting) {
             <div class="flex justify-center mt-4">
                 <p-progressSpinner [style]="{ width: '50px', height: '50px' }"></p-progressSpinner>
