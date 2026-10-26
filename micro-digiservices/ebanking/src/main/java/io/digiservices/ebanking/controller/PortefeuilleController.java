@@ -197,6 +197,19 @@ public class PortefeuilleController {
      * Credits a solde negatif, lus en PRODUCTION (V177). Reserve a la surveillance DSIG : le
      * depot force lui-meme la cible, la liste des chemins n'a pas a connaitre cet appel.
      */
+    /**
+     * Un client SAF par son numero de membre, lu dans la base de PRODUCTION (le depot force la
+     * cible). 404 quand le numero est inconnu, pour que l'appelant distingue « inconnu » de
+     * « SAF indisponible ».
+     */
+    @GetMapping("/membres/{codCliente}")
+    public ResponseEntity<io.digiservices.clients.portefeuille.MembreSafDto> getMembre(
+            @PathVariable("codCliente") String codCliente) {
+        return repository.findMembre(codCliente)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/credits-negatifs")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.CreditNegatifDto>> getCreditsNegatifs() {
         return ResponseEntity.ok(repository.findCreditsNegatifs());

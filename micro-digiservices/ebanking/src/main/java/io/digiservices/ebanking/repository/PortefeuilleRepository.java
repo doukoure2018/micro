@@ -315,6 +315,42 @@ public class PortefeuilleRepository {
         }
     }
 
+    private static final String SQL_MEMBRE = """
+            SELECT c.COD_CLIENTE, c.NOM_CLIENTE, c.COD_AGENCIA, a.DES_AGENCIA,
+                   c.IND_PERSONA, c.CAT_CLIENTE, c.FEC_INGRESO, c.TEL_PRINCIPAL
+            FROM CL.CL_CLIENTES c
+            LEFT JOIN CF.CF_AGENCIAS a ON a.COD_AGENCIA = c.COD_AGENCIA AND a.COD_EMPRESA = c.COD_EMPRESA
+            WHERE c.COD_CLIENTE = :codCliente
+            """;
+
+    /**
+     * Un client par son numero de membre, lu dans la base de PRODUCTION et non dans la
+     * sauvegarde : un client ouvert ce matin n'existe que la. Vide si le numero est inconnu.
+     */
+    public java.util.Optional<io.digiservices.clients.portefeuille.MembreSafDto> findMembre(String codCliente) {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            List<io.digiservices.clients.portefeuille.MembreSafDto> lignes = execute("portefeuille.membre",
+                    () -> primary.query(SQL_MEMBRE,
+                            new MapSqlParameterSource("codCliente", codCliente),
+                            (rs, n) -> new io.digiservices.clients.portefeuille.MembreSafDto(
+                                    str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                                    str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"),
+                                    str(rs, "IND_PERSONA"), str(rs, "CAT_CLIENTE"),
+                                    dt(rs, "FEC_INGRESO"), str(rs, "TEL_PRINCIPAL"))));
+            return lignes.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(lignes.get(0));
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
     /** Echeances non payees tombant exactement a J+joursAvant (credits actifs). */
     public List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> findEcheancesAvenir(int joursAvant) {
         MapSqlParameterSource p = new MapSqlParameterSource()
