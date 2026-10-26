@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
 import { BadgeModule } from 'primeng/badge';
 import { ButtonModule } from 'primeng/button';
 import { ChipModule } from 'primeng/chip';
@@ -24,7 +25,7 @@ import { ToastModule } from 'primeng/toast';
 @Component({
     selector: 'app-resp-regional',
     standalone: true,
-    imports: [
+    imports: [TooltipModule, 
         CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule,
         ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, DividerModule,
         TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule

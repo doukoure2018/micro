@@ -114,6 +114,11 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-contentieux.component').then((c) => c.PortefeuilleContentieuxComponent)
     },
     {
+        path: 'membres-saf',
+        data: { breadcrumb: 'Membres et SAF' },
+        loadComponent: () => import('./membres-saf/membres-saf.component').then((c) => c.MembresSafComponent)
+    },
+    {
         path: 'habilitations',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Habilitations par département', exigeReglage: true },
