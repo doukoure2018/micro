@@ -25,6 +25,13 @@ public class MembreSafResource {
 
     private final MembreSafService service;
 
+    /** Les dossiers en cours dont le numero est inconnu de SAF, dans le perimetre du compte. */
+    @GetMapping("/inconnus")
+    public ResponseEntity<Response> inconnus(@NotNull Authentication authentication, HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("inconnus", service.inconnus(authentication.getName())), "Dossiers inconnus de SAF", OK));
+    }
+
     @GetMapping("/{numero}/verification")
     public ResponseEntity<Response> verifier(@NotNull Authentication authentication,
                                              @PathVariable("numero") String numero,
