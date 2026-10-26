@@ -72,6 +72,8 @@ export interface MembreGroupe {
     salaireNetMensuel?: number;
     /** État de la vérification asynchrone au SAF (front uniquement) */
     verification?: 'en_cours' | 'trouve' | 'introuvable';
+    /** Résultat détaillé de la vérification SAF production (26/10/2026). */
+    verificationSaf?: import('./membre-saf').VerificationMembre | null;
 }
 
 export function demandeGroupeVide(): DemandeGroupe {

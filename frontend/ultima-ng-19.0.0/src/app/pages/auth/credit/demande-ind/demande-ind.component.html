@@ -70,11 +70,25 @@
                             #numeroMembreRef="ngModel" [disabled]="state().submitting" required
                             pattern="^\d{11}$" maxlength="11" minlength="11" inputmode="numeric"
                             (keypress)="onlyDigits($event)" (blur)="verifierDemandeEnCours()"
-                            (ngModelChange)="demandeEnCours = null; histoSaf = null">
+                            (ngModelChange)="demandeEnCours = null; histoSaf = null; membreSaf = null">
                         <small *ngIf="numeroMembreRef.invalid && (numeroMembreRef.dirty || numeroMembreRef.touched)"
                             class="text-red-500 block mt-1">
                             <span *ngIf="numeroMembreRef.errors?.['required']">Le N° Membre est obligatoire.</span>
                             <span *ngIf="!numeroMembreRef.errors?.['required']">Le N° Membre doit contenir exactement 11 chiffres.</span>
+                        </small>
+                        <small *ngIf="membreSafEnCours" class="text-gray-500 block mt-1">
+                            <i class="pi pi-spinner pi-spin mr-1"></i>Vérification du membre dans SAF…
+                        </small>
+                        <small *ngIf="membreSaf?.etat === 'TROUVE'" class="text-green-700 block mt-1">
+                            <i class="pi pi-check-circle mr-1"></i>{{ membreSaf?.nomClient }}
+                            <span *ngIf="membreSaf?.agence"> — {{ membreSaf?.agence }}</span>
+                            <span *ngIf="membreSaf?.dateAdhesion"> · membre depuis le {{ membreSaf?.dateAdhesion | date: 'dd/MM/yyyy' }}</span>
+                        </small>
+                        <small *ngIf="membreSaf?.etat === 'INCONNU' || membreSaf?.etat === 'FORME_INVALIDE'" class="text-red-600 font-semibold block mt-1">
+                            <i class="pi pi-times-circle mr-1"></i>{{ membreSaf?.message }}
+                        </small>
+                        <small *ngIf="membreSaf?.etat === 'SAF_INDISPONIBLE'" class="text-orange-600 block mt-1">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>{{ membreSaf?.message }}
                         </small>
                         <small *ngIf="demandeEnCours" class="text-red-600 font-semibold block mt-1">
                             <i class="pi pi-exclamation-triangle mr-1"></i>

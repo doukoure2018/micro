@@ -1,3 +1,4 @@
+import { VerificationMembre, verificationBloquante } from '@/interface/membre-saf';
 import { DemandeGroupe, DemandeIndividuel, Echeancier, GarantiePropose, MembreGroupe, NATURE_CREDIT_GROUPE, TYPES_GROUPE_OPTIONS, TypeGroupe, demandeGroupeVide, membreGroupeVide } from '@/interface/demande-individuel.interface';
 import { EcheancierPrevisionnelComponent } from '@/pages/dashboard/credit/echeancier-previsionnel/echeancier-previsionnel.component';
 import { Activite, CreditActiviteData, SousActivite, SousSousActivite } from '@/service/credit-activite.model';
@@ -182,7 +183,9 @@ export class DemandeGroupeComponent implements OnInit {
             .pipe(
                 debounceTime(600),
                 switchMap((membre) =>
-                    this.userService.existNumeroMembre$(membre.numeroMembre as any).pipe(
+                    // Vérification dans SAF production (26/10/2026). L'ancien contrôle lisait une
+                    // table locale que digi remplit lui-même : « reconnu » voulait dire « déjà vu ».
+                    this.userService.verifierMembreSaf$((membre.numeroMembre || '').trim()).pipe(
                         catchError(() => of(null)),
                         switchMap((response: IResponse | null) => of({ membre, response }))
                     )
@@ -190,11 +193,13 @@ export class DemandeGroupeComponent implements OnInit {
                 takeUntilDestroyed(this.destroyRef)
             )
             .subscribe(({ membre, response }) => {
-                if (!response) {
-                    membre.verification = undefined; // service indisponible : ne pas bloquer
+                const v = ((response?.data as any)?.verification ?? null) as VerificationMembre | null;
+                membre.verificationSaf = v;
+                if (!v || v.etat === 'SAF_INDISPONIBLE') {
+                    membre.verification = undefined; // service indisponible : ne pas bloquer, le serveur marquera
                     return;
                 }
-                membre.verification = (response.data as any)?.existMembre ? 'trouve' : 'introuvable';
+                membre.verification = v.etat === 'TROUVE' ? 'trouve' : 'introuvable';
             });
     }
 
@@ -395,12 +400,42 @@ export class DemandeGroupeComponent implements OnInit {
     }
 
     onNumeroMembreChange(membre: MembreGroupe): void {
-        if (membre.numeroMembre && membre.numeroMembre.trim().length >= 4) {
+        membre.verificationSaf = null;
+        if (membre.numeroMembre && /^\d{11}$/.test(membre.numeroMembre.trim())) {
             membre.verification = 'en_cours';
             this.verificationMembre$.next(membre);
         } else {
             membre.verification = undefined;
         }
+    }
+
+    /** Le numéro du groupe lui-même est un membre SAF : même vérification, à la sortie du champ. */
+    membreGroupeSaf: VerificationMembre | null = null;
+    membreGroupeSafEnCours = false;
+
+    verifierNumeroGroupe(): void {
+        const numero = (this.pret.numeroMembreGroupe || '').trim();
+        this.membreGroupeSaf = null;
+        if (!numero) return;
+        this.membreGroupeSafEnCours = true;
+        this.userService
+            .verifierMembreSaf$(numero)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    this.membreGroupeSafEnCours = false;
+                    this.membreGroupeSaf = ((response.data as any)?.verification ?? null) as VerificationMembre | null;
+                },
+                error: () => {
+                    this.membreGroupeSafEnCours = false;
+                    this.membreGroupeSaf = null;
+                }
+            });
+    }
+
+    /** Un membre dont SAF dit qu'il n'existe pas, ou dont le numéro est mal formé. */
+    private membresRefuses(): MembreGroupe[] {
+        return this.membres.filter((m) => verificationBloquante(m.verificationSaf));
     }
 
     totalParts(): number {
@@ -539,6 +574,20 @@ export class DemandeGroupeComponent implements OnInit {
                 summary: 'Modalités incohérentes',
                 detail: `La durée (${this.pret.dureeDemande} mois) doit être égale au moratoire (${this.pret.periodeDiffere || 0} mois) + le nombre d'échéances (${this.pret.nombreEcheance}). Exemple : 9 mois = 7 mois de moratoire + 2 échéances.`,
                 life: 8000
+            });
+            return;
+        }
+        if (verificationBloquante(this.membreGroupeSaf)) {
+            this.messageService.add({ severity: 'error', summary: 'Numéro du groupe refusé', detail: this.membreGroupeSaf!.message, life: 9000 });
+            return;
+        }
+        const refuses = this.membresRefuses();
+        if (refuses.length) {
+            this.messageService.add({
+                severity: 'error',
+                summary: refuses.length + ' membre(s) inconnu(s) de SAF',
+                detail: refuses.map((m) => m.numeroMembre + (m.nomPrenom ? ' (' + m.nomPrenom + ')' : '')).join(', ') + ' — vérifiez les numéros avant de soumettre.',
+                life: 10000
             });
             return;
         }

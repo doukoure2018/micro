@@ -86,7 +86,20 @@
                     <td class="label-cell">N Membre *</td>
                     <td>
                         <input pInputText [(ngModel)]="formData.numeroMembre" name="numeroMembreHeader" class="w-full"
-                            [disabled]="state().submitting" required>
+                            [disabled]="state().submitting" required inputmode="numeric" maxlength="11"
+                            (blur)="verifierMembreSaf()" (ngModelChange)="membreSaf = null">
+                        <small *ngIf="membreSafEnCours" class="text-gray-500 block mt-1">
+                            <i class="pi pi-spinner pi-spin mr-1"></i>Vérification du membre dans SAF…
+                        </small>
+                        <small *ngIf="membreSaf?.etat === 'TROUVE'" class="text-green-700 block mt-1">
+                            <i class="pi pi-check-circle mr-1"></i>{{ membreSaf?.nomClient }}<span *ngIf="membreSaf?.agence"> — {{ membreSaf?.agence }}</span>
+                        </small>
+                        <small *ngIf="membreSaf?.etat === 'INCONNU' || membreSaf?.etat === 'FORME_INVALIDE'" class="text-red-600 font-semibold block mt-1">
+                            <i class="pi pi-times-circle mr-1"></i>{{ membreSaf?.message }}
+                        </small>
+                        <small *ngIf="membreSaf?.etat === 'SAF_INDISPONIBLE'" class="text-orange-600 block mt-1">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>{{ membreSaf?.message }}
+                        </small>
                     </td>
                     <td class="label-cell">N de la demande</td>
                     <td>
