@@ -45,6 +45,7 @@ public class MembreSafRepriseScheduler {
     private final MembreSafService membreSaf;
     private final AlerteJournalRepository journal;
     private final ApplicationEventPublisher publisher;
+    private final ClotureSaf cloture;
 
     @Value("${membre.saf.reprise.actif:true}")
     private boolean actif;
@@ -58,6 +59,14 @@ public class MembreSafRepriseScheduler {
             return;
         }
         long debut = System.currentTimeMillis();
+        // La verification lit la PRODUCTION (un numero membre doit etre confronte a SAF tel qu'il
+        // est aujourd'hui) : pendant la cloture SAF, inutile de parcourir un lot pour le reporter
+        // ligne par ligne, le passage est mis en pause et reprend a la fin de la cloture.
+        if (cloture.dansLaFenetre()) {
+            journal.execution(JOB, "IGNORE", 1, null, null, null, null, null, null,
+                    System.currentTimeMillis() - debut, cloture.pause("reprise des numeros membres"));
+            return;
+        }
         int trouves = 0;
         int inconnus = 0;
         int reportes = 0;

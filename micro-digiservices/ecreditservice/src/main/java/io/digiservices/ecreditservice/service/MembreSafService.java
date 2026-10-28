@@ -45,6 +45,7 @@ public class MembreSafService {
     private final JdbcClient jdbcClient;
     private final UserClient userClient;
     private final MembreSafRepriseRepository reprise;
+    private final ClotureSaf cloture;
 
     /** Enleve espaces et separateurs : un numero copie d'un tableur arrive souvent avec. */
     public static String normaliser(String numero) {
@@ -76,9 +77,15 @@ public class MembreSafService {
                     .build();
         } catch (Exception e) {
             log.warn("[MEMBRE SAF] Verification impossible pour {} : {}", numero, e.getMessage());
+            // Pendant la cloture SAF du soir, nommer la cause : l'agent n'a pas a se demander si
+            // son numero est en cause. La suite est la meme (saisie sous reserve, reverification).
+            String message = cloture.dansLaFenetre()
+                    ? "Clôture SAF en cours : le numéro ne peut pas être vérifié ce soir. "
+                      + "La saisie est acceptée sous réserve, le numéro sera vérifié demain matin."
+                    : "SAF ne répond pas : la saisie est acceptée sous réserve, le numéro sera revérifié.";
             return VerificationMembreDto.builder()
                     .numero(numero).etat(VerificationMembreDto.SAF_INDISPONIBLE)
-                    .message("SAF ne répond pas : la saisie est acceptée sous réserve, le numéro sera revérifié.")
+                    .message(message)
                     .build();
         }
     }

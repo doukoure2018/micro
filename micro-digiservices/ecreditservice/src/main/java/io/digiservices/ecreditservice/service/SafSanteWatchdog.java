@@ -46,6 +46,7 @@ public class SafSanteWatchdog {
     private final DonneesSafService donneesSaf;
     private final SlackNotifier slack;
     private final AlerteJournalRepository journal;
+    private final ClotureSaf cloture;
 
     @Value("${saf.sante.actif:true}")
     private boolean actif;
@@ -73,6 +74,15 @@ public class SafSanteWatchdog {
             donneesSaf.memoriser(sante);
             if (sante.isToutOk()) {
                 retabli();
+                return;
+            }
+            // Cloture SAF : le compte de lecture de la production est desactive chaque soir en
+            // semaine et revient seul. Evenement attendu, pas une panne : ni alerte, ni compteur
+            // d'echecs. L'etat en cours (une vraie panne commencee avant 17 h) est conserve tel
+            // quel et son rappel reprend a la sortie de la fenetre.
+            if (sante.isProductionEnCloture() && cloture.dansLaFenetre()) {
+                log.info("[SAF-SANTE] Cloture SAF en cours ({}) : compte de lecture de la production "
+                        + "desactive, la sauvegarde repond — aucune alerte", cloture.plage());
                 return;
             }
             sante.getBases().stream().filter(b -> !b.isOk())
