@@ -50,6 +50,9 @@ public interface EbankingAgriClient {
             @RequestParam("fin") String fin, @RequestParam("page") int page, @RequestParam("size") int size,
             @RequestParam(value = "codes", required = false) String codes);
 
+    @GetMapping("/ebanking/agri/photo-mensuelle")
+    List<io.digiservices.clients.agri.PhotoMensuelleDto> getPhotoMensuelle(@RequestParam("mois") String mois);
+
     @GetMapping("/ebanking/agri/referentiels/activites")
     List<java.util.Map<String, Object>> getReferentielActivites();
 

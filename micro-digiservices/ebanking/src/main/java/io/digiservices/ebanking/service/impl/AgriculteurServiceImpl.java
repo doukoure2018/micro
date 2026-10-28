@@ -69,6 +69,18 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         return PageDto.of(content, page, size, total);
     }
 
+    /**
+     * Photo du mois demande. Le mois courant est photographie a la date du jour (encours reel) ;
+     * tout mois anterieur est reconstitue (encours nul, voir AgriculteurRepository#SQL_PHOTO_MENSUELLE).
+     */
+    @Override
+    public java.util.List<io.digiservices.clients.agri.PhotoMensuelleDto> getPhotoMensuelle(
+            java.time.LocalDate mois) {
+        java.time.LocalDate premierDuMois = mois.withDayOfMonth(1);
+        boolean moisCourant = premierDuMois.equals(java.time.LocalDate.now().withDayOfMonth(1));
+        return agriculteurRepository.photoMensuelle(premierDuMois, moisCourant);
+    }
+
     @Override
     public java.util.List<java.util.Map<String, Object>> getReferentielActivites() {
         return agriculteurRepository.findReferentielActivites();

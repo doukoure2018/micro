@@ -106,6 +106,37 @@ public class AgriculteurResource {
                 Math.max(page, 0), taille));
     }
 
+    /**
+     * Serie mensuelle du portefeuille par point de vente (point 6). Bornes au format AAAA-MM,
+     * incluses.
+     *
+     * <p>Chaque ligne porte sa provenance dans {@code source} : <b>PHOTO</b> pour un mois que la
+     * plateforme a observe — l'encours est alors celui de SAF — ou <b>RECONSTITUTION</b> pour un
+     * mois recalcule depuis l'echeancier. Dans ce second cas la production, les sorties datees et
+     * les retards sont fideles, mais <b>l'encours est nul a dessein</b> : l'echeancier de SAF ne
+     * reproduit pas le solde, et publier une approximation aurait fausse la serie de 40 %.</p>
+     */
+    @GetMapping("/historique")
+    public ResponseEntity<List<io.digiservices.clients.agri.HistoriqueMensuelDto>> getHistorique(
+            @RequestParam("debut") String debut,
+            @RequestParam("fin") String fin,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "delegationId", required = false) Long delegationId) {
+        return ResponseEntity.ok(agriculteurService.getHistorique(debut, fin, codeAgence, delegationId));
+    }
+
+    /**
+     * Objectifs de la Direction de l'exploitation (point 7). Vide tant que le fichier annuel de
+     * la DE n'a pas ete charge ; le gabarit est annee, mois, cible, indicateur, valeur.
+     */
+    @GetMapping("/objectifs")
+    public ResponseEntity<List<io.digiservices.clients.agri.ObjectifDto>> getObjectifs(
+            @RequestParam("annee") int annee,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "delegationId", required = false) Long delegationId) {
+        return ResponseEntity.ok(agriculteurService.getObjectifs(annee, codeAgence, delegationId));
+    }
+
     /** Referentiel des activites : activite, sous-activites et filieres agricoles (point 11). */
     @GetMapping("/referentiels/activites")
     public ResponseEntity<List<java.util.Map<String, Object>>> getActivites() {

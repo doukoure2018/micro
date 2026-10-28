@@ -206,3 +206,9 @@ feign:
 ecredit:
   agri:
     api-key: ${ECREDIT_AGRI_API_KEY:}
+
+# Cle presentee par ecreditservice pour appeler le perimetre agricole d'ebanking
+# (photo mensuelle du portefeuille). Meme cle que celle d'agriculteurservice.
+ebanking:
+  agri:
+    api-key: ${EBANKING_AGRI_API_KEY:}
