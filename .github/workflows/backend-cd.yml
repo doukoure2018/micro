@@ -24,6 +24,9 @@ on:
       - .env.prod
       - .github/workflows/backend-cd.yml
       - '!micro-digiservices/frontend/**'
+      # La documentation ne change pas le binaire : inutile d'arreter et de redemarrer toute la
+      # production pour un fichier Markdown.
+      - '!micro-digiservices/**/*.md'
 
 jobs:
   build-and-deploy:
