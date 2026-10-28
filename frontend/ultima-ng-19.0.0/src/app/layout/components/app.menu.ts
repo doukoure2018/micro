@@ -468,14 +468,16 @@ export class AppMenu {
                 routerLink: ['/dashboards/rapprochement-caisse-ra']
             });
         }
-        if (this.estManager('Audit')) {
+        // V187 : le service Audit recoit la rubrique par son role, la matrice peut en ouvrir
+        // l'ecran a un departement. Une seule regle : la rubrique.
+        if (this.peut('RAPPROCHEMENT_CAISSE')) {
             items.push({
                 label: 'Audit rapprochement',
                 icon: 'pi pi-fw pi-shield',
                 routerLink: ['/dashboards/audit-rapprochement']
             });
         }
-        if (['DA', 'DR', 'DG', 'RA'].includes(this.role || '') || this.estManager('DE') || this.estManager('DI')) {
+        if (this.peut('ARRETE_CAISSE')) {
             items.push({
                 label: 'Suivi des arrêtés de caisse',
                 icon: 'pi pi-fw pi-money-bill',
@@ -511,7 +513,7 @@ export class AppMenu {
             });
         }
         // Assainissement des fiches : même écran pour les directions que pour le sociétariat
-        if (['DA', 'DR', 'DG'].includes(this.role || '') || this.estManager('DE') || this.estManager('Societariat')) {
+        if (this.peut('ASSAINISSEMENT')) {
             items.push({
                 label: 'Assainissement',
                 icon: 'pi pi-fw pi-check-square',
@@ -554,14 +556,14 @@ export class AppMenu {
                 routerLink: ['/dashboards/changement-telephone/da']
             });
         }
-        if (this.estManager('DI')) {
+        if (this.peut('STATS_TELEPHONE')) {
             items.push({
                 label: 'Inspection changement téléphone',
                 icon: 'pi pi-fw pi-phone',
                 routerLink: ['/dashboards/changement-telephone/inspection']
             });
         }
-        if (this.peut('CLIENTS_SOCIETARIAT')) {
+        if (this.peut('VERIFICATION_DOCUMENTS')) {
             items.push({
                 label: 'Vérification des documents',
                 icon: 'pi pi-fw pi-folder',

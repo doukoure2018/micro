@@ -43,6 +43,8 @@ public class HabilitationService {
     public static final String CREDITS_NEGATIFS = "CREDITS_NEGATIFS";
     public static final String CLIENTS_SOCIETARIAT = "CLIENTS_SOCIETARIAT";
     public static final String ASSAINISSEMENT = "ASSAINISSEMENT";
+    /** Verification des pieces, detachee de CLIENTS_SOCIETARIAT le 28/10/2026 (V186). */
+    public static final String VERIFICATION_DOCUMENTS = "VERIFICATION_DOCUMENTS";
     public static final String STATS_TELEPHONE = "STATS_TELEPHONE";
     public static final String CREDITS_SUIVI = "CREDITS_SUIVI";
     public static final String ARRETE_CAISSE = "ARRETE_CAISSE";

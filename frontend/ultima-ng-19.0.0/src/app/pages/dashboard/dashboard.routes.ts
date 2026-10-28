@@ -160,7 +160,7 @@ export default [
     {
         path: 'document-verification',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Document Verification', rubrique: 'CLIENTS_SOCIETARIAT' },
+        data: { breadcrumb: 'Document Verification', rubrique: 'VERIFICATION_DOCUMENTS' },
         loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-verification.component').then((c) => c.DocumentVerificationComponent)
     },
     {
@@ -437,7 +437,8 @@ export default [
     },
     {
         path: 'assainissement',
-        data: { breadcrumb: 'Assainissement des fiches clients' },
+        canActivate: [HabilitationGuard],
+        data: { rubrique: 'ASSAINISSEMENT', breadcrumb: 'Assainissement des fiches clients' },
         loadComponent: () => import('./agent-credit/societariat/societariat.component').then((c) => c.SocietariatComponent)
     },
     {
@@ -467,7 +468,8 @@ export default [
     },
     {
         path: 'suivi-arrete-caisse',
-        data: { breadcrumb: 'Suivi des Arretes de Caisse' },
+        canActivate: [HabilitationGuard],
+        data: { rubrique: 'ARRETE_CAISSE', breadcrumb: 'Suivi des Arretes de Caisse' },
         loadComponent: () => import('./admin/de/suivi-arrete-caisse/suivi-arrete-caisse.component').then((c) => c.SuiviArreteCaisseComponent)
     },
     {
@@ -487,7 +489,8 @@ export default [
     },
     {
         path: 'audit-rapprochement',
-        data: { breadcrumb: 'Audit Rapprochement de Caisse' },
+        canActivate: [HabilitationGuard],
+        data: { rubrique: 'RAPPROCHEMENT_CAISSE', breadcrumb: 'Audit Rapprochement de Caisse' },
         loadComponent: () => import('./admin/audit/audit.component').then((c) => c.AuditComponent)
     },
     {
@@ -508,7 +511,8 @@ export default [
     },
     {
         path: 'changement-telephone/inspection',
-        data: { breadcrumb: 'Inspection Changement Telephone' },
+        canActivate: [HabilitationGuard],
+        data: { rubrique: 'STATS_TELEPHONE', breadcrumb: 'Inspection Changement Telephone' },
         loadComponent: () => import('./changement-telephone/inspection-telephone.component').then((c) => c.InspectionTelephoneComponent)
     },
     {
