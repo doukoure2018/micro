@@ -29,10 +29,17 @@ import java.util.function.Supplier;
 import static io.digiservices.ebanking.constant.AgriculturalFilter.AGRICULTURAL_FILTER_CREDIT;
 
 /**
- * Acces lecture seule au perimetre agricole de SAF2000 (BDCRG PROD).
+ * Acces lecture seule au perimetre agricole de SAF2000.
  *
  * <p><b>Regle absolue :</b> ce repository utilise UNIQUEMENT la datasource
- * {@code tertiaryJdbcTemplate} (BDCRG PROD). Aucune autre.</p>
+ * {@code tertiaryJdbcTemplate}. Aucune autre.</p>
+ *
+ * <p><b>Cette datasource est pointee sur la SAUVEGARDE</b> (10.9.0.168, compte DIGI_LECTURE,
+ * restauree chaque matin) depuis l'aiguillage du 21/10/2026, et non sur la production : la
+ * mention « BDCRG PROD » qui figurait ici etait vraie avant cette date et ne l'est plus.
+ * L'API partenaire sert donc des donnees de la veille — c'est ce que dit l'en-tete
+ * {@code X-Donnees-SAF-Au} — et elle continue de repondre quand la production est fermee
+ * (cloture du soir, compte desactive).</p>
  *
  * <p>Chaque appel SQL est protege : une indisponibilite de connexion / timeout
  * est convertie en {@link TertiaryUnavailableException} (-> HTTP 503), les autres
@@ -45,7 +52,7 @@ public class AgriculteurRepository {
     private final NamedParameterJdbcTemplate tertiary;
 
     public AgriculteurRepository(@Qualifier("tertiaryJdbcTemplate") JdbcTemplate tertiaryJdbcTemplate) {
-        // NamedParameterJdbcTemplate construit a partir du JdbcTemplate tertiary (BDCRG PROD)
+        // NamedParameterJdbcTemplate construit a partir du JdbcTemplate tertiary (sauvegarde)
         this.tertiary = new NamedParameterJdbcTemplate(tertiaryJdbcTemplate);
     }
 
