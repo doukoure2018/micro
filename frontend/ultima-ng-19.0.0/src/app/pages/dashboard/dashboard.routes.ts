@@ -153,7 +153,8 @@ export default [
     },
     {
         path: 'verification-client',
-        data: { breadcrumb: 'Verification Client' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Verification Client', rubrique: 'FICHE_RAPPROCHEMENT' },
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)
     },
     {

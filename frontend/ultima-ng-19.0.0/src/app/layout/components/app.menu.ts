@@ -568,6 +568,16 @@ export class AppMenu {
                 routerLink: ['/dashboards/document-verification']
             });
         }
+        // Fiche signaletique et rapprochement Production / Middleware. L'ecran existait depuis
+        // longtemps mais plus aucune entree de menu n'y conduisait : la case de la matrice etait
+        // cochee sans rien ouvrir, et l'equipe y arrivait par l'adresse (DSIG, 28/10/2026).
+        if (this.peut('FICHE_RAPPROCHEMENT')) {
+            items.push({
+                label: 'Fiche signalétique et rapprochement',
+                icon: 'pi pi-fw pi-id-card',
+                routerLink: ['/dashboards/verification-client']
+            });
+        }
         return items;
     }
 
