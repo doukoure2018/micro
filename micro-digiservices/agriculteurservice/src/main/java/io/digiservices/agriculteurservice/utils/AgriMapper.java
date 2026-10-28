@@ -78,6 +78,7 @@ public class AgriMapper {
         dto.setTypeCredit(src.getTipCredito());
         dto.setLibelleTypeCredit(src.getDesTipCredito());
         dto.setCodeActivite(src.getCodActividad());
+        dto.setFiliere(filiere(src.getCodFiliere(), src.getNomFiliere()));
         dto.setMontant(src.getMonCredito());
         dto.setSolde(src.getMonSaldo());
         dto.setDateOuverture(src.getFecApertura());
@@ -174,7 +175,6 @@ public class AgriMapper {
                 .codeClient(src.getCodCliente()).nomClient(src.getNomCliente())
                 .typeCredit(src.getTipCredito()).libelleTypeCredit(src.getDesTipCredito())
                 .codeActivite(src.getCodActividad())
-                .filiere(filiere(src.getCodFiliere(), src.getNomFiliere()))
                 .filiere(filiere(src.getCodFiliere(), src.getNomFiliere()))
                 .montant(src.getMonCredito()).solde(src.getMonSaldo())
                 .dateOuverture(src.getFecApertura()).dateEcheance(src.getFecVencimiento())
