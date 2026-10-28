@@ -106,6 +106,36 @@ public class DonneesSafService {
                 .build();
     }
 
+    /**
+     * Faut-il mettre en pause un traitement qui lit la PRODUCTION ?
+     *
+     * <p>Releve du 28/10/2026 au soir : la fenetre horaire seule mettait en pause les passages de
+     * 17h10, 18h10 et 19h10 alors que la production repondait parfaitement — la cloture n'avait
+     * pas eu lieu ce soir-la. Une pause gratuite est une perte seche. Le test croise donc la
+     * fenetre avec ce que la sonde constate : on ne saute un passage que si la production est
+     * effectivement fermee.</p>
+     *
+     * <p>Si la sonde est elle-meme muette, la fenetre tranche : ebanking est alors probablement
+     * hors service et le traitement echouerait de toute facon.</p>
+     */
+    public boolean productionFermee() {
+        if (!cloture.dansLaFenetre()) {
+            return false;
+        }
+        SanteSafDto s = derniere;
+        if (s == null) {
+            try {
+                s = portefeuilleClient.getSanteSaf();
+                memoriser(s);
+            } catch (Exception e) {
+                log.warn("[DONNEES-SAF] Sonde injoignable dans la fenetre de cloture : pause par precaution ({})",
+                        e.getMessage());
+                return true;
+            }
+        }
+        return s.isProductionEnCloture();
+    }
+
     /** Pied de courriel, en HTML discret ; vide si rien a dire. */
     public String mentionHtml() {
         DonneesSafDto e = etat();
