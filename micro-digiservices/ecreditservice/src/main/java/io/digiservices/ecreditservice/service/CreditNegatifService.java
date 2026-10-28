@@ -64,6 +64,7 @@ public class CreditNegatifService {
     private final UserClient userClient;
     private final HabilitationService habilitations;
     private final ClotureSaf cloture;
+    private final DonneesSafService donneesSaf;
 
     @Value("${credit.negatif.actif:true}")
     private boolean actif;
@@ -299,7 +300,7 @@ public class CreditNegatifService {
         // La surveillance lit la PRODUCTION : pendant la cloture SAF le compte de lecture est
         // desactive et le passage ne peut qu'echouer. On le note en pause plutot qu'en echec ;
         // le premier passage du matin rattrape tout (le 27/10/2026 : « 2 nouveaux, 14 corriges »).
-        if (cloture.dansLaFenetre()) {
+        if (donneesSaf.productionFermee()) {
             journal.execution("CREDIT_NEGATIF", "IGNORE", 1, null, null, null, null, null, null,
                     System.currentTimeMillis() - debut, cloture.pause("surveillance des credits negatifs"));
             return;

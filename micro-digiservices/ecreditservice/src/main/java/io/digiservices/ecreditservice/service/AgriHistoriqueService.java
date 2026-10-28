@@ -20,6 +20,9 @@ import java.util.List;
  * Historique mensuel du portefeuille agricole (point 6 du tableau de bord DE) : digi conserve la
  * serie que SAF ne garde pas.
  *
+ * <p>Ce travail lit la <b>sauvegarde</b>, pas la production : il n'a donc rien a craindre de la
+ * cloture du soir et n'est pas suspendu par elle.</p>
+ *
  * <p><b>Un passage par jour, le matin.</b> La photo du mois en cours est reecrite a chaque
  * passage — un mois n'est fige qu'une fois passe — apres la restauration de la sauvegarde, dans
  * la meme fenetre que les autres travaux SAF du matin et avec les memes reprises
@@ -42,7 +45,6 @@ public class AgriHistoriqueService {
     private final AgriHistoriqueRepository repository;
     private final AlerteJournalRepository journal;
     private final SafJobRetry retry;
-    private final ClotureSaf cloture;
 
     @Value("${agri.historique.actif:true}")
     private boolean actif;
@@ -54,11 +56,6 @@ public class AgriHistoriqueService {
     @Scheduled(cron = "${agri.historique.cron:0 35 8 * * *}", zone = "GMT")
     public void photographierLeMois() {
         if (!actif) {
-            return;
-        }
-        if (cloture.dansLaFenetre()) {
-            journal.execution(JOB, "IGNORE", 1, null, null, null, null, null, null, 0L,
-                    cloture.pause("photo mensuelle du portefeuille agricole"));
             return;
         }
         retry.executer("photo mensuelle agricole", () -> photographier(LocalDate.now()));
