@@ -23,6 +23,8 @@ public class CreditAgricoleDto {
     private Integer typeCredit;
     private String libelleTypeCredit;
     private String codeActivite;
+    /** Filière agricole : la sous-sous-activité SAF (point 11). */
+    private FiliereDto filiere;
     private BigDecimal montant;
     private BigDecimal solde;
     private LocalDate dateOuverture;

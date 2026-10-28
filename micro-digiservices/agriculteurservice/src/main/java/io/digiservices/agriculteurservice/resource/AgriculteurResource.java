@@ -88,6 +88,31 @@ public class AgriculteurResource {
     }
 
     /**
+     * Sorties du portefeuille entre deux dates (point 10).
+     *
+     * <p>SAF ne date que les credits cloturees, et seulement une partie : les apures et les
+     * transferts n'ont jamais de date de sortie et n'apparaissent donc pas ici.</p>
+     */
+    @GetMapping("/sorties")
+    public ResponseEntity<PageDto<io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto>> getSorties(
+            @RequestParam("debut") String debut,
+            @RequestParam("fin") String fin,
+            @RequestParam(value = "delegationId", required = false) Long delegationId,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "100") int size) {
+        int taille = Math.min(Math.max(size, 1), MAX_PAGE_SIZE_PORTFOLIO);
+        return avecDate(agriculteurService.getSorties(debut, fin, delegationId, codeAgence,
+                Math.max(page, 0), taille));
+    }
+
+    /** Referentiel des activites : activite, sous-activites et filieres agricoles (point 11). */
+    @GetMapping("/referentiels/activites")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getActivites() {
+        return ResponseEntity.ok(agriculteurService.getActivites());
+    }
+
+    /**
      * Agents de credit d'un point de vente (point 8). Le code attendu est le <b>code SAF</b>,
      * le meme que {@code codeAgence} du portefeuille.
      */

@@ -158,6 +158,92 @@ public class AgriMapper {
     /**
      * Convertit une page Feign en page publique en mappant chaque element.
      */
+    private io.digiservices.agriculteurservice.dto.FiliereDto filiere(String code, String libelle) {
+        if ((code == null || code.isBlank()) && (libelle == null || libelle.isBlank())) return null;
+        return io.digiservices.agriculteurservice.dto.FiliereDto.builder()
+                .code(code == null || code.isBlank() ? null : code.trim())
+                .libelle(libelle == null || libelle.isBlank() ? null : libelle.trim())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto toSortie(
+            io.digiservices.clients.agri.AgriSortieDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto.builder()
+                .codeAgence(src.getCodAgencia()).numeroCredit(src.getNumCredito())
+                .codeClient(src.getCodCliente()).nomClient(src.getNomCliente())
+                .typeCredit(src.getTipCredito()).libelleTypeCredit(src.getDesTipCredito())
+                .codeActivite(src.getCodActividad())
+                .filiere(filiere(src.getCodFiliere(), src.getNomFiliere()))
+                .filiere(filiere(src.getCodFiliere(), src.getNomFiliere()))
+                .montant(src.getMonCredito()).solde(src.getMonSaldo())
+                .dateOuverture(src.getFecApertura()).dateEcheance(src.getFecVencimiento())
+                .dateSortie(src.getFecCancelacion())
+                .statut(translator.translateStatutCredit(src.getIndEstado()))
+                .codeAgent(src.getCodEjecutivo()).nomAgent(src.getNomEjecutivo())
+                .build();
+    }
+
+    /**
+     * Referentiel des activites mis en arbre : activite -> sous-activites -> filieres. Le meme
+     * code de filiere figure sous plusieurs sous-activites avec le meme libelle ; la liste
+     * « filieres » de l'activite les dedoublonne, car c'est le seul niveau que PR_CREDITOS
+     * permette de rattacher a un credit.
+     */
+    public java.util.List<java.util.Map<String, Object>> referentielActivites(
+            java.util.List<java.util.Map<String, Object>> lignes) {
+        java.util.Map<String, java.util.Map<String, Object>> activites = new java.util.LinkedHashMap<>();
+        java.util.Map<String, java.util.Map<String, java.util.Map<String, Object>>> sousParActivite = new java.util.LinkedHashMap<>();
+        java.util.Map<String, java.util.Map<String, String>> filieresParActivite = new java.util.LinkedHashMap<>();
+        for (java.util.Map<String, Object> l : lignes) {
+            String codeAct = txt(l.get("COD_ACTIVIDAD"));
+            if (codeAct == null) continue;
+            activites.computeIfAbsent(codeAct, k -> {
+                java.util.Map<String, Object> a = new java.util.LinkedHashMap<>();
+                a.put("code", codeAct);
+                a.put("libelle", txt(l.get("DES_ACTIVIDAD")));
+                return a;
+            });
+            String codeSous = txt(l.get("COD_SUBACTIV"));
+            if (codeSous != null) {
+                sousParActivite.computeIfAbsent(codeAct, k -> new java.util.LinkedHashMap<>())
+                        .computeIfAbsent(codeSous, k -> {
+                            java.util.Map<String, Object> sa = new java.util.LinkedHashMap<>();
+                            sa.put("code", codeSous);
+                            sa.put("libelle", txt(l.get("DES_SUBACTIV")));
+                            return sa;
+                        });
+            }
+            String codeFil = txt(l.get("COD_SUBSUBACTIV"));
+            if (codeFil != null) {
+                filieresParActivite.computeIfAbsent(codeAct, k -> new java.util.LinkedHashMap<>())
+                        .putIfAbsent(codeFil, txt(l.get("DES_SUBSUBACTIV")));
+            }
+        }
+        java.util.List<java.util.Map<String, Object>> sortie = new java.util.ArrayList<>();
+        for (var e : activites.entrySet()) {
+            java.util.Map<String, Object> a = new java.util.LinkedHashMap<>(e.getValue());
+            a.put("sousActivites", new java.util.ArrayList<>(
+                    sousParActivite.getOrDefault(e.getKey(), java.util.Map.of()).values()));
+            java.util.List<java.util.Map<String, Object>> filieres = new java.util.ArrayList<>();
+            filieresParActivite.getOrDefault(e.getKey(), java.util.Map.of()).forEach((c, lib) -> {
+                java.util.Map<String, Object> f = new java.util.LinkedHashMap<>();
+                f.put("code", c);
+                f.put("libelle", lib);
+                filieres.add(f);
+            });
+            a.put("filieres", filieres);
+            sortie.add(a);
+        }
+        return sortie;
+    }
+
+    private static String txt(Object o) {
+        if (o == null) return null;
+        String s = String.valueOf(o).trim();
+        return s.isEmpty() ? null : s;
+    }
+
     public io.digiservices.agriculteurservice.dto.AgentCreditDto toAgentCredit(
             io.digiservices.clients.agri.AgentCreditDto src) {
         if (src == null) return null;

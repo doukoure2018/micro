@@ -33,6 +33,13 @@ public interface AgriculteurService {
     /** Agents de credit d'un point de vente, par son code SAF (point 8). */
     java.util.List<io.digiservices.agriculteurservice.dto.AgentCreditDto> getAgents(String codeAgence);
 
+    /** Sorties du portefeuille datees par SAF entre deux dates incluses (point 10). */
+    PageDto<io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto> getSorties(
+            String debut, String fin, Long delegationId, String codeAgence, int page, int size);
+
+    /** Referentiel des activites, sous-activites et filieres (point 11). */
+    java.util.List<java.util.Map<String, Object>> getActivites();
+
     /** Demandes de credit de digi, paginees et datees (point 9). */
     PageDto<io.digiservices.agriculteurservice.dto.DemandeCreditDto> getDemandes(
             int page, int size, String depuis, Long delegationId, String codeAgence, String etape);

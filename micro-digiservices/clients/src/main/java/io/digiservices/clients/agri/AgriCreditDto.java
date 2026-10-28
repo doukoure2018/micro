@@ -28,6 +28,10 @@ public class AgriCreditDto {
     private String desTipCredito;
 
     private String codActividad;
+    /** Code de la sous-sous-activite SAF, qui est la filiere agricole (313 = cereale riz). */
+    private String codFiliere;
+    /** Libelle de la filiere. Le code se repete sous plusieurs sous-activites, le libelle non. */
+    private String nomFiliere;
 
     private BigDecimal monCredito;
     private BigDecimal monSaldo;

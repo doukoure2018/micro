@@ -23,6 +23,13 @@ public interface AgriculteurService {
     /** Portefeuille national pagine (KUMY, lot 1) ; codes = points de service SAF, vide = tout le reseau. */
     PageDto<AgriCreditDto> getPortfolio(java.util.Collection<String> codes, boolean inclureClos, int page, int size);
 
+    /** Sorties du portefeuille datees par SAF, entre deux dates incluses (point 10). */
+    PageDto<io.digiservices.clients.agri.AgriSortieDto> getSorties(java.util.Collection<String> codes,
+            java.time.LocalDate debut, java.time.LocalDate fin, int page, int size);
+
+    /** Referentiel des activites, sous-activites et filieres (point 11). */
+    java.util.List<java.util.Map<String, Object>> getReferentielActivites();
+
     PageDto<FarmerDto> getFarmers(int page, int size);
 
     FarmerDto getFarmerById(String codCliente);
