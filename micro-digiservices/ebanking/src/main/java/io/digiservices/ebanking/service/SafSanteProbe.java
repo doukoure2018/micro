@@ -57,24 +57,42 @@ public class SafSanteProbe {
 
     public SanteSafDto sonder() {
         List<SanteSafDto.Base> bases = new ArrayList<>();
-        bases.add(tester("production", production, false));
+        SanteSafDto.Base prod = tester("production", production, false);
+        bases.add(prod);
         SanteSafDto.Base sauv = tester("sauvegarde", sauvegarde, true);
         bases.add(sauv);
         if (sauv.getDateRestauration() != null) dateRestaurationConnue = sauv.getDateRestauration();
         bases.add(tester("tertiary", tertiary, true));
         bases.add(tester("middleware", middleware, false));
         boolean toutOk = bases.stream().allMatch(SanteSafDto.Base::isOk);
+        // Cloture SAF : seule la production refuse le compte, la sauvegarde repond. Journalise en
+        // information et non en avertissement, pour ne pas faire passer un evenement attendu pour
+        // une panne (voir SanteSafDto#productionEnCloture).
+        boolean enCloture = compteDesactive(prod) && sauv.isOk();
         if (!toutOk) {
-            bases.stream().filter(b -> !b.isOk()).forEach(b ->
-                    log.warn("[SAF-SANTE] {} ({}, {}) : {}", b.getNom(), b.getHote(), b.getUtilisateur(), b.getMessage()));
+            bases.stream().filter(b -> !b.isOk()).forEach(b -> {
+                if (enCloture && "production".equals(b.getNom())) {
+                    log.info("[SAF-SANTE] production ({}, {}) : compte desactive — cloture SAF en cours, "
+                            + "les lectures continuent sur la sauvegarde", b.getHote(), b.getUtilisateur());
+                } else {
+                    log.warn("[SAF-SANTE] {} ({}, {}) : {}", b.getNom(), b.getHote(), b.getUtilisateur(), b.getMessage());
+                }
+            });
         }
         boolean enRestauration = !sauv.isOk() && sauv.getMessage() != null
                 && (sauv.getMessage().contains("Cannot open database") || sauv.getMessage().contains("restore"));
         return SanteSafDto.builder().toutOk(toutOk).bases(bases)
                 .sauvegardeActive(routage.isActive())
                 .sauvegardeEnRestauration(enRestauration)
+                .productionEnCloture(enCloture)
                 .dateDonneesSauvegarde(sauv.getDateRestauration())
                 .build();
+    }
+
+    /** « Login failed for user 'DIGI'. Reason: The account is disabled. » */
+    private static boolean compteDesactive(SanteSafDto.Base b) {
+        return !b.isOk() && b.getMessage() != null
+                && b.getMessage().toLowerCase().contains("account is disabled");
     }
 
     /**

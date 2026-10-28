@@ -27,6 +27,13 @@ public class SanteSafDto {
     private boolean sauvegardeEnRestauration;
     /** Date de restauration de la sauvegarde (yyyy-MM-dd HH:mm:ss), a afficher comme « Donnees SAF au ». */
     private String dateDonneesSauvegarde;
+    /**
+     * La production refuse le compte de lecture (« account is disabled ») alors que la sauvegarde
+     * repond : signature de la <b>cloture SAF</b>, qui desactive le login chaque soir en semaine
+     * (mesure du 26 au 28/10/2026 : coupure apres 17 h GMT, retour automatique le soir ou la nuit).
+     * Ce n'est pas une panne : les ecrans continuent de lire la sauvegarde.
+     */
+    private boolean productionEnCloture;
 
     @Data
     @Builder

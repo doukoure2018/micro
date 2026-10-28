@@ -63,6 +63,7 @@ public class CreditNegatifService {
     private final ApplicationEventPublisher publisher;
     private final UserClient userClient;
     private final HabilitationService habilitations;
+    private final ClotureSaf cloture;
 
     @Value("${credit.negatif.actif:true}")
     private boolean actif;
@@ -219,7 +220,7 @@ public class CreditNegatifService {
             repository.completerPreuve(cle.id(), null, null, CLOS_SAF);
             return new Verification(cle.id(), CLOS_SAF, "Crédit introuvable dans SAF aujourd'hui", null, null);
         } catch (Exception e) {
-            throw new ApiException("SAF ne répond pas : lecture impossible pour le moment");
+            throw new ApiException(safMuet("lecture"));
         }
         BigDecimal solde = etat.getMonSaldo() == null ? BigDecimal.ZERO : etat.getMonSaldo();
         String ind = etat.getIndEstado() == null ? "" : etat.getIndEstado().trim().toUpperCase();
@@ -229,6 +230,18 @@ public class CreditNegatifService {
         return new Verification(cle.id(), conclusion,
                 solde.signum() < 0 ? "Attention : SAF le voit encore négatif aujourd'hui (" + montant(solde) + " GNF)"
                         : "Solde aujourd'hui : " + montant(solde) + " GNF, " + libelleEtat(ind), solde, ind);
+    }
+
+    /**
+     * Message rendu a l'ecran quand la production ne repond pas : pendant la cloture du soir, la
+     * cause est nommee et l'utilisateur sait quand reessayer, au lieu d'un « SAF ne repond pas »
+     * qui ressemble a une panne.
+     */
+    private String safMuet(String action) {
+        return cloture.dansLaFenetre()
+                ? "Clôture SAF en cours : la " + action + " dans la base de production n'est pas possible "
+                  + "ce soir. Réessayez demain matin — la vérification automatique reprend à 6 h."
+                : "SAF ne répond pas : " + action + " impossible pour le moment";
     }
 
     private Verification confronter(io.digiservices.ecreditservice.repository.CreditNegatifRepository.Cle cle,
@@ -241,7 +254,7 @@ public class CreditNegatifService {
             repository.clore(cle.id(), null, null, CLOS_SAF, mode, parUserId);
             return new Verification(cle.id(), CLOS_SAF, "Crédit introuvable dans SAF : clos", null, null);
         } catch (Exception e) {
-            throw new ApiException("SAF ne répond pas : vérification impossible pour le moment");
+            throw new ApiException(safMuet("vérification"));
         }
         BigDecimal solde = etat.getMonSaldo() == null ? BigDecimal.ZERO : etat.getMonSaldo();
         String ind = etat.getIndEstado() == null ? "" : etat.getIndEstado().trim().toUpperCase();
@@ -283,6 +296,14 @@ public class CreditNegatifService {
             return;
         }
         long debut = System.currentTimeMillis();
+        // La surveillance lit la PRODUCTION : pendant la cloture SAF le compte de lecture est
+        // desactive et le passage ne peut qu'echouer. On le note en pause plutot qu'en echec ;
+        // le premier passage du matin rattrape tout (le 27/10/2026 : « 2 nouveaux, 14 corriges »).
+        if (cloture.dansLaFenetre()) {
+            journal.execution("CREDIT_NEGATIF", "IGNORE", 1, null, null, null, null, null, null,
+                    System.currentTimeMillis() - debut, cloture.pause("surveillance des credits negatifs"));
+            return;
+        }
         try {
             List<CreditNegatifDto> negatifs = portefeuilleClient.getCreditsNegatifs();
             boolean premierPassage = repository.journalVide();

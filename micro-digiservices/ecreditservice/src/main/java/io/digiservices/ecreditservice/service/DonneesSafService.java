@@ -26,6 +26,7 @@ public class DonneesSafService {
     private static final DateTimeFormatter AFFICHAGE = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm");
 
     private final EbankingPortefeuilleClient portefeuilleClient;
+    private final ClotureSaf cloture;
 
     private volatile SanteSafDto derniere;
     private volatile LocalDateTime dateSonde;
@@ -45,11 +46,20 @@ public class DonneesSafService {
         private LocalDateTime dateSonde;
         /** La sauvegarde est en cours de restauration : les ecrans SAF affichent un message d'attente. */
         private boolean enRestauration;
+        /**
+         * Cloture SAF en cours : la base de production n'accepte plus de lecture jusqu'a la fin de
+         * soiree. Les ecrans continuent de fonctionner sur la sauvegarde ; seules les verifications
+         * en direct (numero membre a la saisie, preuve des credits negatifs) sont reportees.
+         */
+        private boolean enCloture;
         private String messageInfo;
     }
 
     public static final String MESSAGE_RESTAURATION =
             "Veuillez patienter : la base SAF est actuellement en cours de restauration. Revenez dans 30 minutes.";
+
+    public static final String MESSAGE_CLOTURE =
+            "Clôture SAF en cours : la base de production n'accepte pas de lecture en direct jusqu'à la fin de la soirée.";
 
     /** Appele par la sonde a chaque passage. */
     public void memoriser(SanteSafDto sante) {
@@ -62,7 +72,10 @@ public class DonneesSafService {
         // Pas encore sonde, ou sonde vieille de plus de trois minutes alors qu'elle etait en echec
         // (restauration en cours) : on relit, pour que le message d'attente disparaisse vite.
         boolean perimee = s != null && !s.isToutOk() && dateSonde != null
-                && dateSonde.isBefore(LocalDateTime.now().minusMinutes(3));
+                && dateSonde.isBefore(LocalDateTime.now().minusMinutes(3))
+                // Pendant la cloture, l'etat ne changera pas avant la fin de soiree : inutile de
+                // resonder a chaque affichage d'ecran, la sonde passe deja toutes les dix minutes.
+                && !(s.isProductionEnCloture() && cloture.dansLaFenetre());
         if (s == null || perimee) {
             try {
                 s = portefeuilleClient.getSanteSaf();
@@ -76,6 +89,10 @@ public class DonneesSafService {
         String mention = !s.isSauvegardeActive() ? "Données SAF en direct (base de production)"
                 : texte == null ? "Données SAF lues dans la sauvegarde de la veille"
                 : "Données SAF au " + texte + " (sauvegarde de la veille)";
+        boolean enRestauration = s.isSauvegardeActive() && s.isSauvegardeEnRestauration();
+        // La cloture (le soir) et la restauration (le matin) ne se chevauchent pas ; en cas de
+        // doute la restauration passe devant, c'est elle qui empeche les ecrans de lire.
+        boolean enCloture = !enRestauration && s.isProductionEnCloture() && cloture.dansLaFenetre();
         return DonneesSafDto.builder()
                 .sauvegardeActive(s.isSauvegardeActive())
                 .dateDonnees(s.getDateDonneesSauvegarde())
@@ -83,8 +100,9 @@ public class DonneesSafService {
                 .mention(mention)
                 .toutOk(s.isToutOk())
                 .dateSonde(dateSonde)
-                .enRestauration(s.isSauvegardeActive() && s.isSauvegardeEnRestauration())
-                .messageInfo(s.isSauvegardeActive() && s.isSauvegardeEnRestauration() ? MESSAGE_RESTAURATION : null)
+                .enRestauration(enRestauration)
+                .enCloture(enCloture)
+                .messageInfo(enRestauration ? MESSAGE_RESTAURATION : enCloture ? MESSAGE_CLOTURE : null)
                 .build();
     }
 
