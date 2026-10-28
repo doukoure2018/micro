@@ -24,6 +24,10 @@ import { TooltipModule } from 'primeng/tooltip';
                 <i class="pi pi-clock"></i>
                 <div><strong>{{ e.messageInfo }}</strong><div class="text-xs">Les chiffres SAF de cette page (portefeuille, retards, contrôles) ne peuvent pas être lus pendant la restauration quotidienne ; les saisies et les dossiers digi restent accessibles.</div></div>
             </div>
+            <div *ngIf="!e.enRestauration && e.enCloture" class="cloture">
+                <i class="pi pi-moon"></i>
+                <div><strong>{{ e.messageInfo }}</strong><div class="text-xs">Cette page continue de fonctionner normalement sur la sauvegarde du matin. Seules les vérifications en direct dans la production — numéro de membre à la saisie, contrôle d'un crédit négatif — sont reportées à demain matin ; une saisie faite ce soir est acceptée sous réserve.</div></div>
+            </div>
         </ng-container>
     `,
     styles: [
@@ -33,6 +37,8 @@ import { TooltipModule } from 'primeng/tooltip';
             .donnees-saf.direct { background: #eceff3; color: #5a6577; }
             .restauration { flex-basis: 100%; display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; padding: 10px 12px; border-radius: 6px; border: 1px solid #93c5fd; background: #eff6ff; color: #1e3a8a; font-size: 14px; font-weight: normal; }
             .restauration .pi { margin-top: 2px; }
+            .cloture { flex-basis: 100%; display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; padding: 10px 12px; border-radius: 6px; border: 1px solid #fcd34d; background: #fffbeb; color: #78451a; font-size: 14px; font-weight: normal; }
+            .cloture .pi { margin-top: 2px; }
         `
     ]
 })
