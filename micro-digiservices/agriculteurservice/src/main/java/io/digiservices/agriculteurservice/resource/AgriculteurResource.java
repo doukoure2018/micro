@@ -87,6 +87,37 @@ public class AgriculteurResource {
         return ResponseEntity.ok(agriculteurService.getStatuts());
     }
 
+    /**
+     * Agents de credit d'un point de vente (point 8). Le code attendu est le <b>code SAF</b>,
+     * le meme que {@code codeAgence} du portefeuille.
+     */
+    @GetMapping("/agencies/{codeAgence}/agents")
+    public ResponseEntity<List<io.digiservices.agriculteurservice.dto.AgentCreditDto>> getAgents(
+            @PathVariable("codeAgence") String codeAgence) {
+        return ResponseEntity.ok(agriculteurService.getAgents(codeAgence));
+    }
+
+    /**
+     * Demandes de credit saisies dans digi, paginees et datees (point 9).
+     *
+     * @param depuis       date de creation minimale, au format AAAA-MM-JJ (optionnel)
+     * @param delegationId restreint a une delegation (optionnel)
+     * @param codeAgence   restreint a un point de vente, code SAF (optionnel)
+     * @param etape        RECU, EN_INSTRUCTION, ACCORDE, REFUSE ou ANNULE (optionnel)
+     */
+    @GetMapping("/demandes")
+    public ResponseEntity<PageDto<io.digiservices.agriculteurservice.dto.DemandeCreditDto>> getDemandes(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "100") int size,
+            @RequestParam(value = "depuis", required = false) String depuis,
+            @RequestParam(value = "delegationId", required = false) Long delegationId,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "etape", required = false) String etape) {
+        int taille = Math.min(Math.max(size, 1), MAX_PAGE_SIZE_PORTFOLIO);
+        return ResponseEntity.ok(agriculteurService.getDemandes(
+                Math.max(page, 0), taille, depuis, delegationId, codeAgence, etape));
+    }
+
     private <T> ResponseEntity<PageDto<T>> avecDate(PageDto<T> page) {
         String date = page.getDonneesSafAu();
         return date == null ? ResponseEntity.ok(page)

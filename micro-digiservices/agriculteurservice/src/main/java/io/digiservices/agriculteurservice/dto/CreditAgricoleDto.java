@@ -49,6 +49,12 @@ public class CreditAgricoleDto {
     private String codeAgent;
     private String nomAgent;
 
+    /**
+     * Agent a qui digi a affecte ce credit, quand une affectation existe. Le gestionnaire
+     * declare dans SAF reste {@code codeAgent} / {@code nomAgent} : les deux peuvent differer.
+     */
+    private AgentAffecteDto agentAffecte;
+
     @lombok.Data
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor

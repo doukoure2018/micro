@@ -14,6 +14,7 @@ import io.digiservices.agriculteurservice.service.AgriculteurService;
 import io.digiservices.agriculteurservice.utils.AgriMapper;
 import io.digiservices.clients.EbankingAgriClient;
 import io.digiservices.clients.UserAgentsClient;
+import io.digiservices.clients.agri.AffectationDigiDto;
 import io.digiservices.clients.agents.AgentPerimetreDto;
 import io.digiservices.clients.UserClient;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     private final EbankingAgriClient ebankingAgriClient;
     private final UserClient userClient;
     private final UserAgentsClient userAgentsClient;
+    private final io.digiservices.clients.EcreditAgriClient ecreditAgriClient;
     private final AgriMapper mapper;
 
     @Override
@@ -125,8 +127,58 @@ public class AgriculteurServiceImpl implements AgriculteurService {
         }
         PageDto<CreditAgricoleDto> pageDto = mapper.toPage(ebankingAgriClient.getPortfolio(page, size, codes, inclureClos),
                 mapper::toCreditAgricole);
+        ajouterAffectations(pageDto.getContent());
         pageDto.setDonneesSafAu(donneesSafAu());
         return pageDto;
+    }
+
+    /**
+     * Complete la page avec l'affectation digi de chaque credit (point 8), en un seul appel a
+     * ecreditservice. Un echec ne fait pas tomber la page : le portefeuille vient de SAF et reste
+     * la donnee principale, l'affectation est un complement.
+     */
+    private void ajouterAffectations(List<CreditAgricoleDto> credits) {
+        if (credits == null || credits.isEmpty()) {
+            return;
+        }
+        List<String> cles = credits.stream()
+                .filter(c -> c.getCodeAgence() != null && c.getNumeroCredit() != null)
+                .map(c -> c.getCodeAgence() + "-" + c.getNumeroCredit())
+                .distinct().toList();
+        if (cles.isEmpty()) {
+            return;
+        }
+        try {
+            java.util.Map<String, AffectationDigiDto> parCle = new java.util.HashMap<>();
+            for (AffectationDigiDto a : ecreditAgriClient.getAffectations(cles)) {
+                parCle.put(a.getCodeAgence() + "-" + a.getNumeroCredit(), a);
+            }
+            if (parCle.isEmpty()) {
+                return;
+            }
+            for (CreditAgricoleDto c : credits) {
+                AffectationDigiDto a = parCle.get(c.getCodeAgence() + "-" + c.getNumeroCredit());
+                if (a != null) {
+                    c.setAgentAffecte(mapper.toAgentAffecte(a));
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[AGRI] Affectations digi indisponibles pour cette page ({}) : la page est rendue sans",
+                    e.getMessage());
+        }
+    }
+
+    @Override
+    public List<io.digiservices.agriculteurservice.dto.AgentCreditDto> getAgents(String codeAgence) {
+        return ecreditAgriClient.getAgents(codeAgence).stream().map(mapper::toAgentCredit).toList();
+    }
+
+    @Override
+    public PageDto<io.digiservices.agriculteurservice.dto.DemandeCreditDto> getDemandes(
+            int page, int size, String depuis, Long delegationId, String codeAgence, String etape) {
+        return mapper.toPage(
+                ecreditAgriClient.getDemandes(page, size, depuis, delegationId, codeAgence, etape),
+                mapper::toDemandeCredit);
     }
 
     @Override

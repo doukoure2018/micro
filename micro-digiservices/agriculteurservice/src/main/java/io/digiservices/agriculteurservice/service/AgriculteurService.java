@@ -30,6 +30,13 @@ public interface AgriculteurService {
     /** Dictionnaire des statuts de credit. */
     java.util.List<java.util.Map<String, String>> getStatuts();
 
+    /** Agents de credit d'un point de vente, par son code SAF (point 8). */
+    java.util.List<io.digiservices.agriculteurservice.dto.AgentCreditDto> getAgents(String codeAgence);
+
+    /** Demandes de credit de digi, paginees et datees (point 9). */
+    PageDto<io.digiservices.agriculteurservice.dto.DemandeCreditDto> getDemandes(
+            int page, int size, String depuis, Long delegationId, String codeAgence, String etape);
+
     /** De quand datent les donnees servies ; null si inconnu. */
     String donneesSafAu();
 

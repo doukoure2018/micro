@@ -194,3 +194,11 @@ feign:
       default:
         connectTimeout: 15000
         readTimeout: 120000
+
+# Cle API protegeant le perimetre partenaire /ecredit/agri/** (agriculteurservice -> ecreditservice,
+# pour le tableau de bord DE d'AgriScore). La valeur est fournie par le compose, qui reprend la cle
+# interne du perimetre agricole : rien a ajouter dans .env.prod.
+# Defaut vide => fail-closed (401), jamais d'ouverture par omission.
+ecredit:
+  agri:
+    api-key: ${ECREDIT_AGRI_API_KEY:}
