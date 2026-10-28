@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Historique mensuel du portefeuille agricole (V186, point 6 du tableau de bord DE) et objectifs
+ * Historique mensuel du portefeuille agricole (V189, point 6 du tableau de bord DE) et objectifs
  * de la Direction de l'exploitation (point 7).
  *
  * <p>Les lignes sont calculees par ebanking depuis SAF et seulement <b>rangees</b> ici : digi

@@ -1,4 +1,4 @@
--- V186 : historique mensuel du portefeuille agricole et objectifs (tableau de bord DE, lot 3).
+-- V189 : historique mensuel du portefeuille agricole et objectifs (tableau de bord DE, lot 3).
 --
 -- Point 6 de la demande KUMY : aucune photo mensuelle par point de vente n'existait dans digi.
 -- Les seuls chiffres mensuels etaient declaratifs (rapport_mensuel), avec un controle SAF lu a la
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS agri_photo_mensuelle (
 CREATE INDEX IF NOT EXISTS idx_agri_photo_mois ON agri_photo_mensuelle (mois);
 
 COMMENT ON TABLE agri_photo_mensuelle IS
-    'V186 : une ligne par point de vente et par mois. source = PHOTO (mois en cours, encours reel de SAF) '
+    'V189 : une ligne par point de vente et par mois. source = PHOTO (mois en cours, encours reel de SAF) '
     'ou RECONSTITUTION (mois passes : production, sorties et retards fideles, encours volontairement nul)';
 COMMENT ON COLUMN agri_photo_mensuelle.encours IS
     'Somme des MON_SALDO, meme mesure que les ecrans de la plateforme. NULL en RECONSTITUTION : '
@@ -72,6 +72,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_agri_objectif
                       COALESCE(delegation_id, 0), indicateur);
 
 COMMENT ON TABLE agri_objectif IS
-    'V186 : objectifs fournis par la Direction de l''exploitation. Un objectif cible soit un point de '
+    'V189 : objectifs fournis par la Direction de l''exploitation. Un objectif cible soit un point de '
     'vente (code SAF) soit une delegation, pour une annee et eventuellement un mois. Vide jusqu''a '
     'reception du fichier de la DE : le gabarit est annee, mois, cible, indicateur, valeur';
