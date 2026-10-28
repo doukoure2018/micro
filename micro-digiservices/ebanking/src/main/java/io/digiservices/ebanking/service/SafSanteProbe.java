@@ -55,6 +55,27 @@ public class SafSanteProbe {
         return dateRestaurationConnue;
     }
 
+    /**
+     * Date de restauration de la sauvegarde, en sondant si elle n'est pas encore connue.
+     *
+     * <p>Le champ statique n'est renseigne qu'au premier passage de la sonde, declenche toutes
+     * les dix minutes par ecreditservice. Apres un redemarrage d'ebanking, l'API partenaire
+     * servait donc un repere de fraicheur vide pendant une dizaine de minutes — constate en
+     * production le 28/10/2026, au moment precis ou KUMY peut lire. Une sonde de la seule
+     * sauvegarde repare cela en quelques centaines de millisecondes, et une seule fois.</p>
+     */
+    public String dateRestauration() {
+        String connue = dateRestaurationConnue;
+        if (connue != null) {
+            return connue;
+        }
+        SanteSafDto.Base sauv = tester("sauvegarde", sauvegarde, true);
+        if (sauv.getDateRestauration() != null) {
+            dateRestaurationConnue = sauv.getDateRestauration();
+        }
+        return sauv.getDateRestauration();
+    }
+
     public SanteSafDto sonder() {
         List<SanteSafDto.Base> bases = new ArrayList<>();
         SanteSafDto.Base prod = tester("production", production, false);

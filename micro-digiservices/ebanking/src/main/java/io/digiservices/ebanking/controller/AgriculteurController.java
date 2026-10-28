@@ -37,6 +37,7 @@ public class AgriculteurController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final AgriculteurService agriculteurService;
+    private final io.digiservices.ebanking.service.SafSanteProbe santeProbe;
 
     @GetMapping("/agences")
     public ResponseEntity<List<AgriAgencyDto>> getAllAgencies() {
@@ -110,7 +111,7 @@ public class AgriculteurController {
     /** De quand datent les donnees : la date de restauration de la sauvegarde lue par l'API agricole. */
     @GetMapping("/donnees-saf")
     public ResponseEntity<java.util.Map<String, Object>> getDonneesSaf() {
-        String date = io.digiservices.ebanking.service.SafSanteProbe.dateRestaurationConnue();
+        String date = santeProbe.dateRestauration();
         java.util.Map<String, Object> r = new java.util.LinkedHashMap<>();
         r.put("base", "sauvegarde");
         r.put("dateDonnees", date);
