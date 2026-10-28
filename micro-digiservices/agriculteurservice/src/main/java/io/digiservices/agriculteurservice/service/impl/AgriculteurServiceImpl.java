@@ -179,6 +179,18 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     }
 
     @Override
+    public java.util.List<io.digiservices.clients.agri.HistoriqueMensuelDto> getHistorique(
+            String debut, String fin, String codeAgence, Long delegationId) {
+        return ecreditAgriClient.getHistorique(debut, fin, codeAgence, delegationId);
+    }
+
+    @Override
+    public java.util.List<io.digiservices.clients.agri.ObjectifDto> getObjectifs(
+            int annee, String codeAgence, Long delegationId) {
+        return ecreditAgriClient.getObjectifs(annee, codeAgence, delegationId);
+    }
+
+    @Override
     public java.util.List<java.util.Map<String, Object>> getActivites() {
         return mapper.referentielActivites(ebankingAgriClient.getReferentielActivites());
     }

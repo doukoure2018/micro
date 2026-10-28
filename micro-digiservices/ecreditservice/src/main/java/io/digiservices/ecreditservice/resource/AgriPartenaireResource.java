@@ -38,6 +38,7 @@ public class AgriPartenaireResource {
     private static final Set<String> ETAPES = Set.of("RECU", "EN_INSTRUCTION", "ACCORDE", "REFUSE", "ANNULE");
 
     private final AgriPartenaireRepository repository;
+    private final io.digiservices.ecreditservice.service.AgriHistoriqueService historique;
 
     @GetMapping("/agents")
     public ResponseEntity<List<AgentCreditDto>> agents(@RequestParam("codeAgence") String codeAgence) {
@@ -56,6 +57,66 @@ public class AgriPartenaireResource {
             throw new ApiException("Au plus " + TAILLE_MAX + " cles par appel (recu " + cles.size() + ")");
         }
         return ResponseEntity.ok(repository.affectations(cles));
+    }
+
+    /**
+     * Serie mensuelle du portefeuille (point 6). Bornes au format AAAA-MM, incluses.
+     *
+     * <p>Chaque ligne dit sa provenance : PHOTO (mois observe, encours reel de SAF) ou
+     * RECONSTITUTION (mois recalcule, encours nul a dessein).</p>
+     */
+    @GetMapping("/historique")
+    public ResponseEntity<java.util.List<io.digiservices.clients.agri.HistoriqueMensuelDto>> historique(
+            @RequestParam("debut") String debut,
+            @RequestParam("fin") String fin,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "delegationId", required = false) Long delegationId) {
+        LocalDate d = mois(debut, "debut");
+        LocalDate f = mois(fin, "fin");
+        if (f.isBefore(d)) {
+            throw new ApiException("fin doit etre posterieure ou egale a debut");
+        }
+        return ResponseEntity.ok(historique.serie(d, f, codeAgence, delegationId));
+    }
+
+    /** Objectifs de la Direction de l'exploitation pour une annee (point 7). */
+    @GetMapping("/objectifs")
+    public ResponseEntity<java.util.List<io.digiservices.clients.agri.ObjectifDto>> objectifs(
+            @RequestParam("annee") int annee,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "delegationId", required = false) Long delegationId) {
+        if (annee < 2000 || annee > 2100) {
+            throw new ApiException("annee invalide : " + annee);
+        }
+        return ResponseEntity.ok(historique.objectifs(annee, codeAgence, delegationId));
+    }
+
+    /**
+     * Reconstitution des mois passes. <b>Action de maintenance interne</b>, a lancer une fois :
+     * elle n'est jamais exposee par agriculteurservice, donc hors de portee du partenaire. Ne
+     * reecrit aucun mois deja photographie.
+     */
+    @PostMapping("/historique/reprise")
+    public ResponseEntity<java.util.Map<String, String>> reprise(
+            @RequestParam(value = "mois", required = false) Integer mois) {
+        String resume = historique.reprendre(mois);
+        return ResponseEntity.ok(java.util.Map.of("resultat", resume));
+    }
+
+    /** Photographie un mois precis et le range (maintenance). */
+    @PostMapping("/historique/photographier")
+    public ResponseEntity<java.util.Map<String, Object>> photographier(@RequestParam("mois") String mois) {
+        LocalDate m = mois(mois, "mois");
+        return ResponseEntity.ok(java.util.Map.of("mois", m.toString(), "pointsDeVente", historique.photographier(m)));
+    }
+
+    private static LocalDate mois(String valeur, String nom) {
+        try {
+            String v = valeur.trim();
+            return LocalDate.parse(v.length() == 7 ? v + "-01" : v).withDayOfMonth(1);
+        } catch (Exception e) {
+            throw new ApiException(nom + " doit etre un mois au format AAAA-MM (recu « " + valeur + " »)");
+        }
     }
 
     @GetMapping("/demandes")

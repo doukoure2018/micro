@@ -279,6 +279,9 @@ services:
       # et demandes du tableau de bord DE). Meme valeur que la cle avec laquelle agriculteurservice
       # appelle le perimetre agricole, donc rien a ajouter dans .env.prod. Vide => 401 (fail-closed).
       ECREDIT_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}
+      # Cle presentee par ecreditservice pour appeler /ebanking/agri/** (photo mensuelle du
+      # portefeuille agricole, point 6 du tableau de bord DE).
+      EBANKING_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}
       # Alertes portefeuille SAF (phase 3) : digests quotidiens + synthese PAR hebdo
       PORTEFEUILLE_ALERTES_ACTIVES: "true"
       # Alerte « SAF indisponible » : depuis le 24/10/2026 elle part dans Slack et non plus par

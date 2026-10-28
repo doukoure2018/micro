@@ -27,6 +27,10 @@ public interface AgriculteurService {
     PageDto<io.digiservices.clients.agri.AgriSortieDto> getSorties(java.util.Collection<String> codes,
             java.time.LocalDate debut, java.time.LocalDate fin, int page, int size);
 
+    /** Photo mensuelle du portefeuille par point de vente (point 6). */
+    java.util.List<io.digiservices.clients.agri.PhotoMensuelleDto> getPhotoMensuelle(
+            java.time.LocalDate mois);
+
     /** Referentiel des activites, sous-activites et filieres (point 11). */
     java.util.List<java.util.Map<String, Object>> getReferentielActivites();
 

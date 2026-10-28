@@ -33,6 +33,17 @@ public interface EcreditAgriClient {
     @PostMapping("/ecredit/agri/affectations")
     List<AffectationDigiDto> getAffectations(@RequestBody List<String> cles);
 
+    @GetMapping("/ecredit/agri/historique")
+    List<io.digiservices.clients.agri.HistoriqueMensuelDto> getHistorique(
+            @RequestParam("debut") String debut, @RequestParam("fin") String fin,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "delegationId", required = false) Long delegationId);
+
+    @GetMapping("/ecredit/agri/objectifs")
+    List<io.digiservices.clients.agri.ObjectifDto> getObjectifs(@RequestParam("annee") int annee,
+            @RequestParam(value = "codeAgence", required = false) String codeAgence,
+            @RequestParam(value = "delegationId", required = false) Long delegationId);
+
     @GetMapping("/ecredit/agri/demandes")
     PageDto<DemandeCreditPartenaireDto> getDemandes(@RequestParam("page") int page,
                                                     @RequestParam("size") int size,

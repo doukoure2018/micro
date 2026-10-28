@@ -4,6 +4,7 @@ import io.digiservices.ebanking.exception.TertiaryUnavailableException;
 import io.digiservices.clients.agri.AgriAgencyDto;
 import io.digiservices.clients.agri.AgriCreditDto;
 import io.digiservices.clients.agri.AgriSortieDto;
+import io.digiservices.clients.agri.PhotoMensuelleDto;
 import io.digiservices.clients.agri.CooperativeDto;
 import io.digiservices.clients.agri.CooperativeMemberDto;
 import io.digiservices.clients.agri.FarmerDto;
@@ -404,6 +405,122 @@ public class AgriculteurRepository {
             WHERE a.COD_EMPRESA = '00000'
             ORDER BY a.COD_ACTIVIDAD, sa.COD_SUBACTIV, ss.COD_SUBSUBACTIV
             """;
+
+    // ==================== Photo mensuelle (KUMY, lot 3, point 6) ====================
+
+    /**
+     * Photo mensuelle du portefeuille agricole, par point de vente.
+     *
+     * <p>Une seule requete, parametree par la date d'observation {@code :fin} (exclusive) et le
+     * debut du mois {@code :debut}. Elle sert les deux usages : la photo du mois en cours
+     * (observation = demain, donc l'etat du jour) et la reconstitution d'un mois passe
+     * (observation = premier jour du mois suivant).</p>
+     *
+     * <p><b>Ce qui se reconstitue et ce qui ne se reconstitue pas.</b> Les vivants, les retards,
+     * la production et les sorties reposent sur des <i>dates reelles</i> (ouverture, echeance,
+     * reglement, cloture) : ils sont exacts a toute date passee. L'encours, lui, n'existe dans
+     * SAF que comme MON_SALDO <i>courant</i> : il n'est donc renseigne que pour la photo du jour.
+     * Mesure du 28/10/2026 sur 5 181 credits vivants : le capital de l'echeancier donne 27,6 Md
+     * contre 46,7 Md de MON_SALDO, soit -41 %, et seuls 2 842 credits ont un solde egal au
+     * capital restant de leur echeancier. Approcher l'encours passe par l'echeancier aurait donc
+     * publie un chiffre faux de quatre dixiemes.</p>
+     */
+    private static final String SQL_PHOTO_MENSUELLE = """
+            WITH agri AS (
+                SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, cr.NUM_CREDITO, cr.MON_CREDITO, cr.MON_SALDO,
+                       cr.FEC_APERTURA, cr.FEC_CANCELACION, cr.IND_ESTADO
+                FROM PR.PR_CREDITOS cr
+                WHERE """ + AGRICULTURAL_FILTER_CREDIT + """
+            ),
+            vivants AS (
+                SELECT a.* FROM agri a
+                WHERE a.FEC_APERTURA < :fin
+                  AND ( a.FEC_CANCELACION >= :fin
+                     OR (a.FEC_CANCELACION IS NULL AND a.IND_ESTADO NOT IN ('C','T','X','I')) )
+            ),
+            retard AS (
+                SELECT v.COD_AGENCIA, v.NUM_CREDITO,
+                       MIN(pp.FEC_CUOTA) AS PREM_IMP,
+                       SUM(COALESCE(pp.MON_PRINCIPAL,0) + COALESCE(pp.MON_INT,0)) AS DU_IMPAYE
+                FROM vivants v
+                JOIN PR.PR_PLAN_PAGOS pp
+                  ON pp.COD_EMPRESA = v.COD_EMPRESA AND pp.COD_AGENCIA = v.COD_AGENCIA
+                 AND pp.NUM_CREDITO = v.NUM_CREDITO AND pp.NUM_CUOTA <> 0
+                WHERE pp.FEC_CUOTA < :fin
+                  AND (pp.FEC_CANCELACION IS NULL OR pp.FEC_CANCELACION >= :fin)
+                GROUP BY v.COD_AGENCIA, v.NUM_CREDITO
+            ),
+            stock AS (
+                SELECT v.COD_AGENCIA,
+                       COUNT(*) AS NB_CREDITS,
+                       SUM(v.MON_SALDO) AS ENCOURS,
+                       SUM(CASE WHEN r.PREM_IMP <= :j30 THEN 1 ELSE 0 END) AS NB_PAR30,
+                       SUM(CASE WHEN r.PREM_IMP <= :j30 THEN v.MON_SALDO ELSE 0 END) AS ENCOURS_PAR30,
+                       SUM(CASE WHEN r.PREM_IMP <= :j90 THEN 1 ELSE 0 END) AS NB_PAR90,
+                       SUM(CASE WHEN r.PREM_IMP <= :j90 THEN v.MON_SALDO ELSE 0 END) AS ENCOURS_PAR90,
+                       SUM(COALESCE(r.DU_IMPAYE,0)) AS MONTANT_IMPAYE
+                FROM vivants v
+                LEFT JOIN retard r ON r.COD_AGENCIA = v.COD_AGENCIA AND r.NUM_CREDITO = v.NUM_CREDITO
+                GROUP BY v.COD_AGENCIA
+            ),
+            flux AS (
+                SELECT a.COD_AGENCIA,
+                       SUM(CASE WHEN a.FEC_APERTURA >= :debut AND a.FEC_APERTURA < :fin THEN 1 ELSE 0 END) AS NB_PROD,
+                       SUM(CASE WHEN a.FEC_APERTURA >= :debut AND a.FEC_APERTURA < :fin THEN a.MON_CREDITO ELSE 0 END) AS MON_PROD,
+                       SUM(CASE WHEN a.FEC_CANCELACION >= :debut AND a.FEC_CANCELACION < :fin THEN 1 ELSE 0 END) AS NB_SORT,
+                       SUM(CASE WHEN a.FEC_CANCELACION >= :debut AND a.FEC_CANCELACION < :fin THEN a.MON_CREDITO ELSE 0 END) AS MON_SORT,
+                       SUM(CASE WHEN a.FEC_CANCELACION IS NULL AND a.IND_ESTADO IN ('C','T','I')
+                                 AND a.FEC_APERTURA < :fin THEN 1 ELSE 0 END) AS NB_INDATABLES
+                FROM agri a
+                GROUP BY a.COD_AGENCIA
+            )
+            SELECT COALESCE(s.COD_AGENCIA, f.COD_AGENCIA) AS COD_AGENCIA,
+                   s.NB_CREDITS, s.ENCOURS, s.NB_PAR30, s.ENCOURS_PAR30, s.NB_PAR90, s.ENCOURS_PAR90,
+                   s.MONTANT_IMPAYE,
+                   f.NB_PROD, f.MON_PROD, f.NB_SORT, f.MON_SORT, f.NB_INDATABLES
+            FROM stock s
+            FULL JOIN flux f ON f.COD_AGENCIA = s.COD_AGENCIA
+            WHERE COALESCE(s.NB_CREDITS, 0) > 0 OR COALESCE(f.NB_PROD, 0) > 0 OR COALESCE(f.NB_SORT, 0) > 0
+            ORDER BY COALESCE(s.COD_AGENCIA, f.COD_AGENCIA)
+            """;
+
+    /**
+     * Photo d'un mois. {@code photoDuJour} vrai quand le mois demande est le mois courant :
+     * l'observation est alors arretee a demain (donc l'etat du jour) et l'encours est renseigne ;
+     * pour un mois passe, l'observation est le premier jour du mois suivant et l'encours reste nul.
+     */
+    public List<PhotoMensuelleDto> photoMensuelle(java.time.LocalDate mois, boolean photoDuJour) {
+        java.time.LocalDate debut = mois.withDayOfMonth(1);
+        java.time.LocalDate fin = photoDuJour
+                ? java.time.LocalDate.now().plusDays(1)
+                : debut.plusMonths(1);
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("debut", java.sql.Date.valueOf(debut))
+                .addValue("fin", java.sql.Date.valueOf(fin))
+                .addValue("j30", java.sql.Date.valueOf(fin.minusDays(30)))
+                .addValue("j90", java.sql.Date.valueOf(fin.minusDays(90)));
+        String source = photoDuJour ? "PHOTO" : "RECONSTITUTION";
+        return execute("photoMensuelle", () -> tertiary.query(SQL_PHOTO_MENSUELLE, p, (rs, n) -> {
+            PhotoMensuelleDto d = new PhotoMensuelleDto();
+            d.setMois(debut);
+            d.setCodAgencia(str(rs, "COD_AGENCIA"));
+            d.setNbCredits(intg(rs, "NB_CREDITS"));
+            // L'encours n'a de sens que pour la photo du jour : voir SQL_PHOTO_MENSUELLE.
+            d.setEncours(photoDuJour ? dec(rs, "ENCOURS") : null);
+            d.setNbPar30(intg(rs, "NB_PAR30"));
+            d.setEncoursPar30(photoDuJour ? dec(rs, "ENCOURS_PAR30") : null);
+            d.setNbPar90(intg(rs, "NB_PAR90"));
+            d.setEncoursPar90(photoDuJour ? dec(rs, "ENCOURS_PAR90") : null);
+            d.setMontantImpaye(dec(rs, "MONTANT_IMPAYE"));
+            d.setNbProduction(intg(rs, "NB_PROD"));
+            d.setMontantProduction(dec(rs, "MON_PROD"));
+            d.setNbSorties(intg(rs, "NB_SORT"));
+            d.setMontantSorties(dec(rs, "MON_SORT"));
+            d.setNbClosSansDate(intg(rs, "NB_INDATABLES"));
+            d.setSource(source);
+            return d;
+        }));
+    }
 
     public long countSorties(java.util.Collection<String> codes, java.time.LocalDate debut, java.time.LocalDate fin) {
         return execute("countSorties",

@@ -37,6 +37,14 @@ public interface AgriculteurService {
     PageDto<io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto> getSorties(
             String debut, String fin, Long delegationId, String codeAgence, int page, int size);
 
+    /** Serie mensuelle du portefeuille, bornes au format AAAA-MM (point 6). */
+    java.util.List<io.digiservices.clients.agri.HistoriqueMensuelDto> getHistorique(
+            String debut, String fin, String codeAgence, Long delegationId);
+
+    /** Objectifs de la Direction de l'exploitation pour une annee (point 7). */
+    java.util.List<io.digiservices.clients.agri.ObjectifDto> getObjectifs(
+            int annee, String codeAgence, Long delegationId);
+
     /** Referentiel des activites, sous-activites et filieres (point 11). */
     java.util.List<java.util.Map<String, Object>> getActivites();
 

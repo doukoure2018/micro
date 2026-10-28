@@ -93,6 +93,21 @@ public class AgriculteurController {
         return ResponseEntity.ok(agriculteurService.getSorties(liste, d, f, page, size));
     }
 
+    /**
+     * Photo mensuelle du portefeuille par point de vente (KUMY, lot 3, point 6).
+     * Le mois est au format AAAA-MM ; le mois courant rend un encours, un mois passe non.
+     */
+    @GetMapping("/photo-mensuelle")
+    public ResponseEntity<java.util.List<io.digiservices.clients.agri.PhotoMensuelleDto>> getPhotoMensuelle(
+            @RequestParam("mois") String mois) {
+        java.time.LocalDate premier = jour(mois.trim().length() == 7 ? mois.trim() + "-01" : mois, "mois");
+        if (premier.withDayOfMonth(1).isAfter(java.time.LocalDate.now())) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "mois ne peut pas etre dans le futur");
+        }
+        log.info("[AGRI] GET /photo-mensuelle mois={}", premier);
+        return ResponseEntity.ok(agriculteurService.getPhotoMensuelle(premier));
+    }
+
     /** Referentiel des activites, sous-activites et filieres (KUMY, lot 2, point 11). */
     @GetMapping("/referentiels/activites")
     public ResponseEntity<java.util.List<java.util.Map<String, Object>>> getReferentielActivites() {
