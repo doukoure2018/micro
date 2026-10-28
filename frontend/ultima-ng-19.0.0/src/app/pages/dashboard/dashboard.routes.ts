@@ -172,7 +172,10 @@ export default [
     {
         path: 'document-verification/documents/:id',
         canActivate: [HabilitationGuard],
-        data: { rubrique: 'CLIENTS_SOCIETARIAT' },
+        // Le detail d'un document suit la liste qui y mene : meme rubrique, sinon une equipe
+        // qui recoit la verification des documents sans le suivi du societariat ouvre la liste
+        // et se fait refuser chaque document.
+        data: { breadcrumb: 'Document Verification', rubrique: 'VERIFICATION_DOCUMENTS' },
         loadComponent: () => import('./agent-credit/digital-verification/document-verification/document-detail/document-detail.component').then((c) => c.DocumentDetailComponent)
     },
     {
@@ -448,7 +451,8 @@ export default [
     },
     {
         path: 'suivi-societariat',
-        data: { breadcrumb: 'Suivi Societariat' },
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Suivi Societariat', rubrique: 'CLIENTS_SOCIETARIAT' },
         loadComponent: () => import('./admin/suivi-societariat/suivi-societariat.component').then((c) => c.SuiviSocietariatComponent)
     },
     {

@@ -505,7 +505,10 @@ export class AppMenu {
 
     private menuClients(): MenuItem[] {
         const items: MenuItem[] = [];
-        if (['DA', 'DR', 'RA'].includes(this.role || '')) {
+        // Suivi sociétariat : seul écran que porte encore la rubrique « Clients et sociétariat »
+        // depuis que la vérification des documents a la sienne (V186). Le rôle ouvrait cet écran
+        // en dur ; il passe par la matrice, qui le donne aux mêmes rôles (V188).
+        if (this.peut('CLIENTS_SOCIETARIAT')) {
             items.push({
                 label: 'Suivi sociétariat',
                 icon: 'pi pi-fw pi-id-card',
