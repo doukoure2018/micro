@@ -72,6 +72,10 @@ export class UserService {
 
     // ── Page « Mon profil » : contacts et vérification par code (V172) ──
     // Tout porte sur l'utilisateur connecté : aucune de ces routes ne prend d'identifiant.
+    /** Corriger le numéro de membre d'un dossier : le serveur vérifie le nouveau numéro contre SAF (V185). */
+    corrigerNumeroMembre$ = (demandeId: number, numero: string, motif?: string): Observable<IResponse> =>
+        this.http.post<IResponse>(`${this.server}/ecredit/membres/dossiers/${demandeId}/numero`, { numero, motif }).pipe(catchError(this.handleError));
+
     profilContacts$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/user/profil/contacts`).pipe(catchError(this.handleError));
 
     demanderCodeContact$ = (canal: 'EMAIL' | 'SMS', destination: string): Observable<IResponse> =>

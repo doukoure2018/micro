@@ -8,6 +8,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -24,7 +25,7 @@ import { TooltipModule } from 'primeng/tooltip';
 @Component({
     selector: 'app-membres-saf',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, InputTextModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, RouterModule, ButtonModule, DialogModule, InputTextModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -118,6 +119,7 @@ import { TooltipModule } from 'primeng/tooltip';
                         <th>Agent</th>
                         <th>Créé le</th>
                         <th>Signalé</th>
+                        <th *ngIf="peutCorriger"></th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
@@ -132,11 +134,41 @@ import { TooltipModule } from 'primeng/tooltip';
                         <td>{{ d.agent || '—' }}</td>
                         <td>{{ d.creeLe | date: 'dd/MM/yyyy' }}</td>
                         <td class="text-sm text-gray-500">{{ d.signaleLe ? (d.signaleLe | date: 'dd/MM HH:mm') : 'pas encore' }}</td>
+                        <td *ngIf="peutCorriger" class="whitespace-nowrap">
+                            <button pButton icon="pi pi-pencil" label="Corriger" class="p-button-text p-button-sm"
+                                pTooltip="Corriger le numéro de membre de ce dossier" (click)="ouvrirCorrection(d)"></button>
+                        </td>
                     </tr>
                 </ng-template>
             </p-table>
             <div class="text-sm text-gray-500" *ngIf="!l.dossiers.length">Aucun dossier en cours avec un numéro inconnu de SAF dans ce périmètre.</div>
         </div>
+
+        <!-- Correction du numéro de membre (V185). Le serveur confronte le nouveau numéro à SAF
+             avant d'écrire : un numéro inconnu est refusé, et rien n'est enregistré sans preuve. -->
+        <p-dialog header="Corriger le numéro de membre" [visible]="showCorrection()" (visibleChange)="!$event && showCorrection.set(false)" [modal]="true" [style]="{ width: '560px' }">
+            <div *ngIf="cible() as c">
+                <p class="m-0 mb-3 text-sm">
+                    Dossier <strong>{{ c.id }}</strong> — {{ c.client }}<span *ngIf="c.pointVente"> — {{ c.pointVente }}</span>
+                </p>
+                <div class="border rounded p-2 mb-3 text-sm">
+                    <span class="text-gray-500">Numéro actuel, inconnu de SAF :</span>
+                    <span class="font-mono text-red-700 font-semibold ml-2">{{ c.numeroMembre }}</span>
+                </div>
+                <label class="block text-sm font-medium mb-1">Nouveau numéro de membre</label>
+                <input pInputText class="w-full" [(ngModel)]="nouveauNumero" placeholder="onze chiffres" (keyup.enter)="corriger()" />
+                <label class="block text-sm font-medium mb-1 mt-3">Motif (facultatif)</label>
+                <input pInputText class="w-full" [(ngModel)]="motifCorrection" placeholder="erreur de saisie, numéro d'un homonyme…" />
+                <p class="text-xs text-gray-500 mt-3">
+                    Le numéro est vérifié dans SAF avant d'être enregistré. S'il y existe, le nom du client vous sera
+                    montré : vérifiez qu'il s'agit bien de la bonne personne. La correction est tracée à votre nom.
+                </p>
+            </div>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="showCorrection.set(false)"></button>
+                <button pButton label="Vérifier et corriger" icon="pi pi-check" [loading]="correctionEnCours()" [disabled]="!nouveauNumero.trim()" (click)="corriger()"></button>
+            </ng-template>
+        </p-dialog>
     `
 })
 export class MembresSafComponent implements OnInit {
@@ -151,6 +183,19 @@ export class MembresSafComponent implements OnInit {
     liste = signal<MembresInconnus | null>(null);
     chargementListe = signal(false);
     erreurListe = signal<string | null>(null);
+
+    // ── Correction du numéro de membre (V185) ──
+    // Le serveur tranche ; l'écran n'affiche le bouton qu'aux profils qui peuvent corriger,
+    // pour ne pas proposer une action systématiquement refusée au DR ou au RA.
+    readonly peutCorriger =
+        this.userService.hasRole('AGENT_CREDIT') || this.userService.hasRole('AGENT_ACCUEIL') ||
+        this.userService.hasRole('DA') || this.userService.hasRole('SUPER_ADMIN') ||
+        this.userService.hasRole('MANAGER');
+    showCorrection = signal(false);
+    correctionEnCours = signal(false);
+    cible = signal<any | null>(null);
+    nouveauNumero = '';
+    motifCorrection = '';
 
     ngOnInit(): void {
         this.chargerListe();
@@ -171,6 +216,41 @@ export class MembresSafComponent implements OnInit {
                 error: (err) => {
                     this.enCours.set(false);
                     this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err?.message || 'Vérification impossible', life: 5000 });
+                }
+            });
+    }
+
+    ouvrirCorrection(dossier: any): void {
+        this.cible.set(dossier);
+        this.nouveauNumero = '';
+        this.motifCorrection = '';
+        this.showCorrection.set(true);
+    }
+
+    corriger(): void {
+        const c = this.cible();
+        if (!c || !this.nouveauNumero.trim()) return;
+        this.correctionEnCours.set(true);
+        this.userService
+            .corrigerNumeroMembre$(c.id, this.nouveauNumero.trim(), this.motifCorrection.trim() || undefined)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: IResponse) => {
+                    this.correctionEnCours.set(false);
+                    this.showCorrection.set(false);
+                    const v: any = (res.data as any)?.verification;
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Numéro corrigé',
+                        detail: v?.nomClient ? `Dossier ${c.id} : ${v.nomClient}` : `Dossier ${c.id} corrigé`,
+                        life: 8000
+                    });
+                    this.chargerListe();
+                },
+                error: (err) => {
+                    this.correctionEnCours.set(false);
+                    const message = typeof err === 'string' ? err : err?.message;
+                    this.messageService.add({ severity: 'error', summary: 'Correction refusée', detail: message || 'Correction impossible', life: 9000 });
                 }
             });
     }
