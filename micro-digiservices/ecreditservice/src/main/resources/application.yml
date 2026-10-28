@@ -29,7 +29,11 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
-      indent-output: true
+      # Faux depuis le 28/10/2026 : l'indentation n'avait jamais ete appliquee (le bean
+      # ObjectMapper fait main court-circuitait ce fichier). Une fois le reglage effectif,
+      # elle alourdissait chaque reponse d'environ 18 % pour un confort de lecture qui n'a
+      # pas sa place en production, sur une liaison lente.
+      indent-output: false
     deserialization:
       fail-on-unknown-properties: false
       adjust-dates-to-context-time-zone: false

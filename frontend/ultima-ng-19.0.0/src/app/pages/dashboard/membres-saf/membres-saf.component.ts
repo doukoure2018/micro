@@ -63,6 +63,23 @@ import { TooltipModule } from 'primeng/tooltip';
             </div>
         </div>
 
+        <!-- La liste met un instant a venir : on le montre, plutot que de laisser une page vide
+             que l'utilisateur prend pour un echec et qu'il recharge a la main. -->
+        <div class="card" *ngIf="chargementListe() && !liste()">
+            <div class="flex items-center gap-3 text-gray-600">
+                <i class="pi pi-spin pi-spinner text-xl"></i>
+                <span>Chargement des dossiers dont le numéro est inconnu de SAF…</span>
+            </div>
+        </div>
+
+        <!-- Un echec ne doit pas faire disparaitre la section en silence. -->
+        <div class="card" *ngIf="erreurListe() as e">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="text-red-700"><i class="pi pi-exclamation-triangle mr-2"></i>{{ e }}</div>
+                <button pButton label="Réessayer" icon="pi pi-refresh" class="p-button-outlined" (click)="chargerListe()" [loading]="chargementListe()"></button>
+            </div>
+        </div>
+
         <div class="card" *ngIf="liste() as l">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
@@ -133,6 +150,7 @@ export class MembresSafComponent implements OnInit {
 
     liste = signal<MembresInconnus | null>(null);
     chargementListe = signal(false);
+    erreurListe = signal<string | null>(null);
 
     ngOnInit(): void {
         this.chargerListe();
@@ -157,9 +175,15 @@ export class MembresSafComponent implements OnInit {
             });
     }
 
-    /** La liste n'est pas ouverte à tous les profils : un refus laisse simplement la section absente. */
+    /**
+     * La liste n'est pas ouverte a tous les profils. Un refus affiche la raison ; toute autre
+     * panne affiche un message et un bouton de reprise. Jusqu'au 28/10/2026 l'echec etait
+     * avale en silence : la section disparaissait, et l'utilisateur rechargeait a la main sans
+     * savoir ce qui s'etait passe.
+     */
     chargerListe(): void {
         this.chargementListe.set(true);
+        this.erreurListe.set(null);
         this.userService
             .getMembresInconnus$()
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -168,9 +192,11 @@ export class MembresSafComponent implements OnInit {
                     this.chargementListe.set(false);
                     this.liste.set(((res.data as any)?.inconnus ?? null) as MembresInconnus | null);
                 },
-                error: () => {
+                error: (err) => {
                     this.chargementListe.set(false);
                     this.liste.set(null);
+                    const message = typeof err === 'string' ? err : err?.message;
+                    this.erreurListe.set(message || 'La liste n’a pas pu être chargée. Réessayez.');
                 }
             });
     }
