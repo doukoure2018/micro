@@ -32,12 +32,18 @@ public class FeignAgriConfig {
     @Value("${userservice.agents.api-key:}")
     private String userserviceAgentsApiKey;
 
+    /** Perimetre partenaire d'ecreditservice : affectations et demandes (tableau de bord DE). */
+    @Value("${ecredit.agri.api-key:${ebanking.agri.api-key:}}")
+    private String ecreditAgriApiKey;
+
     @Bean
     public RequestInterceptor apiKeyInterceptor() {
         return template -> {
             String path = template.path();
             if (path.startsWith("/ebanking/agri/")) {
                 inject(template, ebankingAgriApiKey, "ebanking.agri.api-key", "/ebanking/agri/**");
+            } else if (path.startsWith("/ecredit/agri/")) {
+                inject(template, ecreditAgriApiKey, "ecredit.agri.api-key", "/ecredit/agri/**");
             } else if (path.startsWith("/agents/")) {
                 inject(template, userserviceAgentsApiKey, "userservice.agents.api-key", "/agents/**");
             }

@@ -158,6 +158,44 @@ public class AgriMapper {
     /**
      * Convertit une page Feign en page publique en mappant chaque element.
      */
+    public io.digiservices.agriculteurservice.dto.AgentCreditDto toAgentCredit(
+            io.digiservices.clients.agri.AgentCreditDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.AgentCreditDto.builder()
+                .id(src.getId()).identifiant(src.getIdentifiant()).matricule(src.getMatricule())
+                .nom(src.getNom())
+                .codeAgence(src.getCodeAgence()).libelleAgence(src.getLibelleAgence())
+                .actif(src.isActif()).creditsAffectes(src.getCreditsAffectes())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.AgentAffecteDto toAgentAffecte(
+            io.digiservices.clients.agri.AffectationDigiDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.AgentAffecteDto.builder()
+                .agentId(src.getAgentId()).identifiant(src.getIdentifiant()).nom(src.getNom())
+                .dateAffectation(src.getDateAffectation()).type(src.getType())
+                .build();
+    }
+
+    public io.digiservices.agriculteurservice.dto.DemandeCreditDto toDemandeCredit(
+            io.digiservices.clients.agri.DemandeCreditPartenaireDto src) {
+        if (src == null) return null;
+        return io.digiservices.agriculteurservice.dto.DemandeCreditDto.builder()
+                .numeroDossier(src.getNumeroDossier()).nomClient(src.getNomClient())
+                .numeroMembre(src.getNumeroMembre()).typeClient(src.getTypeClient())
+                .montantDemande(src.getMontantDemande()).montantPropose(src.getMontantPropose())
+                .dureeMois(src.getDureeMois()).typeCredit(src.getTypeCredit())
+                .objetCredit(src.getObjetCredit())
+                .etape(src.getEtape()).etatDetaille(src.getEtatDetaille())
+                .dateCreation(src.getDateCreation()).dateDecision(src.getDateDecision())
+                .sourceDateDecision(src.getSourceDateDecision())
+                .delegationId(src.getDelegationId()).agenceId(src.getAgenceId())
+                .codeAgence(src.getCodeAgence())
+                .agentId(src.getAgentId()).nomAgent(src.getNomAgent())
+                .build();
+    }
+
     public java.util.List<java.util.Map<String, String>> dictionnaireStatuts() {
         return translator.dictionnaireStatuts();
     }
