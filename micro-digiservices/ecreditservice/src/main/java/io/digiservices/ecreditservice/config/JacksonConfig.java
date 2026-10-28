@@ -6,6 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -43,11 +44,24 @@ public class JacksonConfig {
         };
     }
 
+    /**
+     * Le mapper de tout le service, construit a partir du builder ci-dessus.
+     *
+     * <p>Piege repare le 28/10/2026 : ce bean existait, mais il fabriquait un
+     * {@code new ObjectMapper()} a la main. Declarer un bean {@code ObjectMapper} fait taire
+     * l'auto-configuration de Spring Boot — et donc le {@code Jackson2ObjectMapperBuilderCustomizer}
+     * juste au-dessus, qui n'etait plus applique a personne. Resultat :
+     * {@code WRITE_DATES_AS_TIMESTAMPS} restait actif, un {@code OffsetDateTime} partait en
+     * nombre de secondes depuis 1970 et l'ecran, qui lit des millisecondes, affichait
+     * « 21/01/1970 18:06 » a la place de la date du jour (journal des habilitations).</p>
+     *
+     * <p>En passant par le builder, le service a un seul reglage de dates : format texte,
+     * jamais d'horodatage numerique, et la lecture tolerante de l'ISO pour les reponses
+     * Feign d'ebanking et de SAF.</p>
+     */
     @Bean
-    public ObjectMapper objectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
+    public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
+        return builder.build();
     }
 
     /* Alternative: Bean ObjectMapper personnalisé */
