@@ -32,17 +32,30 @@ public class WorkflowQuery {
 
     /**
      * Resoumission par l'agent apres correction demandee par le DR ou le DE : le dossier
-     * retourne dans la file du niveau qui l'a rejete (CORRECTION_DR -> VALIDATED_DA revu
-     * par le DR, CORRECTION_DE -> VALIDATED_DR revu par le DE). L'etat est fixe
-     * explicitement, SANS l'echelle de delegation (sinon un dossier <= 25M resoumis
-     * partirait en VALIDATED_FINAL sans revalidation) et SANS toucher aux avis/signatures
-     * des niveaux DA/DR. Les motifs de rejet restent visibles jusqu'a la revalidation.
+     * repart dans la file du niveau COMPETENT POUR SON MONTANT CORRIGE (decision DSIG du
+     * 2026-10-28, dossier 7963).
+     *
+     * <p>Le cas qui a motive la regle : un dossier de plus de 50 M monte legitimement au DE,
+     * le DE demande de revoir le montant a la baisse, l'agent le ramene a 45 M — et le
+     * dossier revenait chez le DE alors que le DR est desormais le validateur final a ce
+     * montant. Il repart maintenant chez le DR.</p>
+     *
+     * <p>Deux garde-fous conserves : le dossier ne part JAMAIS en VALIDATED_FINAL sans
+     * revalidation (il va dans une file, pas a l'arrivee), et il ne remonte jamais au-dessus
+     * du niveau qui a demande la correction — un dossier renvoye par le DR ne peut pas
+     * atterrir chez le DE. Les avis et signatures des niveaux precedents ne sont pas touches,
+     * et les motifs de rejet restent visibles jusqu'a la revalidation.</p>
+     *
+     * <p>Files : APPROVED = le DA, VALIDATED_DA = le DR, VALIDATED_DR = le DE. Memes
+     * plafonds que l'echelle de delegation : DA jusqu'a 25 M, DR jusqu'a 50 M, DE au-dela.</p>
      */
     public static final String UPDATE_RESOUMETTRE_CORRECTION = """
             UPDATE demandeindividuel
-            SET validation_state = CASE validation_state
-                                       WHEN 'CORRECTION_DR' THEN 'VALIDATED_DA'
-                                       WHEN 'CORRECTION_DE' THEN 'VALIDATED_DR'
+            SET validation_state = CASE
+                                       WHEN COALESCE(montant_demande, 0) <= 25000000 THEN 'APPROVED'
+                                       WHEN COALESCE(montant_demande, 0) <= 50000000 THEN 'VALIDATED_DA'
+                                       WHEN validation_state = 'CORRECTION_DR' THEN 'VALIDATED_DA'
+                                       ELSE 'VALIDATED_DR'
                                    END
             WHERE demandeindividuel_id = :demandeId
               AND validation_state IN ('CORRECTION_DR', 'CORRECTION_DE')
