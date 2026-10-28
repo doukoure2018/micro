@@ -3,6 +3,7 @@ package io.digiservices.ebanking.repository;
 import io.digiservices.ebanking.exception.TertiaryUnavailableException;
 import io.digiservices.clients.agri.AgriAgencyDto;
 import io.digiservices.clients.agri.AgriCreditDto;
+import io.digiservices.clients.agri.AgriSortieDto;
 import io.digiservices.clients.agri.CooperativeDto;
 import io.digiservices.clients.agri.CooperativeMemberDto;
 import io.digiservices.clients.agri.FarmerDto;
@@ -71,7 +72,7 @@ public class AgriculteurRepository {
     private static final String AGRI_CREDIT_SELECT = """
             SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
                    c.NOM_CLIENTE, c.IND_PERSONA,
-                   cr.TIP_CREDITO, tc.DES_TIP_CREDITO, cr.COD_ACTIVIDAD,
+                   cr.TIP_CREDITO, tc.DES_TIP_CREDITO, cr.COD_ACTIVIDAD, cr.COD_SUBSUBACTIVIDAD,
                    cr.MON_CREDITO, cr.MON_SALDO, cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
                    cr.IND_ESTADO, cr.CANT_HECTAREAS,
                    cr.COD_PLAN_INVERSION, pinv.NOM_PLAN,
@@ -103,10 +104,28 @@ public class AgriculteurRepository {
             SELECT p.*, ug.NOM_USUARIO AS NOM_EJECUTIVO,
                    imp.PREM_IMP, imp.CAP_IMP, imp.INT_IMP,
                    pe.PROCH_ECH, pe.PROCH_MON,
-                   m.ATTENDU_MOIS, m.RESTE_MOIS
+                   m.ATTENDU_MOIS, m.RESTE_MOIS,
+                   fi.DES_FILIERE
             FROM (
             """;
-    private static final String ENRICHI_SUFFIXE = """
+
+    /**
+     * Libelle de la filiere (sous-sous-activite SAF). Le meme code se repete sous plusieurs
+     * sous-activites avec le MEME libelle (AGRUME figure sous 201, 203 et 204) : une jointure
+     * ordinaire multiplierait les lignes de la page. TOP 1 rend le libelle sans dupliquer.
+     * PR_CREDITOS ne portant pas COD_SUBACTIV, le niveau intermediaire reste indeterminable et
+     * n'est donc pas expose.
+     */
+    private static final String FILIERE_LIBELLE = """
+            OUTER APPLY (
+                SELECT TOP 1 ss.DES_SUBSUBACTIV AS DES_FILIERE
+                FROM CL.CL_SUBSUBACT_ECONOMICA ss
+                WHERE ss.COD_EMPRESA = p.COD_EMPRESA
+                  AND ss.COD_ACTIVIDAD = p.COD_ACTIVIDAD
+                  AND ss.COD_SUBSUBACTIV = p.COD_SUBSUBACTIVIDAD
+            ) fi
+            """;
+    private static final String ENRICHI_SUFFIXE_DEBUT = """
             ) p
             LEFT JOIN SG.SG_USUARIOS ug
                    ON ug.COD_EMPRESA = p.COD_EMPRESA AND ug.COD_AGENCIA = p.COD_AGENCIA AND ug.COD_USUARIO = p.COD_EJECUTIVO
@@ -130,6 +149,9 @@ public class AgriculteurRepository {
                 WHERE pp.COD_EMPRESA = p.COD_EMPRESA AND pp.COD_AGENCIA = p.COD_AGENCIA AND pp.NUM_CREDITO = p.NUM_CREDITO
                   AND pp.NUM_CUOTA <> 0 AND pp.FEC_CUOTA >= :debutMois AND pp.FEC_CUOTA < :finMois
             ) m
+            """;
+
+    private static final String ENRICHI_SUFFIXE_FIN = """
             ORDER BY p.FEC_APERTURA DESC, p.NUM_CREDITO DESC
             """;
 
@@ -317,6 +339,127 @@ public class AgriculteurRepository {
 
     // ---- Portefeuille national (KUMY, lot 1) ----
 
+    /**
+     * Sorties du portefeuille (point 10) : les credits dont SAF date la cloture.
+     *
+     * <p><b>Perimetre assume :</b> SAF ne date QUE les cloturees (IND_ESTADO 'C'), et seulement
+     * une partie — 56 151 datees contre 45 485 sans date au 28/10/2026. Les apures ('I', 5 694)
+     * et les transferts ('T', 34) n'ont <b>jamais</b> de date de cloture. Une route bornee par
+     * dates ne peut donc rendre que les cloturees datees : c'est exactement ce qu'il faut pour
+     * « les sorties du mois », et ce que les autres etats ne permettent pas de produire. Les
+     * apures restent visibles dans le portefeuille avec inclureClos=true.</p>
+     */
+    private static final String FILTRES_SORTIES =
+            " WHERE " + AGRICULTURAL_FILTER_CREDIT
+            + "\n   AND cr.FEC_CANCELACION IS NOT NULL"
+            + "\n   AND cr.FEC_CANCELACION >= :debut AND cr.FEC_CANCELACION < :fin"
+            + "\n   AND (:avecCodes = 0 OR cr.COD_AGENCIA IN (:codes)) \n";
+
+    private static final String SQL_COUNT_SORTIES =
+            "SELECT COUNT(*) FROM PR.PR_CREDITOS cr " + FILTRES_SORTIES;
+
+    private static final String SORTIE_SELECT = """
+            SELECT cr.COD_EMPRESA, cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE,
+                   c.NOM_CLIENTE, cr.TIP_CREDITO, tc.DES_TIP_CREDITO,
+                   cr.COD_ACTIVIDAD, cr.COD_SUBSUBACTIVIDAD,
+                   cr.MON_CREDITO, cr.MON_SALDO, cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
+                   cr.FEC_CANCELACION, cr.IND_ESTADO, cr.COD_EJECUTIVO,
+                   ug.NOM_USUARIO AS NOM_EJECUTIVO, fi.DES_FILIERE
+            FROM PR.PR_CREDITOS cr
+            INNER JOIN CL.CL_CLIENTES c
+                ON cr.COD_EMPRESA = c.COD_EMPRESA AND cr.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN PR.PR_TIPO_CREDITO tc
+                ON cr.COD_EMPRESA = tc.COD_EMPRESA AND cr.TIP_CREDITO = tc.TIP_CREDITO
+            LEFT JOIN SG.SG_USUARIOS ug
+                ON ug.COD_EMPRESA = cr.COD_EMPRESA AND ug.COD_AGENCIA = cr.COD_AGENCIA
+               AND ug.COD_USUARIO = cr.COD_EJECUTIVO
+            OUTER APPLY (
+                SELECT TOP 1 ss.DES_SUBSUBACTIV AS DES_FILIERE
+                FROM CL.CL_SUBSUBACT_ECONOMICA ss
+                WHERE ss.COD_EMPRESA = cr.COD_EMPRESA AND ss.COD_ACTIVIDAD = cr.COD_ACTIVIDAD
+                  AND ss.COD_SUBSUBACTIV = cr.COD_SUBSUBACTIVIDAD
+            ) fi
+            """;
+
+    private static final String SQL_FIND_SORTIES = SORTIE_SELECT + FILTRES_SORTIES
+            + " ORDER BY cr.FEC_CANCELACION DESC, cr.NUM_CREDITO DESC\n"
+            + " OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY\n";
+
+    /**
+     * Referentiel des activites economiques (point 11) : activite, sous-activite, et
+     * sous-sous-activite qui est la <b>filiere</b> (CEREALE RIZ, ARACHIDE, ELEVAGE BOVIN...).
+     * Le meme code de filiere se repete sous plusieurs sous-activites avec le meme libelle ;
+     * le dedoublonnage est fait a la mise en forme, pas ici, pour que l'arbre reste complet.
+     */
+    private static final String SQL_REFERENTIEL_ACTIVITES = """
+            SELECT a.COD_ACTIVIDAD, a.DES_ACTIVIDAD,
+                   sa.COD_SUBACTIV, sa.DES_SUBACTIV,
+                   ss.COD_SUBSUBACTIV, ss.DES_SUBSUBACTIV
+            FROM CL.CL_ACTIVIDAD_ECONOMICA a
+            LEFT JOIN CL.CL_SUBACT_ECONOMICA sa
+                ON sa.COD_EMPRESA = a.COD_EMPRESA AND sa.COD_ACTIVIDAD = a.COD_ACTIVIDAD
+            LEFT JOIN CL.CL_SUBSUBACT_ECONOMICA ss
+                ON ss.COD_EMPRESA = sa.COD_EMPRESA AND ss.COD_ACTIVIDAD = sa.COD_ACTIVIDAD
+               AND ss.COD_SUBACTIV = sa.COD_SUBACTIV
+            WHERE a.COD_EMPRESA = '00000'
+            ORDER BY a.COD_ACTIVIDAD, sa.COD_SUBACTIV, ss.COD_SUBSUBACTIV
+            """;
+
+    public long countSorties(java.util.Collection<String> codes, java.time.LocalDate debut, java.time.LocalDate fin) {
+        return execute("countSorties",
+                () -> nullSafe(tertiary.queryForObject(SQL_COUNT_SORTIES,
+                        avecBornes(avecCodes(new MapSqlParameterSource(), codes), debut, fin), Long.class)));
+    }
+
+    public List<AgriSortieDto> findSorties(java.util.Collection<String> codes, java.time.LocalDate debut,
+                                           java.time.LocalDate fin, int offset, int size) {
+        MapSqlParameterSource p = avecBornes(avecCodes(new MapSqlParameterSource()
+                .addValue("offset", offset).addValue("size", size), codes), debut, fin);
+        return execute("findSorties", () -> tertiary.query(SQL_FIND_SORTIES, p, SORTIE_MAPPER));
+    }
+
+    /** Le referentiel a plat : une ligne par (activite, sous-activite, filiere). */
+    public List<java.util.Map<String, Object>> findReferentielActivites() {
+        return execute("findReferentielActivites",
+                () -> tertiary.queryForList(SQL_REFERENTIEL_ACTIVITES, new MapSqlParameterSource()));
+    }
+
+    private static MapSqlParameterSource avecCodes(MapSqlParameterSource p, java.util.Collection<String> codes) {
+        boolean presents = codes != null && !codes.isEmpty();
+        return p.addValue("avecCodes", presents ? 1 : 0)
+                .addValue("codes", presents ? List.copyOf(codes) : List.of("-"));
+    }
+
+    private static MapSqlParameterSource avecBornes(MapSqlParameterSource p, java.time.LocalDate debut,
+                                                    java.time.LocalDate fin) {
+        // Borne haute exclusive au lendemain : une date de cloture porte une heure, et
+        // « jusqu'au 31 » doit inclure le 31 en entier.
+        return p.addValue("debut", java.sql.Date.valueOf(debut))
+                .addValue("fin", java.sql.Date.valueOf(fin.plusDays(1)));
+    }
+
+    private static final RowMapper<AgriSortieDto> SORTIE_MAPPER = (rs, n) -> {
+        AgriSortieDto d = new AgriSortieDto();
+        d.setCodAgencia(str(rs, "COD_AGENCIA"));
+        d.setNumCredito(lng(rs, "NUM_CREDITO"));
+        d.setCodCliente(str(rs, "COD_CLIENTE"));
+        d.setNomCliente(str(rs, "NOM_CLIENTE"));
+        d.setTipCredito(intg(rs, "TIP_CREDITO"));
+        d.setDesTipCredito(str(rs, "DES_TIP_CREDITO"));
+        d.setCodActividad(str(rs, "COD_ACTIVIDAD"));
+        d.setCodFiliere(str(rs, "COD_SUBSUBACTIVIDAD"));
+        d.setNomFiliere(str(rs, "DES_FILIERE"));
+        d.setMonCredito(dec(rs, "MON_CREDITO"));
+        d.setMonSaldo(dec(rs, "MON_SALDO"));
+        d.setFecApertura(dt(rs, "FEC_APERTURA"));
+        d.setFecVencimiento(dt(rs, "FEC_VENCIMIENTO"));
+        d.setFecCancelacion(dt(rs, "FEC_CANCELACION"));
+        d.setIndEstado(str(rs, "IND_ESTADO"));
+        d.setCodEjecutivo(str(rs, "COD_EJECUTIVO"));
+        d.setNomEjecutivo(str(rs, "NOM_EJECUTIVO"));
+        return d;
+    };
+
     public long countPortfolio(java.util.Collection<String> codes, boolean inclureClos) {
         return execute("countPortfolio",
                 () -> nullSafe(tertiary.queryForObject(SQL_COUNT_PORTFOLIO_NATIONAL,
@@ -335,7 +478,7 @@ public class AgriculteurRepository {
     private static String enrichi(String sqlPage) {
         // L'ORDER BY ... OFFSET/FETCH de la page doit rester dans la table derivee : SQL Server
         // l'accepte avec OFFSET. Le tri final est refait sur la page enveloppee.
-        return ENRICHI_PREFIXE + sqlPage + ENRICHI_SUFFIXE;
+        return ENRICHI_PREFIXE + sqlPage + ENRICHI_SUFFIXE_DEBUT + FILIERE_LIBELLE + ENRICHI_SUFFIXE_FIN;
     }
 
     private static MapSqlParameterSource avecDates(MapSqlParameterSource p) {
@@ -471,6 +614,8 @@ public class AgriculteurRepository {
         dto.setTipCredito(intg(rs, "TIP_CREDITO"));
         dto.setDesTipCredito(str(rs, "DES_TIP_CREDITO"));
         dto.setCodActividad(str(rs, "COD_ACTIVIDAD"));
+        dto.setCodFiliere(strSiPresent(rs, "COD_SUBSUBACTIVIDAD"));
+        dto.setNomFiliere(strSiPresent(rs, "DES_FILIERE"));
         dto.setMonCredito(dec(rs, "MON_CREDITO"));
         dto.setMonSaldo(dec(rs, "MON_SALDO"));
         dto.setFecApertura(dt(rs, "FEC_APERTURA"));

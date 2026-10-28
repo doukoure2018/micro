@@ -70,6 +70,43 @@ public class AgriculteurController {
         return ResponseEntity.ok(agriculteurService.getPortfolio(liste, inclureClos, page, size));
     }
 
+    /** Sorties du portefeuille datees par SAF entre deux dates (KUMY, lot 2, point 10). */
+    @GetMapping("/sorties")
+    public ResponseEntity<PageDto<io.digiservices.clients.agri.AgriSortieDto>> getSorties(
+            @RequestParam(name = "debut") String debut,
+            @RequestParam(name = "fin") String fin,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "100") int size,
+            @RequestParam(name = "codes", required = false) String codes) {
+        if (page < 0 || size < 1 || size > 500) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "page >= 0 et 1 <= size <= 500");
+        }
+        java.time.LocalDate d = jour(debut, "debut");
+        java.time.LocalDate f = jour(fin, "fin");
+        if (f.isBefore(d)) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST, "fin doit etre posterieure ou egale a debut");
+        }
+        java.util.List<String> liste = codes == null || codes.isBlank() ? java.util.List.of()
+                : java.util.Arrays.stream(codes.split(",")).map(String::trim).filter(x -> !x.isEmpty()).toList();
+        log.info("[AGRI] GET /sorties {} -> {} page={} size={} codes={}", d, f, page, size, liste.size());
+        return ResponseEntity.ok(agriculteurService.getSorties(liste, d, f, page, size));
+    }
+
+    /** Referentiel des activites, sous-activites et filieres (KUMY, lot 2, point 11). */
+    @GetMapping("/referentiels/activites")
+    public ResponseEntity<java.util.List<java.util.Map<String, Object>>> getReferentielActivites() {
+        return ResponseEntity.ok(agriculteurService.getReferentielActivites());
+    }
+
+    private static java.time.LocalDate jour(String valeur, String nom) {
+        try {
+            return java.time.LocalDate.parse(valeur.trim());
+        } catch (Exception e) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST,
+                    nom + " doit etre une date au format AAAA-MM-JJ");
+        }
+    }
+
     /** De quand datent les donnees : la date de restauration de la sauvegarde lue par l'API agricole. */
     @GetMapping("/donnees-saf")
     public ResponseEntity<java.util.Map<String, Object>> getDonneesSaf() {

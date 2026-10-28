@@ -169,6 +169,41 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     }
 
     @Override
+    public PageDto<io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto> getSorties(
+            String debut, String fin, Long delegationId, String codeAgence, int page, int size) {
+        String codes = codesDe(delegationId, codeAgence);
+        PageDto<io.digiservices.agriculteurservice.dto.SortiePortefeuilleDto> p = mapper.toPage(
+                ebankingAgriClient.getSorties(debut, fin, page, size, codes), mapper::toSortie);
+        p.setDonneesSafAu(donneesSafAu());
+        return p;
+    }
+
+    @Override
+    public java.util.List<java.util.Map<String, Object>> getActivites() {
+        return mapper.referentielActivites(ebankingAgriClient.getReferentielActivites());
+    }
+
+    /**
+     * Codes de points de vente a interroger : ceux d'une delegation, ou un code precis, ou rien
+     * (tout le reseau). Un code explicite l'emporte sur la delegation.
+     */
+    private String codesDe(Long delegationId, String codeAgence) {
+        if (codeAgence != null && !codeAgence.isBlank()) {
+            return codeAgence.trim();
+        }
+        if (delegationId == null) {
+            return null;
+        }
+        List<String> liste = getPointsDeVenteByDelegation(delegationId).stream()
+                .map(PointDeVenteDto::getCode).filter(c -> c != null && !c.isBlank()).distinct().toList();
+        if (liste.isEmpty()) {
+            throw new io.digiservices.agriculteurservice.exception.BadRequestException(
+                    "Aucun point de service pour la delegation " + delegationId);
+        }
+        return String.join(",", liste);
+    }
+
+    @Override
     public List<io.digiservices.agriculteurservice.dto.AgentCreditDto> getAgents(String codeAgence) {
         return ecreditAgriClient.getAgents(codeAgence).stream().map(mapper::toAgentCredit).toList();
     }

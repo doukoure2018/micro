@@ -61,6 +61,20 @@ public class AgriculteurServiceImpl implements AgriculteurService {
     }
 
     @Override
+    public PageDto<io.digiservices.clients.agri.AgriSortieDto> getSorties(java.util.Collection<String> codes,
+            java.time.LocalDate debut, java.time.LocalDate fin, int page, int size) {
+        long total = agriculteurRepository.countSorties(codes, debut, fin);
+        List<io.digiservices.clients.agri.AgriSortieDto> content = total == 0 ? List.of()
+                : agriculteurRepository.findSorties(codes, debut, fin, page * size, size);
+        return PageDto.of(content, page, size, total);
+    }
+
+    @Override
+    public java.util.List<java.util.Map<String, Object>> getReferentielActivites() {
+        return agriculteurRepository.findReferentielActivites();
+    }
+
+    @Override
     public PageDto<AgriCreditDto> getPortfolio(java.util.Collection<String> codes, boolean inclureClos, int page, int size) {
         long total = agriculteurRepository.countPortfolio(codes, inclureClos);
         List<AgriCreditDto> content = total == 0

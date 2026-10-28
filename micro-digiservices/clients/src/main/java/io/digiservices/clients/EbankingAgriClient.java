@@ -45,6 +45,14 @@ public interface EbankingAgriClient {
             @RequestParam(value = "inclureClos", defaultValue = "false") boolean inclureClos);
 
     /** De quand datent les donnees servies : date de restauration de la base lue par l'API agricole. */
+    @GetMapping("/ebanking/agri/sorties")
+    PageDto<io.digiservices.clients.agri.AgriSortieDto> getSorties(@RequestParam("debut") String debut,
+            @RequestParam("fin") String fin, @RequestParam("page") int page, @RequestParam("size") int size,
+            @RequestParam(value = "codes", required = false) String codes);
+
+    @GetMapping("/ebanking/agri/referentiels/activites")
+    List<java.util.Map<String, Object>> getReferentielActivites();
+
     @GetMapping("/ebanking/agri/donnees-saf")
     java.util.Map<String, Object> getDonneesSaf();
 
