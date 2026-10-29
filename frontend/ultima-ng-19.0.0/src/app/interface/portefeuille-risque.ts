@@ -26,9 +26,15 @@ export interface LigneRisque {
     encoursPar30: number;
     nbPar30: number;
     tauxPar30: number; // en pourcentage
+    encoursPar60: number;
+    nbPar60: number;
+    tauxPar60: number;
     encoursPar90: number;
     nbPar90: number;
     tauxPar90: number;
+    encoursPar120: number;
+    nbPar120: number;
+    tauxPar120: number;
     nbContentieuxDeclares: number;
     seuilPar30?: number | null; // seuil propre à la famille, sinon le seuil général
     seuilPar90?: number | null;
@@ -96,7 +102,7 @@ export interface FamilleProduit {
 }
 
 export const NON_AFFECTE = 'NON_AFFECTE';
-export type TrancheRisque = '' | 'retard' | '30' | '90';
+export type TrancheRisque = '' | 'retard' | '30' | '60' | '90' | '120';
 
 /** Familles proposées à la Direction de l'exploitation ; la saisie reste libre. */
 export const FAMILLES_PROPOSEES = ['Agricole et campagne', 'Trésorerie et commerce', 'Équipement', 'Habitat', 'Consommation et salariés', 'Groupe et solidaire', 'Autres'];

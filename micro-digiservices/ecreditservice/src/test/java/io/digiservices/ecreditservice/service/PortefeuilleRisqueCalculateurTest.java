@@ -58,6 +58,11 @@ class PortefeuilleRisqueCalculateurTest {
         assertEquals(new BigDecimal("300"), t.getEncoursPar30(), "A (45 j) et C (100 j)");
         assertEquals(2, t.getNbPar30());
         assertEquals(new BigDecimal("200"), t.getEncoursPar90(), "C seul");
+        assertEquals(new BigDecimal("200"), t.getEncoursPar60(), "C (100 j) ; A n'a que 45 j");
+        assertEquals(new BigDecimal("0"), t.getEncoursPar120(), "personne au-dela de 120 j");
+        assertEquals(new BigDecimal("52.63"), t.getTauxPar60());
+        assertEquals(1, t.getNbPar60());
+        assertEquals(0, t.getNbPar120());
         assertEquals(new BigDecimal("78.95"), t.getTauxPar30());
         assertEquals(new BigDecimal("52.63"), t.getTauxPar90());
         assertEquals(new BigDecimal("118"), t.getImpaye());
@@ -153,6 +158,8 @@ class PortefeuilleRisqueCalculateurTest {
         assertEquals(28, r.total().getNbCredits());
         assertEquals(new BigDecimal("2800"), r.total().getEncours());
         assertEquals(new BigDecimal("680"), r.total().getEncoursPar30());
+        assertEquals(new BigDecimal("680"), r.total().getEncoursPar60());
+        assertEquals(new BigDecimal("400"), r.total().getEncoursPar120());
         assertEquals(new BigDecimal("24.29"), r.total().getTauxPar30());
 
         assertEquals(2, r.parProduit().size());
@@ -218,7 +225,8 @@ class PortefeuilleRisqueCalculateurTest {
     private static IndicateursProduitAgenceDto saf(String cod, Long tip, String des, int nb, int encours, int par30, int par90) {
         return new IndicateursProduitAgenceDto(cod, "PS " + cod, tip, des, nb, BigDecimal.valueOf(encours),
                 par30 > 0 ? 2 : 0, BigDecimal.valueOf(par30 / 10), BigDecimal.valueOf(par30), par30 > 0 ? 1 : 0,
-                BigDecimal.valueOf(par90), par90 > 0 ? 1 : 0);
+                BigDecimal.valueOf(par90), par90 > 0 ? 1 : 0,
+                BigDecimal.valueOf(par30), par30 > 0 ? 1 : 0, BigDecimal.valueOf(par90), par90 > 0 ? 1 : 0);
     }
 
     // ------------------------------------------------------------------ fabrique

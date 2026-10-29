@@ -40,7 +40,9 @@ public final class PortefeuilleRisqueExcelUtils {
     private static final String[] ENTETES = {
             "Crédits", "Encours (GNF)", "Part de l'encours", "En retard", "Impayés (GNF)",
             "PAR 30 (GNF)", "PAR 30 (%)", "Crédits à 30 j et plus",
-            "PAR 90 (GNF)", "PAR 90 (%)", "Crédits à 90 j et plus", "Contentieux déclarés"
+            "PAR 60 (GNF)", "PAR 60 (%)", "Crédits à 60 j et plus",
+            "PAR 90 (GNF)", "PAR 90 (%)", "Crédits à 90 j et plus",
+            "PAR 120 (GNF)", "PAR 120 (%)", "Crédits à 120 j et plus", "Contentieux déclarés"
     };
 
     private static final String DEFINITION = "PAR 30 : encours des crédits en cours dont la plus ancienne échéance impayée a 30 jours ou plus, rapporté à l'encours des crédits en cours. Même règle que le bandeau du portefeuille et que la déclaration BCRG.";
@@ -157,9 +159,15 @@ public final class PortefeuilleRisqueExcelUtils {
         montant(row, c++, l.getEncoursPar30(), st.montant);
         pourcent(row, c++, l.getTauxPar30(), st.pourcent);
         nombre(row, c++, l.getNbPar30());
+        montant(row, c++, l.getEncoursPar60(), st.montant);
+        pourcent(row, c++, l.getTauxPar60(), st.pourcent);
+        nombre(row, c++, l.getNbPar60());
         montant(row, c++, l.getEncoursPar90(), st.montant);
         pourcent(row, c++, l.getTauxPar90(), st.pourcent);
         nombre(row, c++, l.getNbPar90());
+        montant(row, c++, l.getEncoursPar120(), st.montant);
+        pourcent(row, c++, l.getTauxPar120(), st.pourcent);
+        nombre(row, c++, l.getNbPar120());
         nombre(row, c, l.getNbContentieuxDeclares());
     }
 

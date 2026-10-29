@@ -41,7 +41,9 @@ public final class PortefeuilleRisqueCalculateur {
     }
 
     public static final String TRANCHE_30 = "30";
+    public static final String TRANCHE_60 = "60";
     public static final String TRANCHE_90 = "90";
+    public static final String TRANCHE_120 = "120";
     public static final String TRANCHE_RETARD = "retard";
 
     public static final String NIVEAU_PS = "ps";
@@ -69,7 +71,8 @@ public final class PortefeuilleRisqueCalculateur {
     public static Resultat calculer(List<PortefeuilleCreditDto> credits, Map<Long, AffectationDto> affectations,
                                     Set<Long> contentieuxDeclares, String codAgencia, LocalDate aujourdhui,
                                     Long agentSeul) {
-        LocalDate d30 = aujourdhui.minusDays(30), d90 = aujourdhui.minusDays(90);
+        LocalDate d30 = aujourdhui.minusDays(30), d60 = aujourdhui.minusDays(60),
+                d90 = aujourdhui.minusDays(90), d120 = aujourdhui.minusDays(120);
         LigneRisqueDto total = LigneRisqueDto.vide("TOTAL", "Point de service");
         Map<String, LigneRisqueDto> produits = new LinkedHashMap<>();
         Map<String, LigneRisqueDto> agents = new LinkedHashMap<>();
@@ -92,7 +95,7 @@ public final class PortefeuilleRisqueCalculateur {
 
             boolean contentieux = contentieuxDeclares.contains(c.getNumCredito());
             for (LigneRisqueDto l : List.of(total, p, a, x)) {
-                cumuler(l, c, d30, d90, contentieux);
+                cumuler(l, c, d30, d60, d90, d120, contentieux);
             }
         }
 
@@ -130,7 +133,9 @@ public final class PortefeuilleRisqueCalculateur {
         }
         LocalDate prem = c.getDatPremiereImpayee();
         if (TRANCHE_30.equals(tranche)) return prem != null && !prem.isAfter(aujourdhui.minusDays(30));
+        if (TRANCHE_60.equals(tranche)) return prem != null && !prem.isAfter(aujourdhui.minusDays(60));
         if (TRANCHE_90.equals(tranche)) return prem != null && !prem.isAfter(aujourdhui.minusDays(90));
+        if (TRANCHE_120.equals(tranche)) return prem != null && !prem.isAfter(aujourdhui.minusDays(120));
         if (TRANCHE_RETARD.equals(tranche)) return prem != null;
         return true;
     }
@@ -235,12 +240,17 @@ public final class PortefeuilleRisqueCalculateur {
         l.setImpaye(nvl(i.getImpaye()));
         l.setEncoursPar30(nvl(i.getEncoursPar30()));
         l.setNbPar30(i.getNbPar30());
+        l.setEncoursPar60(nvl(i.getEncoursPar60()));
+        l.setNbPar60(i.getNbPar60());
         l.setEncoursPar90(nvl(i.getEncoursPar90()));
         l.setNbPar90(i.getNbPar90());
+        l.setEncoursPar120(nvl(i.getEncoursPar120()));
+        l.setNbPar120(i.getNbPar120());
         return l;
     }
 
-    private static void cumuler(LigneRisqueDto l, PortefeuilleCreditDto c, LocalDate d30, LocalDate d90, boolean contentieux) {
+    private static void cumuler(LigneRisqueDto l, PortefeuilleCreditDto c, LocalDate d30, LocalDate d60,
+                                LocalDate d90, LocalDate d120, boolean contentieux) {
         BigDecimal solde = nvl(c.getMonSaldo());
         l.setNbCredits(l.getNbCredits() + 1);
         l.setEncours(l.getEncours().add(solde));
@@ -252,9 +262,17 @@ public final class PortefeuilleRisqueCalculateur {
                 l.setNbPar30(l.getNbPar30() + 1);
                 l.setEncoursPar30(l.getEncoursPar30().add(solde));
             }
+            if (!prem.isAfter(d60)) {
+                l.setNbPar60(l.getNbPar60() + 1);
+                l.setEncoursPar60(l.getEncoursPar60().add(solde));
+            }
             if (!prem.isAfter(d90)) {
                 l.setNbPar90(l.getNbPar90() + 1);
                 l.setEncoursPar90(l.getEncoursPar90().add(solde));
+            }
+            if (!prem.isAfter(d120)) {
+                l.setNbPar120(l.getNbPar120() + 1);
+                l.setEncoursPar120(l.getEncoursPar120().add(solde));
             }
         }
         if (contentieux) {

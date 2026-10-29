@@ -49,9 +49,10 @@ public class PortefeuilleRisqueRepository {
                             INSERT INTO portefeuille_risque_photo
                                    (date_photo, cod_agencia, agent_user_id, agent_nom, agent_actif, tip_credito, des_tip_credito,
                                     nb_credits, encours, nb_en_retard, impaye, encours_par30, nb_par30, encours_par90, nb_par90,
-                                    nb_contentieux_declares)
+                                    encours_par60, nb_par60, encours_par120, nb_par120, nb_contentieux_declares)
                             VALUES (:d, :c, :agent, :nom, :actif, :tip, :des,
-                                    :nb, :encours, :nbRetard, :impaye, :par30, :nbPar30, :par90, :nbPar90, :cont)
+                                    :nb, :encours, :nbRetard, :impaye, :par30, :nbPar30, :par90, :nbPar90,
+                                    :par60, :nbPar60, :par120, :nbPar120, :cont)
                             """)
                     .param("d", date).param("c", codAgencia)
                     .param("agent", l.isNonAffecte() || l.getAgentUserId() == null ? 0L : l.getAgentUserId())
@@ -63,6 +64,8 @@ public class PortefeuilleRisqueRepository {
                     .param("nbRetard", l.getNbEnRetard()).param("impaye", l.getImpaye())
                     .param("par30", l.getEncoursPar30()).param("nbPar30", l.getNbPar30())
                     .param("par90", l.getEncoursPar90()).param("nbPar90", l.getNbPar90())
+                    .param("par60", l.getEncoursPar60()).param("nbPar60", l.getNbPar60())
+                    .param("par120", l.getEncoursPar120()).param("nbPar120", l.getNbPar120())
                     .param("cont", l.getNbContentieuxDeclares())
                     .update();
         }
@@ -95,6 +98,8 @@ public class PortefeuilleRisqueRepository {
                        SUM(nb_credits) AS nb, SUM(encours) AS encours, SUM(nb_en_retard) AS nb_retard, SUM(impaye) AS impaye,
                        SUM(encours_par30) AS par30, SUM(nb_par30) AS nb_par30,
                        SUM(encours_par90) AS par90, SUM(nb_par90) AS nb_par90,
+                       SUM(encours_par60) AS par60, SUM(nb_par60) AS nb_par60,
+                       SUM(encours_par120) AS par120, SUM(nb_par120) AS nb_par120,
                        SUM(nb_contentieux_declares) AS cont
                   FROM portefeuille_risque_photo
                  WHERE date_photo = :d
@@ -120,6 +125,10 @@ public class PortefeuilleRisqueRepository {
             l.setNbPar30(rs.getLong("nb_par30"));
             l.setEncoursPar90(nvl(rs.getBigDecimal("par90")));
             l.setNbPar90(rs.getLong("nb_par90"));
+            l.setEncoursPar60(nvl(rs.getBigDecimal("par60")));
+            l.setNbPar60(rs.getLong("nb_par60"));
+            l.setEncoursPar120(nvl(rs.getBigDecimal("par120")));
+            l.setNbPar120(rs.getLong("nb_par120"));
             l.setNbContentieuxDeclares(rs.getLong("cont"));
             l.figerTaux();
             return l;

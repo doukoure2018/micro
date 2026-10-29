@@ -249,7 +249,11 @@ public class PortefeuilleRepository {
             + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date30 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30, "
             + "SUM(CASE WHEN t.PREM_IMP <= :date30 THEN 1 ELSE 0 END) AS NB_PAR30, "
             + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date90 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90, "
-            + "SUM(CASE WHEN t.PREM_IMP <= :date90 THEN 1 ELSE 0 END) AS NB_PAR90 " + """
+            + "SUM(CASE WHEN t.PREM_IMP <= :date90 THEN 1 ELSE 0 END) AS NB_PAR90, "
+            + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date60 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR60, "
+            + "SUM(CASE WHEN t.PREM_IMP <= :date60 THEN 1 ELSE 0 END) AS NB_PAR60, "
+            + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date120 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR120, "
+            + "SUM(CASE WHEN t.PREM_IMP <= :date120 THEN 1 ELSE 0 END) AS NB_PAR120 " + """
             FROM PR.PR_CREDITOS cr
             LEFT JOIN """ + IMPAYES_PAR_CREDIT + """
                 ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
@@ -458,7 +462,9 @@ public class PortefeuilleRepository {
         MapSqlParameterSource p = new MapSqlParameterSource()
                 .addValue("aujourdhui", java.sql.Date.valueOf(aujourdhui))
                 .addValue("date30", java.sql.Date.valueOf(aujourdhui.minusDays(30)))
-                .addValue("date90", java.sql.Date.valueOf(aujourdhui.minusDays(90)));
+                .addValue("date90", java.sql.Date.valueOf(aujourdhui.minusDays(90)))
+                .addValue("date60", java.sql.Date.valueOf(aujourdhui.minusDays(60)))
+                .addValue("date120", java.sql.Date.valueOf(aujourdhui.minusDays(120)));
         return execute("portefeuille.indicateursReseauParProduit", () -> primary.query(SQL_INDICATEURS_RESEAU_PRODUIT, p,
                 (rs, n) -> new io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto(
                         str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"),
@@ -466,7 +472,9 @@ public class PortefeuilleRepository {
                         str(rs, "DES_TIP_CREDITO"), rs.getLong("NB"),
                         rs.getBigDecimal("ENCOURS"), rs.getLong("NB_RETARD"), rs.getBigDecimal("IMPAYE"),
                         rs.getBigDecimal("ENCOURS_PAR30"), rs.getLong("NB_PAR30"),
-                        rs.getBigDecimal("ENCOURS_PAR90"), rs.getLong("NB_PAR90"))));
+                        rs.getBigDecimal("ENCOURS_PAR90"), rs.getLong("NB_PAR90"),
+                        rs.getBigDecimal("ENCOURS_PAR60"), rs.getLong("NB_PAR60"),
+                        rs.getBigDecimal("ENCOURS_PAR120"), rs.getLong("NB_PAR120"))));
     }
 
     public List<AgenceSafDto> findAgences() {

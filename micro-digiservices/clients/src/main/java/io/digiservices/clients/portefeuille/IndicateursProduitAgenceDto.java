@@ -27,4 +27,8 @@ public class IndicateursProduitAgenceDto {
     private long nbPar30;
     private BigDecimal encoursPar90;
     private long nbPar90;
+    private BigDecimal encoursPar60;
+    private long nbPar60;
+    private BigDecimal encoursPar120;
+    private long nbPar120;
 }

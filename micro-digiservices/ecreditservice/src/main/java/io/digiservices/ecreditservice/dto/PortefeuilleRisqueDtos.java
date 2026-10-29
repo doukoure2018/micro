@@ -69,9 +69,15 @@ public final class PortefeuilleRisqueDtos {
         private BigDecimal encoursPar30;
         private long nbPar30;
         private BigDecimal tauxPar30;       // en pourcentage, 2 decimales
+        private BigDecimal encoursPar60;
+        private long nbPar60;
+        private BigDecimal tauxPar60;
         private BigDecimal encoursPar90;
         private long nbPar90;
         private BigDecimal tauxPar90;
+        private BigDecimal encoursPar120;
+        private long nbPar120;
+        private BigDecimal tauxPar120;
         private long nbContentieuxDeclares; // dossiers que le DA a passes au contentieux dans digi (V166), restes dans la base
         private BigDecimal seuilPar30;      // seuil propre a la famille du produit, sinon null = seuil general
         private BigDecimal seuilPar90;
@@ -79,8 +85,10 @@ public final class PortefeuilleRisqueDtos {
         public static LigneRisqueDto vide(String cle, String libelle) {
             return LigneRisqueDto.builder().cle(cle).libelle(libelle)
                     .encours(BigDecimal.ZERO).impaye(BigDecimal.ZERO)
-                    .encoursPar30(BigDecimal.ZERO).encoursPar90(BigDecimal.ZERO)
-                    .tauxPar30(BigDecimal.ZERO).tauxPar90(BigDecimal.ZERO)
+                    .encoursPar30(BigDecimal.ZERO).encoursPar60(BigDecimal.ZERO)
+                    .encoursPar90(BigDecimal.ZERO).encoursPar120(BigDecimal.ZERO)
+                    .tauxPar30(BigDecimal.ZERO).tauxPar60(BigDecimal.ZERO)
+                    .tauxPar90(BigDecimal.ZERO).tauxPar120(BigDecimal.ZERO)
                     .build();
         }
 
@@ -92,15 +100,21 @@ public final class PortefeuilleRisqueDtos {
             impaye = impaye.add(nvl(autre.impaye));
             encoursPar30 = encoursPar30.add(nvl(autre.encoursPar30));
             nbPar30 += autre.nbPar30;
+            encoursPar60 = encoursPar60.add(nvl(autre.encoursPar60));
+            nbPar60 += autre.nbPar60;
             encoursPar90 = encoursPar90.add(nvl(autre.encoursPar90));
             nbPar90 += autre.nbPar90;
+            encoursPar120 = encoursPar120.add(nvl(autre.encoursPar120));
+            nbPar120 += autre.nbPar120;
             nbContentieuxDeclares += autre.nbContentieuxDeclares;
         }
 
         /** Les taux se calculent une fois les sommes faites, jamais ligne a ligne. */
         public void figerTaux() {
             tauxPar30 = taux(encoursPar30, encours);
+            tauxPar60 = taux(encoursPar60, encours);
             tauxPar90 = taux(encoursPar90, encours);
+            tauxPar120 = taux(encoursPar120, encours);
         }
 
         public static BigDecimal taux(BigDecimal part, BigDecimal total) {

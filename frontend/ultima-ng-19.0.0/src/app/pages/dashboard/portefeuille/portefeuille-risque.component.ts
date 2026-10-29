@@ -52,7 +52,7 @@ type VueProduit = 'type' | 'famille';
                 <button pButton icon="pi pi-refresh" class="p-button-text" pTooltip="Relire SAF" (click)="recharger()" [loading]="loading() || loadingReseau()"></button>
             </div>
             <p class="text-sm text-gray-500 mb-3">
-                PAR 30 et PAR 90 des crédits en cours, par produit et par gestionnaire désigné. Même règle que le bandeau du portefeuille et que la déclaration BCRG :
+                PAR 30, 60, 90 et 120 des crédits en cours, par produit et par gestionnaire désigné. Même règle que le bandeau du portefeuille et que la déclaration BCRG :
                 un crédit entre dans le PAR 30 quand sa plus ancienne échéance impayée a 30 jours ou plus, et tout son encours compte.
             </p>
 
@@ -107,10 +107,10 @@ type VueProduit = 'type' | 'famille';
                         <th class="text-right">Encours (GNF)</th>
                         <th class="text-right">Part</th>
                         <th class="text-right">En retard</th>
-                        <th class="text-right">PAR 30 (GNF)</th>
                         <th class="text-right">PAR 30</th>
-                        <th class="text-right">PAR 90 (GNF)</th>
+                        <th class="text-right">PAR 60</th>
                         <th class="text-right">PAR 90</th>
+                        <th class="text-right">PAR 120</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-l>
@@ -122,10 +122,22 @@ type VueProduit = 'type' | 'famille';
                         <td class="text-right">{{ l.encours | number: '1.0-0' }}</td>
                         <td class="text-right text-gray-500">{{ part(l.encours, r.total.encours) | number: '1.0-0' }} %</td>
                         <td class="text-right" [class.text-orange-600]="l.nbEnRetard > 0">{{ l.nbEnRetard }}</td>
-                        <td class="text-right">{{ l.encoursPar30 | number: '1.0-0' }}</td>
-                        <td class="text-right font-semibold" [class.text-red-600]="l.tauxPar30 >= r.seuilPar30">{{ l.tauxPar30 | number: '1.1-1' }} %</td>
-                        <td class="text-right">{{ l.encoursPar90 | number: '1.0-0' }}</td>
-                        <td class="text-right font-semibold" [class.text-red-600]="l.tauxPar90 >= r.seuilPar90">{{ l.tauxPar90 | number: '1.1-1' }} %</td>
+                        <td class="text-right">
+                            <div class="font-semibold" [class.text-red-600]="l.tauxPar30 >= r.seuilPar30">{{ l.tauxPar30 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar30 | number: '1.0-0' }} · {{ l.nbPar30 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ l.tauxPar60 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar60 | number: '1.0-0' }} · {{ l.nbPar60 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold" [class.text-red-600]="l.tauxPar90 >= r.seuilPar90">{{ l.tauxPar90 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar90 | number: '1.0-0' }} · {{ l.nbPar90 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ l.tauxPar120 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar120 | number: '1.0-0' }} · {{ l.nbPar120 }}</div>
+                        </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage"><tr><td colspan="11" class="text-center text-gray-500 py-4">Aucun crédit en cours.</td></tr></ng-template>
@@ -177,7 +189,7 @@ type VueProduit = 'type' | 'famille';
             </p>
             <ng-container *ngTemplateOutlet="tableAgents; context: { $implicit: lignesAgent(), total: d.total, seuil30: d.seuilPar30, seuil90: d.seuilPar90, cliquable: true, credits: true }"></ng-container>
             <p class="text-xs text-gray-500 mt-3">
-                Seuils d'attention : PAR 30 ≥ {{ d.seuilPar30 }} %, PAR 90 ≥ {{ d.seuilPar90 }} %, sauf seuil propre à une famille. Ce PAR est comptable : il dit où est le risque, pas la faute de quelqu'un.
+                Dans chaque case PAR : le taux, puis l'encours en GNF et le nombre de crédits. Seuils d'attention : PAR 30 ≥ {{ d.seuilPar30 }} %, PAR 90 ≥ {{ d.seuilPar90 }} %, sauf seuil propre à une famille ; PAR 60 et PAR 120 sont donnés sans seuil. Ce PAR est comptable : il dit où est le risque, pas la faute de quelqu'un.
                 Un agent qui reçoit un portefeuille dégradé affiche un PAR élevé le jour de l'affectation. L'appréciation des agents, elle, retire les retards hérités.
             </p>
             } @else if (!loading() && agence()) {
@@ -190,7 +202,7 @@ type VueProduit = 'type' | 'famille';
 
         <!-- ========================= Gabarits ========================= -->
         <ng-template #tuiles let-t let-seuil30="seuil30" let-seuil90="seuil90">
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3 mb-4">
                 <div class="border rounded p-3">
                     <div class="text-xs text-gray-500 uppercase">Crédits en cours</div>
                     <div class="text-xl font-bold">{{ t.nbCredits }}</div>
@@ -210,9 +222,19 @@ type VueProduit = 'type' | 'famille';
                     <div class="text-xs text-gray-500">{{ t.encoursPar30 | number: '1.0-0' }} GNF · {{ t.nbPar30 }} crédits</div>
                 </div>
                 <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">PAR 60</div>
+                    <div class="text-xl font-bold">{{ t.tauxPar60 | number: '1.1-1' }} %</div>
+                    <div class="text-xs text-gray-500">{{ t.encoursPar60 | number: '1.0-0' }} GNF · {{ t.nbPar60 }} crédits</div>
+                </div>
+                <div class="border rounded p-3">
                     <div class="text-xs text-gray-500 uppercase">PAR 90</div>
                     <div class="text-xl font-bold" [class.text-red-600]="t.tauxPar90 >= seuil90">{{ t.tauxPar90 | number: '1.1-1' }} %</div>
                     <div class="text-xs text-gray-500">{{ t.encoursPar90 | number: '1.0-0' }} GNF · {{ t.nbPar90 }} crédits</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500 uppercase">PAR 120</div>
+                    <div class="text-xl font-bold">{{ t.tauxPar120 | number: '1.1-1' }} %</div>
+                    <div class="text-xs text-gray-500">{{ t.encoursPar120 | number: '1.0-0' }} GNF · {{ t.nbPar120 }} crédits</div>
                 </div>
             </div>
         </ng-template>
@@ -227,10 +249,10 @@ type VueProduit = 'type' | 'famille';
                         <th class="text-right" pSortableColumn="encours">Encours (GNF) <p-sortIcon field="encours"></p-sortIcon></th>
                         <th class="text-right">Part</th>
                         <th class="text-right" pSortableColumn="nbEnRetard">En retard <p-sortIcon field="nbEnRetard"></p-sortIcon></th>
-                        <th class="text-right" pSortableColumn="encoursPar30">PAR 30 (GNF) <p-sortIcon field="encoursPar30"></p-sortIcon></th>
                         <th class="text-right" pSortableColumn="tauxPar30">PAR 30 <p-sortIcon field="tauxPar30"></p-sortIcon></th>
-                        <th class="text-right" pSortableColumn="encoursPar90">PAR 90 (GNF) <p-sortIcon field="encoursPar90"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="tauxPar60">PAR 60 <p-sortIcon field="tauxPar60"></p-sortIcon></th>
                         <th class="text-right" pSortableColumn="tauxPar90">PAR 90 <p-sortIcon field="tauxPar90"></p-sortIcon></th>
+                        <th class="text-right" pSortableColumn="tauxPar120">PAR 120 <p-sortIcon field="tauxPar120"></p-sortIcon></th>
                         <th class="text-right" pTooltip="Dossiers passés au contentieux par le DA dans digi ; ils restent dans la base du PAR">Cont.</th>
                         <th *ngIf="avecCredits">Crédits</th>
                     </tr>
@@ -247,10 +269,22 @@ type VueProduit = 'type' | 'famille';
                         <td class="text-right">{{ l.encours | number: '1.0-0' }}</td>
                         <td class="text-right text-gray-500">{{ part(l.encours, total.encours) | number: '1.0-0' }} %</td>
                         <td class="text-right" [class.text-orange-600]="l.nbEnRetard > 0">{{ l.nbEnRetard }}</td>
-                        <td class="text-right">{{ l.encoursPar30 | number: '1.0-0' }}</td>
-                        <td class="text-right font-semibold" [class.text-red-600]="l.tauxPar30 >= (l.seuilPar30 ?? seuil30)" [pTooltip]="l.seuilPar30 != null ? 'Seuil propre à la famille : ' + l.seuilPar30 + ' %' : ''">{{ l.tauxPar30 | number: '1.1-1' }} %</td>
-                        <td class="text-right">{{ l.encoursPar90 | number: '1.0-0' }}</td>
-                        <td class="text-right font-semibold" [class.text-red-600]="l.tauxPar90 >= (l.seuilPar90 ?? seuil90)">{{ l.tauxPar90 | number: '1.1-1' }} %</td>
+                        <td class="text-right" [pTooltip]="l.seuilPar30 != null ? 'Seuil propre à la famille : ' + l.seuilPar30 + ' %' : ''">
+                            <div class="font-semibold" [class.text-red-600]="l.tauxPar30 >= (l.seuilPar30 ?? seuil30)">{{ l.tauxPar30 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar30 | number: '1.0-0' }} · {{ l.nbPar30 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ l.tauxPar60 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar60 | number: '1.0-0' }} · {{ l.nbPar60 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold" [class.text-red-600]="l.tauxPar90 >= (l.seuilPar90 ?? seuil90)">{{ l.tauxPar90 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar90 | number: '1.0-0' }} · {{ l.nbPar90 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ l.tauxPar120 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar120 | number: '1.0-0' }} · {{ l.nbPar120 }}</div>
+                        </td>
                         <td class="text-right">{{ l.nbContentieuxDeclares || '' }}</td>
                         <td *ngIf="avecCredits" class="whitespace-nowrap" (click)="$event.stopPropagation()">
                             <button pButton label="30 j+" class="p-button-text p-button-sm" pTooltip="Crédits à 30 jours de retard et plus" [disabled]="!l.nbPar30" (click)="voirCredits(l, '30')"></button>
@@ -273,10 +307,10 @@ type VueProduit = 'type' | 'famille';
                         <th class="text-right">Encours (GNF)</th>
                         <th class="text-right">Part</th>
                         <th class="text-right">En retard</th>
-                        <th class="text-right">PAR 30 (GNF)</th>
                         <th class="text-right">PAR 30</th>
-                        <th class="text-right">PAR 90 (GNF)</th>
+                        <th class="text-right">PAR 60</th>
                         <th class="text-right">PAR 90</th>
+                        <th class="text-right">PAR 120</th>
                         <th class="text-right" pTooltip="Dossiers passés au contentieux par le DA dans digi ; ils restent dans la base du PAR">Cont.</th>
                         <th *ngIf="avecCredits">Crédits</th>
                     </tr>
@@ -293,10 +327,22 @@ type VueProduit = 'type' | 'famille';
                         <td class="text-right">{{ l.encours | number: '1.0-0' }}</td>
                         <td class="text-right text-gray-500">{{ part(l.encours, total.encours) | number: '1.0-0' }} %</td>
                         <td class="text-right" [class.text-orange-600]="l.nbEnRetard > 0">{{ l.nbEnRetard }}</td>
-                        <td class="text-right">{{ l.encoursPar30 | number: '1.0-0' }}</td>
-                        <td class="text-right font-semibold" [class.text-red-600]="l.tauxPar30 >= seuil30">{{ l.tauxPar30 | number: '1.1-1' }} %</td>
-                        <td class="text-right">{{ l.encoursPar90 | number: '1.0-0' }}</td>
-                        <td class="text-right font-semibold" [class.text-red-600]="l.tauxPar90 >= seuil90">{{ l.tauxPar90 | number: '1.1-1' }} %</td>
+                        <td class="text-right">
+                            <div class="font-semibold" [class.text-red-600]="l.tauxPar30 >= seuil30">{{ l.tauxPar30 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar30 | number: '1.0-0' }} · {{ l.nbPar30 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ l.tauxPar60 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar60 | number: '1.0-0' }} · {{ l.nbPar60 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold" [class.text-red-600]="l.tauxPar90 >= seuil90">{{ l.tauxPar90 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar90 | number: '1.0-0' }} · {{ l.nbPar90 }}</div>
+                        </td>
+                        <td class="text-right">
+                            <div class="font-semibold">{{ l.tauxPar120 | number: '1.1-1' }} %</div>
+                            <div class="text-xs text-gray-500">{{ l.encoursPar120 | number: '1.0-0' }} · {{ l.nbPar120 }}</div>
+                        </td>
                         <td class="text-right">{{ l.nbContentieuxDeclares || '' }}</td>
                         <td *ngIf="avecCredits" class="whitespace-nowrap" (click)="$event.stopPropagation()">
                             <button pButton label="30 j+" class="p-button-text p-button-sm" pTooltip="Crédits à 30 jours de retard et plus" [disabled]="!l.nbPar30" (click)="voirCredits(l, '30')"></button>
@@ -448,7 +494,9 @@ export class PortefeuilleRisqueComponent implements OnInit {
         { label: 'Tous', value: '' },
         { label: 'En retard', value: 'retard' },
         { label: '30 j et plus', value: '30' },
-        { label: '90 j et plus', value: '90' }
+        { label: '60 j et plus', value: '60' },
+        { label: '90 j et plus', value: '90' },
+        { label: '120 j et plus', value: '120' }
     ];
 
     // Dialogue des familles et seuils
@@ -837,13 +885,19 @@ export class PortefeuilleRisqueComponent implements OnInit {
         cible.impaye += autre.impaye;
         cible.encoursPar30 += autre.encoursPar30;
         cible.nbPar30 += autre.nbPar30;
+        cible.encoursPar60 += autre.encoursPar60;
+        cible.nbPar60 += autre.nbPar60;
         cible.encoursPar90 += autre.encoursPar90;
         cible.nbPar90 += autre.nbPar90;
+        cible.encoursPar120 += autre.encoursPar120;
+        cible.nbPar120 += autre.nbPar120;
         cible.nbContentieuxDeclares += autre.nbContentieuxDeclares;
     }
 
     private figerTaux(l: LigneRisque): void {
         l.tauxPar30 = l.encours ? Math.round((l.encoursPar30 / l.encours) * 10000) / 100 : 0;
+        l.tauxPar60 = l.encours ? Math.round((l.encoursPar60 / l.encours) * 10000) / 100 : 0;
         l.tauxPar90 = l.encours ? Math.round((l.encoursPar90 / l.encours) * 10000) / 100 : 0;
+        l.tauxPar120 = l.encours ? Math.round((l.encoursPar120 / l.encours) * 10000) / 100 : 0;
     }
 }
