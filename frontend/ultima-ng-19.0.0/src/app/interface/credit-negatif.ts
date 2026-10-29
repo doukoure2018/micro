@@ -28,6 +28,15 @@ export interface LigneCreditNegatif {
     etatApresLibelle: string | null;
     corrigeMode: 'AUTO' | 'MANUEL' | null;
     corrigePar: string | null;
+    /**
+     * Solde corrigé (V193) : figé au moment de la régularisation, il ne bouge PLUS jamais.
+     * `soldeApres`, lui, suit le dernier état lu dans SAF et change à chaque vérification.
+     */
+    soldeCorrige: number | null;
+    soldeCorrigeAt: string | null;
+    soldeCorrigeSource: 'SAF' | 'REPRISE' | null;
+    /** soldeCorrige − pireSolde : le montant que la régularisation a porté. */
+    ecartRegularise: number | null;
     conclusion: 'CORRIGE' | 'CLOS_SAF' | 'TOUJOURS_NEGATIF' | 'ARRONDI' | null;
     conclusionLibelle: string | null;
     joursDepuisPriseEnCharge: number | null;
@@ -53,4 +62,25 @@ export interface SituationCreditsNegatifs {
     lignes: LigneCreditNegatif[];
     dernierPassage: string | null;
     message: string | null;
+}
+
+/** Le dossier SAF d'un crédit : les cinq tables du script d'extraction de la DSIG. */
+export interface DossierCredit {
+    codAgencia: string;
+    numCredito: number;
+    codCliente: string | null;
+    idCuenta: string | null;
+    fecApertura: string | null;
+    dateLecture: string;
+    trouve: boolean;
+    fiche: Record<string, any> | null;
+    echeancier: Record<string, any>[] | null;
+    mouvements: Record<string, any>[] | null;
+    mouvementsCompte: Record<string, any>[] | null;
+    ecritures: Record<string, any>[] | null;
+    echeancierComplet: boolean;
+    mouvementsComplets: boolean;
+    mouvementsCompteComplets: boolean;
+    ecrituresCompletes: boolean;
+    millisecondes: Record<string, number> | null;
 }

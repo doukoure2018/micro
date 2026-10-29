@@ -52,6 +52,12 @@ public final class CreditNegatifDtos {
         private String corrigeMode;
         private String corrigePar;
         /** CORRIGE, CLOS_SAF, TOUJOURS_NEGATIF, ARRONDI, ou null si jamais confronte. */
+        // Solde corrige (V193) : fige a la regularisation, il ne bouge plus. `soldeApres`, lui,
+        // suit le dernier etat lu dans SAF. L'ecart est le montant que la regularisation a porte.
+        private BigDecimal soldeCorrige;
+        private OffsetDateTime soldeCorrigeAt;
+        private String soldeCorrigeSource;     // SAF (observe) ou REPRISE (reconstitue)
+        private BigDecimal ecartRegularise;    // soldeCorrige - pireSolde
         private String conclusion;
         private String conclusionLibelle;
         private Long joursDepuisPriseEnCharge;

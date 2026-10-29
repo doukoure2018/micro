@@ -91,6 +91,29 @@ public class CreditNegatifResource {
                         : corriges + " corrigé(s), " + clos + " clos dans SAF, " + toujours + " toujours négatif(s)", OK));
     }
 
+    /** Le dossier SAF du credit : fiche, echeancier, operations, compte courant, ecritures. */
+    @GetMapping("/{id}/dossier")
+    public ResponseEntity<Response> dossier(@NotNull Authentication authentication,
+                                            @PathVariable("id") Long id,
+                                            HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("dossier", service.dossier(authentication.getName(), id)),
+                "Dossier du credit", OK));
+    }
+
+    /** Le dossier en classeur Excel : cinq feuilles, comme le script d'extraction de la DSIG. */
+    @GetMapping("/{id}/dossier/export")
+    public ResponseEntity<byte[]> exporterDossier(@NotNull Authentication authentication,
+                                                  @PathVariable("id") Long id) throws IOException {
+        byte[] classeur = service.exporterDossier(authentication.getName(), id);
+        String nom = "Dossier_credit_" + id + "_" + LocalDate.now() + ".xlsx";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nom + "\"")
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(classeur);
+    }
+
     /** Le meme tableau en classeur Excel, feuille de travail pour la correction dans SAF. */
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,

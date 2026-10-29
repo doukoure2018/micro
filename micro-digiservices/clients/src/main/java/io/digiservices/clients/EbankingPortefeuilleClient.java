@@ -63,6 +63,13 @@ public interface EbankingPortefeuilleClient {
     io.digiservices.clients.portefeuille.CreditEtatDto getEtatCredit(@PathVariable("codAgencia") String codAgencia,
                                                                      @PathVariable("numCredito") Long numCredito);
 
+    /** Dossier complet d'un credit : les cinq tables SAF du script d'extraction DSIG. */
+    @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/dossier")
+    io.digiservices.clients.portefeuille.DossierCreditDto getDossierCredit(
+            @PathVariable("codAgencia") String codAgencia,
+            @PathVariable("numCredito") Long numCredito,
+            @RequestParam(value = "max", required = false) Integer max);
+
     @GetMapping("/ebanking/portefeuille/credits-negatifs")
     List<io.digiservices.clients.portefeuille.CreditNegatifDto> getCreditsNegatifs();
 

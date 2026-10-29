@@ -109,6 +109,9 @@ public class CreditNegatifService {
                 .verifieSafAt(l.verifieSafAt()).soldeApres(l.soldeApres()).etatApres(l.etatApres())
                 .etatApresLibelle(l.etatApres() == null ? null : libelleEtat(l.etatApres()))
                 .corrigeMode(l.corrigeMode()).corrigePar(l.corrigePar())
+                .soldeCorrige(l.soldeCorrige()).soldeCorrigeAt(l.soldeCorrigeAt())
+                .soldeCorrigeSource(l.soldeCorrigeSource())
+                .ecartRegularise(ecartRegularise(l.soldeCorrige(), l.pireSolde()))
                 .conclusion(conclusionDe(l)).conclusionLibelle(libelleConclusion(conclusionDe(l)))
                 .joursDepuisPriseEnCharge(l.traiteAt() == null || l.corrigeAt() != null ? null
                         : java.time.Duration.between(l.traiteAt(), java.time.OffsetDateTime.now()).toDays())
@@ -154,6 +157,18 @@ public class CreditNegatifService {
     private static final BigDecimal SEUIL_ARRONDI = BigDecimal.ONE;
     /** Pris en charge depuis plus de sept jours et toujours negatif : rappel au poste de supervision. */
     public static final int JOURS_RAPPEL = 7;
+
+    /**
+     * Le montant que la regularisation a porte : le solde fige moins le pire solde releve. Sur un
+     * credit tombe a -12 000 et ramene a 20 000, l'ecart vaut 32 000 — c'est ce chiffre qu'on
+     * retrouve dans l'ecriture comptable de regularisation.
+     */
+    private static BigDecimal ecartRegularise(BigDecimal soldeCorrige, BigDecimal pireSolde) {
+        if (soldeCorrige == null || pireSolde == null) {
+            return null;
+        }
+        return soldeCorrige.subtract(pireSolde);
+    }
 
     /** La conclusion affichee : celle enregistree a la cloture, ou deduite de l'etat courant. */
     private static String conclusionDe(io.digiservices.ecreditservice.repository.CreditNegatifRepository.Ligne l) {
@@ -270,6 +285,36 @@ public class CreditNegatifService {
                 enCours ? "Corrigé : solde " + montant(solde) + " GNF, crédit en cours"
                         : "Clos dans SAF : état " + libelleEtat(ind) + ", solde " + montant(solde) + " GNF",
                 solde, ind);
+    }
+
+    // ==================== Dossier du credit (DSIG, 29/10/2026) ====================
+
+    /**
+     * Le dossier SAF d'un credit negatif : les cinq tables du script d'extraction de la DSIG.
+     * C'est la qu'on lit pourquoi le solde est passe sous zero — les operations du credit portent
+     * le solde avant et apres chaque mouvement.
+     *
+     * <p>Lecture seule, dans la production, et rien n'est garde : un dossier doit montrer SAF et
+     * non une copie de SAF. Il s'ouvre pour une ligne ouverte comme pour une ligne deja close.</p>
+     */
+    public io.digiservices.clients.portefeuille.DossierCreditDto dossier(String uuid, Long id) {
+        User user = verifierDsig(uuid);
+        var cle = repository.cle(id).or(() -> repository.cleClose(id))
+                .orElseThrow(() -> new ApiException("Credit negatif introuvable"));
+        try {
+            var dossier = portefeuilleClient.getDossierCredit(cle.codAgencia(), cle.numCredito(), null);
+            log.info("[NEGATIFS] Dossier du credit {}/{} ouvert par user {}",
+                    cle.codAgencia(), cle.numCredito(), user.getUserId());
+            return dossier;
+        } catch (feign.FeignException.NotFound e) {
+            throw new ApiException("Credit introuvable dans SAF");
+        } catch (Exception e) {
+            throw new ApiException(safMuet("lecture du dossier"));
+        }
+    }
+
+    public byte[] exporterDossier(String uuid, Long id) throws java.io.IOException {
+        return io.digiservices.ecreditservice.utils.DossierCreditExcelUtils.classeur(dossier(uuid, id));
     }
 
     /** Marque un credit comme pris en charge par la DSIG ; rien n'est ecrit dans SAF. */

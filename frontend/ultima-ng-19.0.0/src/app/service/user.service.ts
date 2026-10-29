@@ -1935,6 +1935,11 @@ export class UserService {
         <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/credits-negatifs/verifier-pris-en-charge`, {}).pipe(catchError(this.handleError));
     exportCreditsNegatifs$ = (corriges = false) =>
         this.http.get(`${this.server}/ecredit/credits-negatifs/export?corriges=${corriges}`, { responseType: 'blob', observe: 'response' });
+    // Dossier SAF d'un credit negatif : les 5 tables du script d'extraction DSIG (29/10/2026)
+    getDossierCreditNegatif$ = (id: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/dossier`).pipe(catchError(this.handleError));
+    exportDossierCreditNegatif$ = (id: number) =>
+        this.http.get(`${this.server}/ecredit/credits-negatifs/${id}/dossier/export`, { responseType: 'blob', observe: 'response' });
 
     // Habilitations par departement (V178) : le porte-cles du compte connecte.
     getHabilitations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/moi`).pipe(catchError(this.handleError));

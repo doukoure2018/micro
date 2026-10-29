@@ -219,6 +219,18 @@ public class PortefeuilleController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /**
+     * Dossier complet d'un credit : les cinq tables du script d'extraction DSIG, lues dans la
+     * production. Le plafond de lignes par table protege les deux recherches en texte libre.
+     */
+    @GetMapping("/credits/{codAgencia}/{numCredito}/dossier")
+    public ResponseEntity<io.digiservices.clients.portefeuille.DossierCreditDto> getDossierCredit(
+            @PathVariable("codAgencia") String codAgencia,
+            @PathVariable("numCredito") Long numCredito,
+            @RequestParam(name = "max", defaultValue = "2000") int max) {
+        return ResponseEntity.ok(repository.dossierCredit(codAgencia, numCredito, Math.min(Math.max(max, 1), 5000)));
+    }
+
     @GetMapping("/credits-negatifs")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.CreditNegatifDto>> getCreditsNegatifs() {
         return ResponseEntity.ok(repository.findCreditsNegatifs());

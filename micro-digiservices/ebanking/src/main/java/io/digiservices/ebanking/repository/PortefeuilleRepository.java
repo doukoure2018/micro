@@ -776,6 +776,160 @@ public class PortefeuilleRepository {
         return d;
     };
 
+
+    // ==================== Dossier d'un credit (DSIG, 29/10/2026) ====================
+
+    /**
+     * Les cinq tables du script d'extraction de la DSIG, pour UN credit, lues dans la PRODUCTION.
+     *
+     * <p>Les trois premieres passent par la cle du credit, donc par un index. Les deux dernieres
+     * reprennent les liens du script, qui sont des recherches dans du texte libre et n'utilisent
+     * aucun index : elles sont bornees par l'entreprise, le point de service, la date d'ouverture
+     * du credit (aucune ecriture anterieure ne peut le concerner) et un plafond de lignes.</p>
+     */
+    private static final String SQL_DOSSIER_FICHE = """
+            SELECT * FROM PR.PR_CREDITOS
+             WHERE COD_AGENCIA = :codAgencia AND NUM_CREDITO = :numCredito
+            """;
+
+    private static final String SQL_DOSSIER_ECHEANCIER = """
+            SELECT TOP (:max) * FROM PR.PR_PLAN_PAGOS
+             WHERE COD_EMPRESA = :codEmpresa AND COD_AGENCIA = :codAgencia AND NUM_CREDITO = :numCredito
+             ORDER BY NUM_CUOTA
+            """;
+
+    private static final String SQL_DOSSIER_MOUVEMENTS = """
+            SELECT TOP (:max) * FROM PR.PR_MOVIMIENTOS
+             WHERE COD_EMPRESA = :codEmpresa AND COD_AGENCIA = :codAgencia AND NUM_CREDITO = :numCredito
+             ORDER BY FEC_MOVIMIENTO, NUM_MOVIMIENTO
+            """;
+
+    // Lien du script : le compte du credit, OU son numero cite dans le libelle du mouvement.
+    private static final String SQL_DOSSIER_COMPTE = """
+            SELECT TOP (:max) * FROM CC.CC_MOVIMTO_MENSUAL
+             WHERE COD_EMPRESA = :codEmpresa AND COD_AGENCIA = :codAgencia
+               AND (:depuis IS NULL OR FEC_MOVIMIENTO >= :depuis)
+               AND ((:idCuenta IS NOT NULL
+                     AND CONVERT(VARCHAR(100), NUM_CUENTA) COLLATE DATABASE_DEFAULT
+                       = CONVERT(VARCHAR(100), :idCuenta) COLLATE DATABASE_DEFAULT)
+                 OR CHARINDEX(CONVERT(VARCHAR(30), :numTexte) COLLATE DATABASE_DEFAULT,
+                              ISNULL(CONVERT(VARCHAR(MAX), DES_MOVIMIENTO), '') COLLATE DATABASE_DEFAULT) > 0)
+             ORDER BY FEC_MOVIMIENTO, NUM_MOVIMIENTO
+            """;
+
+    // Lien du script : le numero du credit cite dans la reference de l'ecriture.
+    private static final String SQL_DOSSIER_ECRITURES = """
+            SELECT TOP (:max) * FROM CG.CG_ASTO_DETALLE
+             WHERE COD_EMPRESA = :codEmpresa AND COD_AGENCIA = :codAgencia
+               AND (:depuis IS NULL OR FEC_MOVIMIENTO >= :depuis)
+               AND CHARINDEX(CONVERT(VARCHAR(30), :numTexte) COLLATE DATABASE_DEFAULT,
+                             ISNULL(CONVERT(VARCHAR(MAX), REFERENCIA), '') COLLATE DATABASE_DEFAULT) > 0
+             ORDER BY FEC_MOVIMIENTO, NUM_ASIENTO, NUM_LINEA
+            """;
+
+    public io.digiservices.clients.portefeuille.DossierCreditDto dossierCredit(String codAgencia, Long numCredito, int max) {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            java.util.Map<String, Long> millis = new java.util.LinkedHashMap<>();
+            MapSqlParameterSource cle = new MapSqlParameterSource()
+                    .addValue("codAgencia", codAgencia).addValue("numCredito", numCredito);
+            List<java.util.Map<String, Object>> fiches = chrono(millis, "fiche",
+                    () -> execute("portefeuille.dossier.fiche", () -> primary.query(SQL_DOSSIER_FICHE, cle, LIGNE_BRUTE)));
+            if (fiches.isEmpty()) {
+                log.info("[DOSSIER] credit {}/{} introuvable dans SAF", codAgencia, numCredito);
+                return io.digiservices.clients.portefeuille.DossierCreditDto.builder()
+                        .codAgencia(codAgencia).numCredito(numCredito).dateLecture(LocalDate.now())
+                        .trouve(false).millisecondes(millis).build();
+            }
+            java.util.Map<String, Object> fiche = fiches.get(0);
+            Object empresa = fiche.get("COD_EMPRESA");
+            Object idCuenta = fiche.get("ID_CUENTA");
+            Object ouverture = fiche.get("FEC_APERTURA");
+            LocalDate fecApertura = ouverture instanceof LocalDate d ? d : null;
+
+            MapSqlParameterSource p = new MapSqlParameterSource()
+                    .addValue("codEmpresa", empresa).addValue("codAgencia", codAgencia)
+                    .addValue("numCredito", numCredito).addValue("max", max);
+            MapSqlParameterSource q = new MapSqlParameterSource()
+                    .addValue("codEmpresa", empresa).addValue("codAgencia", codAgencia)
+                    .addValue("max", max)
+                    .addValue("numTexte", String.valueOf(numCredito))
+                    .addValue("idCuenta", idCuenta == null ? null : String.valueOf(idCuenta))
+                    .addValue("depuis", fecApertura == null ? null : java.sql.Date.valueOf(fecApertura));
+
+            List<java.util.Map<String, Object>> echeancier = chrono(millis, "echeancier",
+                    () -> execute("portefeuille.dossier.echeancier", () -> primary.query(SQL_DOSSIER_ECHEANCIER, p, LIGNE_BRUTE)));
+            List<java.util.Map<String, Object>> mouvements = chrono(millis, "mouvements",
+                    () -> execute("portefeuille.dossier.mouvements", () -> primary.query(SQL_DOSSIER_MOUVEMENTS, p, LIGNE_BRUTE)));
+            List<java.util.Map<String, Object>> compte = chrono(millis, "compte",
+                    () -> execute("portefeuille.dossier.compte", () -> primary.query(SQL_DOSSIER_COMPTE, q, LIGNE_BRUTE)));
+            List<java.util.Map<String, Object>> ecritures = chrono(millis, "ecritures",
+                    () -> execute("portefeuille.dossier.ecritures", () -> primary.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE)));
+
+            log.info("[DOSSIER] credit {}/{} : {} echeances, {} mouvements, {} lignes de compte, {} ecritures — {} ms",
+                    codAgencia, numCredito, echeancier.size(), mouvements.size(), compte.size(), ecritures.size(),
+                    millis.values().stream().mapToLong(Long::longValue).sum());
+
+            return io.digiservices.clients.portefeuille.DossierCreditDto.builder()
+                    .codAgencia(codAgencia).numCredito(numCredito)
+                    .codCliente(texte(fiche.get("COD_CLIENTE"))).desAgencia(null)
+                    .idCuenta(texte(idCuenta)).fecApertura(fecApertura).dateLecture(LocalDate.now())
+                    .trouve(true).fiche(fiche)
+                    .echeancier(echeancier).mouvements(mouvements)
+                    .mouvementsCompte(compte).ecritures(ecritures)
+                    .echeancierComplet(echeancier.size() < max).mouvementsComplets(mouvements.size() < max)
+                    .mouvementsCompteComplets(compte.size() < max).ecrituresCompletes(ecritures.size() < max)
+                    .millisecondes(millis)
+                    .build();
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
+    /**
+     * Une ligne SAF telle quelle : colonne par colonne, dans l'ordre de la table. Les dates et
+     * horodatages sont convertis en types Java datables, pour que la serialisation les rende en
+     * ISO et non en nombre de secondes.
+     */
+    private static final RowMapper<java.util.Map<String, Object>> LIGNE_BRUTE = (rs, n) -> {
+        java.sql.ResultSetMetaData meta = rs.getMetaData();
+        java.util.Map<String, Object> ligne = new java.util.LinkedHashMap<>(meta.getColumnCount() * 2);
+        for (int i = 1; i <= meta.getColumnCount(); i++) {
+            Object v = rs.getObject(i);
+            if (v instanceof java.sql.Timestamp t) {
+                v = t.toLocalDateTime();
+            } else if (v instanceof java.sql.Date d) {
+                v = d.toLocalDate();
+            } else if (v instanceof byte[]) {
+                v = null;   // colonnes binaires : sans interet ici, et illisibles a l'ecran
+            } else if (v instanceof String texte) {
+                v = texte.trim();
+            }
+            ligne.put(meta.getColumnLabel(i), v);
+        }
+        return ligne;
+    };
+
+    private static <R> R chrono(java.util.Map<String, Long> millis, String nom, Supplier<R> action) {
+        long debut = System.currentTimeMillis();
+        try {
+            return action.get();
+        } finally {
+            millis.put(nom, System.currentTimeMillis() - debut);
+        }
+    }
+
+    private static String texte(Object v) {
+        return v == null ? null : String.valueOf(v).trim();
+    }
+
     private <R> R execute(String op, Supplier<R> action) {
         long start = System.currentTimeMillis();
         try {

@@ -28,7 +28,8 @@ public class CreditNegatifRepository {
                         OffsetDateTime detecteAt, OffsetDateTime signaleAt, OffsetDateTime corrigeAt,
                         String traitePar, OffsetDateTime traiteAt, String commentaire,
                         OffsetDateTime verifieSafAt, BigDecimal soldeApres, String etatApres,
-                        String corrigeMode, String corrigePar, String conclusion) {
+                        String corrigeMode, String corrigePar, String conclusion,
+                        BigDecimal soldeCorrige, OffsetDateTime soldeCorrigeAt, String soldeCorrigeSource) {
     }
 
     /** Une ligne ouverte a confronter a SAF : sa cle et son identifiant. */
@@ -145,6 +146,7 @@ public class CreditNegatifRepository {
                        TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS traite_par,
                        c.traite_at, c.commentaire,
                        c.verifie_saf_at, c.solde_apres, c.etat_apres, c.corrige_mode, c.conclusion,
+                       c.solde_corrige, c.solde_corrige_at, c.solde_corrige_source,
                        TRIM(COALESCE(v.first_name,'') || ' ' || COALESCE(v.last_name,'')) AS corrige_par
                 FROM credit_negatif c
                 LEFT JOIN users u ON u.user_id = c.traite_par_user_id
@@ -167,7 +169,10 @@ public class CreditNegatifRepository {
                         rs.getString("commentaire"),
                         rs.getObject("verifie_saf_at", OffsetDateTime.class), rs.getBigDecimal("solde_apres"),
                         rs.getString("etat_apres"), rs.getString("corrige_mode"), rs.getString("corrige_par"),
-                        rs.getString("conclusion")))
+                        rs.getString("conclusion"),
+                        rs.getBigDecimal("solde_corrige"),
+                        rs.getObject("solde_corrige_at", OffsetDateTime.class),
+                        rs.getString("solde_corrige_source")))
                 .list();
     }
 
@@ -202,6 +207,12 @@ public class CreditNegatifRepository {
         jdbcClient.sql("""
                 UPDATE credit_negatif
                 SET verifie_saf_at = CURRENT_TIMESTAMP, solde_apres = :solde, etat_apres = :etat,
+                    solde_corrige = COALESCE(solde_corrige,
+                                             CASE WHEN :conclusion = 'CORRIGE' AND :solde >= 0 THEN :solde END),
+                    solde_corrige_at = CASE WHEN solde_corrige IS NULL AND :conclusion = 'CORRIGE' AND :solde >= 0
+                                            THEN CURRENT_TIMESTAMP ELSE solde_corrige_at END,
+                    solde_corrige_source = CASE WHEN solde_corrige IS NULL AND :conclusion = 'CORRIGE' AND :solde >= 0
+                                                THEN 'REPRISE' ELSE solde_corrige_source END,
                     conclusion = COALESCE(conclusion, :conclusion)
                 WHERE id = :id AND corrige_at IS NOT NULL
                 """)
@@ -214,12 +225,25 @@ public class CreditNegatifRepository {
                 .query((rs, n) -> new Cle(rs.getLong("id"), rs.getString("cod_agencia"), rs.getLong("num_credito"))).list();
     }
 
-    /** Clot avec la preuve : ce que SAF montrait a l'instant, qui a conclu, et comment. */
+    /**
+     * Clot avec la preuve : ce que SAF montrait a l'instant, qui a conclu, et comment.
+     *
+     * <p>C'est ici que le <b>solde corrige</b> est fige (V193) : il prend le solde du moment, et
+     * seulement si la conclusion est une vraie regularisation. Le {@code COALESCE} garantit qu'une
+     * seconde cloture, ou une relecture, ne l'ecrase jamais — contrairement a {@code solde_apres},
+     * qui suit le dernier etat connu par construction.</p>
+     */
     public void clore(Long id, BigDecimal soldeApres, String etatApres, String conclusion, String mode, Long parUserId) {
         jdbcClient.sql("""
                 UPDATE credit_negatif
                 SET corrige_at = CURRENT_TIMESTAMP, verifie_saf_at = CURRENT_TIMESTAMP,
                     solde_a_la_correction = COALESCE(:solde, 0), solde_apres = :solde, etat_apres = :etat,
+                    solde_corrige = COALESCE(solde_corrige,
+                                             CASE WHEN :conclusion = 'CORRIGE' AND :solde >= 0 THEN :solde END),
+                    solde_corrige_at = CASE WHEN solde_corrige IS NULL AND :conclusion = 'CORRIGE' AND :solde >= 0
+                                            THEN CURRENT_TIMESTAMP ELSE solde_corrige_at END,
+                    solde_corrige_source = CASE WHEN solde_corrige IS NULL AND :conclusion = 'CORRIGE' AND :solde >= 0
+                                                THEN 'SAF' ELSE solde_corrige_source END,
                     conclusion = :conclusion, corrige_mode = :mode, corrige_par_user_id = :par
                 WHERE id = :id AND corrige_at IS NULL
                 """)
