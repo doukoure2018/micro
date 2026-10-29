@@ -284,7 +284,9 @@ L'arbre complet : activité → sous-activités → **filières**.
 ```
 
 > **La filière existe, contrairement à ce que nous indiquions le 26 octobre.** Elle correspond à la
-> sous-sous-activité de SAF : 11 activités, 30 sous-activités, **229 filières** — céréale riz,
+> sous-sous-activité de SAF : 11 activités, 30 sous-activités et **109 filières distinctes**
+> (229 lignes dans la table, un même code figurant sous plusieurs sous-activités), dont **53 sous
+> l'activité agricole** — céréale riz,
 > arachide, ananas, anacarde, palmier à huile, hévéa, maraîchage, élevage bovin et porcin, pomme de
 > terre… Et elle est renseignée sur **4 955 des 4 988 crédits agricoles vivants, soit 99,3 %**.
 
@@ -293,9 +295,12 @@ L'arbre complet : activité → sous-activités → **filières**.
 1. Le **niveau sous-activité n'est pas rattachable à un crédit** : la table des crédits ne porte
    pas ce code. Il figure dans le référentiel pour information, mais la ligne de portefeuille ne
    porte que la filière.
-2. Un même code de filière se répète sous plusieurs sous-activités **avec le même libellé**
-   (AGRUME figure sous 201, 203 et 204). La liste `filieres` de chaque activité est dédoublonnée :
-   c'est le seul niveau exploitable.
+2. Un même code de filière se répète sous plusieurs sous-activités, presque toujours **avec le même
+   libellé** (AGRUME figure sous 201, 203 et 204). La liste `filieres` de chaque activité est donc
+   dédoublonnée. Exception mesurée : sous l'agriculture, un seul code porte deux écritures — 308,
+   « CAFÉ » et « CAFE », simple différence d'accent, 35 crédits vivants concernés. Hors agriculture
+   (commerce, transport), quelques codes portent de vrais libellés différents : 31 crédits vivants
+   au total. Nous retenons alors le premier libellé rencontré.
 
 **Palmarès du portefeuille vivant** (hors crédits non agricoles) :
 
@@ -365,7 +370,7 @@ Un `503` survient pendant la restauration matinale de la sauvegarde (quelques di
 |---|---|
 | Sens des états SAF `N` et `R` (6 915 crédits) | exploitation SAF |
 | Codes de point de vente partagés **337** et **958** | exploitation SAF |
-| Regroupement des 229 filières en familles ; cas « AUTRES CULTURES » | Direction de l'exploitation |
+| Regroupement des 109 filières distinctes en familles ; cas « AUTRES CULTURES » | Direction de l'exploitation |
 | Fichier annuel d'objectifs | Direction de l'exploitation |
 | Heure de lecture et fraîcheur J−1 | KUMY |
 

@@ -34,15 +34,21 @@ Cinq nouvelles routes s'y ajoutent :
 ### 1. La filière existe — nous nous étions trompés
 
 Nous vous avions indiqué le 26 octobre que la notion de filière n'existait nulle part. **C'est
-inexact**, et nous tenons à le corriger : SAF porte bien un référentiel de **229 filières**
-agricoles — céréale riz, arachide, ananas, anacarde, palmier à huile, maraîchage, élevage bovin et
-porcin, pomme de terre… — et elles sont renseignées sur **99,3 % des crédits agricoles vivants**.
+inexact**, et nous tenons à le corriger : SAF porte un référentiel d'activités à trois niveaux, et
+le troisième niveau **est** la filière. Il compte **109 filières distinctes**, dont **53 sous
+l'activité agricole** — céréale riz, arachide, ananas, anacarde, palmier à huile, maraîchage,
+élevage bovin et porcin, pomme de terre…
+
+Surtout, cette information est **réellement renseignée** : sur les 4 988 crédits agricoles vivants,
+4 955 portent leur filière, soit **99,3 %**.
 
 Chaque ligne de portefeuille porte donc sa filière, et le référentiel complet est exposé. Il n'y a
 plus de table de correspondance à construire : vous pouvez agréger par filière directement.
 
-À titre d'illustration, les premières filières du portefeuille vivant : céréale riz (1 198 crédits,
-8,61 Md GNF), pomme de terre (453), élevage bovin (259), arachide (227).
+Les premières filières du portefeuille vivant : céréale riz (1 198 crédits, 8,61 Md GNF), pomme de
+terre (453), élevage bovin (259), arachide (227). Nous attirons votre attention sur le premier
+poste, **« AUTRES CULTURES » avec 1 381 crédits et 8,78 Md GNF** : la Direction de l'exploitation
+examine s'il s'agit d'une habitude de saisie à redresser plutôt que d'une réalité agronomique.
 
 ### 2. L'encours des mois passés n'est pas fourni, et c'est délibéré
 
@@ -60,9 +66,16 @@ de quatre dixièmes, qui aurait de surcroît créé une rupture visible le jour 
 relais.
 
 Ce qui **est** reconstitué fidèlement sur les douze mois passés, parce que cela repose sur des dates
-réelles : la production, les sorties datées, le PAR 30 et le PAR 90 en nombre de crédits, et le
-montant dû non réglé. La série d'encours, elle, démarre en octobre 2026 et s'enrichira d'un mois
-chaque mois.
+réelles — ouverture, échéance, règlement, clôture : la production, les sorties datées, le PAR 30 et
+le PAR 90 en nombre de crédits, et le montant dû non réglé. La série d'encours, elle, démarre en
+octobre 2026 et s'enrichira d'un mois chaque mois.
+
+Une réserve de lecture sur les mois reconstitués : les crédits que SAF a clôturés **sans date de
+clôture** ne peuvent pas être situés dans le temps et sont donc absents des mois passés. Les
+effectifs reconstitués sont à ce titre un plancher. Nous avons vérifié la portée de ce biais sur la
+période qui vous intéresse : ces crédits sans date ont été ouverts pour l'essentiel entre 2007 et
+2019, et une centaine seulement depuis 2023 — l'effet sur les douze derniers mois est donc
+négligeable, et la tendance ci-dessous est solide.
 
 À titre indicatif, ce que la série montre déjà : les impayés du réseau agricole sont passés de
 6,18 milliards en octobre 2025 à **2,40 milliards en octobre 2026**, et le nombre de crédits en
