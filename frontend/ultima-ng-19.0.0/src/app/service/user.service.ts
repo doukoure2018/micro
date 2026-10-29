@@ -1820,6 +1820,18 @@ export class UserService {
     recalculerScoresAgents$ = () => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/scores/recalculer`, {}).pipe(catchError(this.handleError));
     exportScoresAgents$ = () => this.http.get(`${this.server}/ecredit/portefeuille/scores/export`, { responseType: 'blob', observe: 'response' });
 
+    // ==================== Portefeuille a risque par agent et par produit (lot 1, 29/10/2026) ====================
+    getPortefeuilleRisque$ = (codAgencia: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque`, { params: { codAgencia } }).pipe(catchError(this.handleError));
+    getPortefeuilleRisqueCredits$ = (codAgencia: string, tipCredito: number | null, agent: string | null, tranche: string | null) => {
+        const params: Record<string, string | number> = { codAgencia };
+        if (tipCredito !== null && tipCredito !== undefined) params['tipCredito'] = tipCredito;
+        if (agent) params['agent'] = agent;
+        if (tranche) params['tranche'] = tranche;
+        return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque/credits`, { params }).pipe(catchError(this.handleError));
+    };
+    exportPortefeuilleRisque$ = (codAgencia: string) => this.http.get(`${this.server}/ecredit/portefeuille/risque/export`, { params: { codAgencia }, responseType: 'blob', observe: 'response' });
+
     // Barometre d'usage de la plateforme (V174, lot 1) : DG, DE, DSIG et DR.
     getUsagePlateforme$ = (jour?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/usage${jour ? '?jour=' + jour : ''}`).pipe(catchError(this.handleError));

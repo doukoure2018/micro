@@ -104,6 +104,12 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-saf.component').then((c) => c.PortefeuilleSafComponent)
     },
     {
+        path: 'portefeuille-risque',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Portefeuille à risque', rubrique: 'PORTEFEUILLE_RISQUE' },
+        loadComponent: () => import('./portefeuille/portefeuille-risque.component').then((c) => c.PortefeuilleRisqueComponent)
+    },
+    {
         path: 'portefeuille-affectation',
         data: { breadcrumb: 'Portefeuille par agent' },
         loadComponent: () => import('./portefeuille/portefeuille-affectation.component').then((c) => c.PortefeuilleAffectationComponent)

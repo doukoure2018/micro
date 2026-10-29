@@ -351,6 +351,16 @@ export class AppMenu {
                 routerLink: ['/dashboards/portefeuille-saf']
             });
         }
+        // Portefeuille a risque par agent et par produit (29/10/2026) : un ecran a part et une
+        // seule entree, pour ne pas le confondre avec le portefeuille, l'affectation ou le TT1.
+        // La rubrique est donnee par le role au reseau (V190) et par la matrice aux departements DSIG.
+        if (this.peut('PORTEFEUILLE_RISQUE')) {
+            items.push({
+                label: 'Portefeuille à risque',
+                icon: 'pi pi-fw pi-exclamation-triangle',
+                routerLink: ['/dashboards/portefeuille-risque']
+            });
+        }
         // Affectation des credits SAF aux agents (V159) : le DA affecte, l'agent voit son
         // portefeuille, DR / DE / DG consultent par point de service et par agent.
         if (this.role === 'DA') {
