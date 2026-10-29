@@ -39,6 +39,10 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/credits-complets")
     List<PortefeuilleCreditDto> getTousCredits(@RequestParam(value = "codAgencia") String codAgencia);
 
+    /** Tout le reseau par agence SAF et par type de credit, credits en cours (portefeuille a risque, lot 2). */
+    @GetMapping("/ebanking/portefeuille/indicateurs-reseau-produit")
+    List<io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto> getIndicateursReseauParProduit();
+
     @GetMapping("/ebanking/portefeuille/indicateurs")
     PortefeuilleIndicateursDto getIndicateurs(@RequestParam(value = "codAgencia") String codAgencia,
                                               @RequestParam(value = "statut", defaultValue = "actifs") String statut,

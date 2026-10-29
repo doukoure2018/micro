@@ -236,6 +236,35 @@ public class PortefeuilleRepository {
             """;
 
     /**
+     * Synthese reseau par agence ET par type de credit, credits EN COURS seulement (portefeuille
+     * a risque, lot 2). Une seule requete pour les 185 points de service, comme la synthese PAR ;
+     * la ventilation par agence, delegation et famille se fait ensuite cote digi.
+     */
+    private static final String SQL_INDICATEURS_RESEAU_PRODUIT = "SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, "
+            + "cr.TIP_CREDITO, MAX(tc.DES_TIP_CREDITO) AS DES_TIP_CREDITO, "
+            + "COUNT(*) AS NB, "
+            + "COALESCE(SUM(cr.MON_SALDO), 0) AS ENCOURS, "
+            + "SUM(CASE WHEN t.PREM_IMP IS NOT NULL THEN 1 ELSE 0 END) AS NB_RETARD, "
+            + "COALESCE(SUM(COALESCE(t.CAP_IMP, 0) + COALESCE(t.INT_IMP, 0)), 0) AS IMPAYE, "
+            + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date30 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30, "
+            + "SUM(CASE WHEN t.PREM_IMP <= :date30 THEN 1 ELSE 0 END) AS NB_PAR30, "
+            + "COALESCE(SUM(CASE WHEN t.PREM_IMP <= :date90 THEN cr.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90, "
+            + "SUM(CASE WHEN t.PREM_IMP <= :date90 THEN 1 ELSE 0 END) AS NB_PAR90 " + """
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN """ + IMPAYES_PAR_CREDIT + """
+                ON t.COD_EMPRESA = cr.COD_EMPRESA AND t.COD_AGENCIA = cr.COD_AGENCIA
+               AND t.NUM_CREDITO = cr.NUM_CREDITO
+            LEFT JOIN PR.PR_TIPO_CREDITO tc
+                ON cr.COD_EMPRESA = tc.COD_EMPRESA AND cr.TIP_CREDITO = tc.TIP_CREDITO
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON cr.COD_EMPRESA = ag.COD_EMPRESA AND cr.COD_AGENCIA = ag.COD_AGENCIA
+            WHERE cr.IND_ESTADO NOT IN ('C', 'T', 'X') AND cr.MON_SALDO > 0
+              AND """ + EST_EN_COURS + """
+            GROUP BY cr.COD_AGENCIA, ag.DES_AGENCIA, cr.TIP_CREDITO
+            ORDER BY cr.COD_AGENCIA, cr.TIP_CREDITO
+            """;
+
+    /**
      * Controles SAF du rapport mensuel des indicateurs (V167) : par point de service, l'encours,
      * les impayes et le capital en retard a la date de lecture, et les octrois du mois demande.
      * Une seule requete pour tout le reseau, comme la synthese PAR.
@@ -421,6 +450,23 @@ public class PortefeuilleRepository {
                         rs.getBigDecimal("ENCOURS_PAR30"), rs.getBigDecimal("ENCOURS_PAR90"),
                         rs.getLong("NB_CONTENTIEUX"), rs.getBigDecimal("ENCOURS_CONTENTIEUX"),
                         rs.getLong("NB_APURE"), rs.getBigDecimal("ENCOURS_APURE"))));
+    }
+
+    /** Indicateurs de tout le reseau par agence SAF et par type de credit, credits en cours (une requete). */
+    public List<io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto> indicateursReseauParProduit() {
+        LocalDate aujourdhui = LocalDate.now();
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("aujourdhui", java.sql.Date.valueOf(aujourdhui))
+                .addValue("date30", java.sql.Date.valueOf(aujourdhui.minusDays(30)))
+                .addValue("date90", java.sql.Date.valueOf(aujourdhui.minusDays(90)));
+        return execute("portefeuille.indicateursReseauParProduit", () -> primary.query(SQL_INDICATEURS_RESEAU_PRODUIT, p,
+                (rs, n) -> new io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto(
+                        str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"),
+                        rs.getObject("TIP_CREDITO") == null ? null : ((Number) rs.getObject("TIP_CREDITO")).longValue(),
+                        str(rs, "DES_TIP_CREDITO"), rs.getLong("NB"),
+                        rs.getBigDecimal("ENCOURS"), rs.getLong("NB_RETARD"), rs.getBigDecimal("IMPAYE"),
+                        rs.getBigDecimal("ENCOURS_PAR30"), rs.getLong("NB_PAR30"),
+                        rs.getBigDecimal("ENCOURS_PAR90"), rs.getLong("NB_PAR90"))));
     }
 
     public List<AgenceSafDto> findAgences() {

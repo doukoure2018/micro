@@ -1831,6 +1831,23 @@ export class UserService {
         return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque/credits`, { params }).pipe(catchError(this.handleError));
     };
     exportPortefeuilleRisque$ = (codAgencia: string) => this.http.get(`${this.server}/ecredit/portefeuille/risque/export`, { params: { codAgencia }, responseType: 'blob', observe: 'response' });
+    // Lot 2 : perimetre (produit en direct, agents par la photo), familles et seuils
+    getPortefeuilleRisqueReseau$ = (niveau: string, agenceId: number | null, delegationId: number | null) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque/reseau`, { params: this.paramsRisqueReseau(niveau, agenceId, delegationId) }).pipe(catchError(this.handleError));
+    exportPortefeuilleRisqueReseau$ = (niveau: string, agenceId: number | null, delegationId: number | null) =>
+        this.http.get(`${this.server}/ecredit/portefeuille/risque/reseau/export`, { params: this.paramsRisqueReseau(niveau, agenceId, delegationId), responseType: 'blob', observe: 'response' });
+    private paramsRisqueReseau(niveau: string, agenceId: number | null, delegationId: number | null): Record<string, string | number> {
+        const params: Record<string, string | number> = { niveau: niveau || 'auto' };
+        if (agenceId !== null && agenceId !== undefined) params['agenceId'] = agenceId;
+        if (delegationId !== null && delegationId !== undefined) params['delegationId'] = delegationId;
+        return params;
+    }
+    lancerPhotoRisque$ = () => <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/portefeuille/risque/photo`, {}).pipe(catchError(this.handleError));
+    getFamillesRisque$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque/familles`).pipe(catchError(this.handleError));
+    enregistrerFamilleRisque$ = (body: { tipCredito: number; libelleSaf?: string | null; famille?: string | null; libelleCourt?: string | null; seuilPar30?: number | null; seuilPar90?: number | null }) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/portefeuille/risque/familles`, body).pipe(catchError(this.handleError));
+    enregistrerSeuilsRisque$ = (body: { seuilPar30: number; seuilPar90: number }) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/portefeuille/risque/seuils`, body).pipe(catchError(this.handleError));
 
     // Barometre d'usage de la plateforme (V174, lot 1) : DG, DE, DSIG et DR.
     getUsagePlateforme$ = (jour?: string) =>

@@ -254,6 +254,12 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.indicateursReseau());
     }
 
+    /** Idem par type de credit, credits en cours seulement (portefeuille a risque, lot 2). */
+    @GetMapping("/indicateurs-reseau-produit")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto>> getIndicateursReseauParProduit() {
+        return ResponseEntity.ok(repository.indicateursReseauParProduit());
+    }
+
     @GetMapping("/credits/{codAgencia}/{numCredito}/echeancier")
     public ResponseEntity<List<PortefeuilleEcheanceDto>> getEcheancier(
             @PathVariable("codAgencia") String codAgencia,

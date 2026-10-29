@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.utils;
 
 import io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.LigneRisqueDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.PortefeuilleRisqueDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.RisqueReseauDto;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -18,14 +19,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.function.Function;
 
 /**
- * Classeur du portefeuille a risque d'un point de service : trois feuilles, Par produit,
- * Par agent et Croisement, chacune avec le total du point de service en premiere ligne pour
- * que le lecteur verifie d'un coup d'oeil que la ventilation retombe sur l'ensemble.
+ * Classeurs du portefeuille a risque. Chaque feuille porte le total en premiere ligne pour que
+ * le lecteur verifie d'un coup d'oeil que la ventilation retombe sur l'ensemble.
  */
 public final class PortefeuilleRisqueExcelUtils {
 
@@ -41,68 +43,124 @@ public final class PortefeuilleRisqueExcelUtils {
             "PAR 90 (GNF)", "PAR 90 (%)", "Crédits à 90 j et plus", "Contentieux déclarés"
     };
 
+    private static final String DEFINITION = "PAR 30 : encours des crédits en cours dont la plus ancienne échéance impayée a 30 jours ou plus, rapporté à l'encours des crédits en cours. Même règle que le bandeau du portefeuille et que la déclaration BCRG.";
+
+    /** Un point de service (lot 1) : Par produit, Par famille, Par agent, Croisement. */
     public static byte[] classeur(PortefeuilleRisqueDto p) throws IOException {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Styles st = new Styles(wb);
-            feuille(wb, st, p, "Par produit", "Produit (type de crédit SAF)", p.getParProduit(), false);
-            feuille(wb, st, p, "Par agent", "Gestionnaire désigné", p.getParAgent(), true);
-            feuille(wb, st, p, "Croisement", "Agent · produit", p.getCroisement(), true);
+            String titre = "Portefeuille à risque — " + nvl(p.getDesAgencia()) + " (" + p.getCodAgencia() + ")";
+            String sousTitre = cartouche(p.getDateLecture(), p.getSeuilPar30(), p.getSeuilPar90(), null);
+            feuille(wb, st, titre, sousTitre, "Par produit", "Produit (type de crédit SAF)", "Famille",
+                    LigneRisqueDto::getFamille, p.getTotal(), "Total du point de service", p.getParProduit());
+            feuille(wb, st, titre, sousTitre, "Par famille", "Famille", null, null,
+                    p.getTotal(), "Total du point de service", p.getParFamille());
+            feuille(wb, st, titre, sousTitre, "Par agent", "Gestionnaire désigné", "Statut",
+                    PortefeuilleRisqueExcelUtils::statutAgent, p.getTotal(), "Total du point de service", p.getParAgent());
+            feuille(wb, st, titre, sousTitre, "Croisement", "Agent", "Produit",
+                    LigneRisqueDto::getProduit, p.getTotal(), "Total du point de service", p.getCroisement());
             wb.write(out);
             return out.toByteArray();
         }
     }
 
-    private static void feuille(Workbook wb, Styles st, PortefeuilleRisqueDto p, String nom, String premiereColonne,
-                                List<LigneRisqueDto> lignes, boolean avecStatutAgent) {
+    /** Un perimetre (lot 2) : Par niveau, Par produit, Par famille, Par agent (photo). */
+    public static byte[] classeurReseau(RisqueReseauDto r) throws IOException {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Styles st = new Styles(wb);
+            String perimetre = r.getAgence() != null ? "Agence " + r.getAgence()
+                    : r.getDelegation() != null ? "Délégation " + r.getDelegation()
+                    : "Tout le périmètre";
+            String titre = "Portefeuille à risque — " + perimetre + " (" + r.getNbPointsService() + " points de service)";
+            String sousTitre = cartouche(r.getDateLecture(), r.getSeuilPar30(), r.getSeuilPar90(), null);
+            String niveau = switch (r.getNiveau()) {
+                case "delegation" -> "Délégation";
+                case "agence" -> "Agence";
+                default -> "Point de service";
+            };
+            feuille(wb, st, titre, sousTitre, "Par niveau", niveau, "Rattachement",
+                    l -> l.getRattachement() == null ? "" : l.getRattachement(), r.getTotal(), "Total du périmètre", r.getParNiveau());
+            feuille(wb, st, titre, sousTitre, "Par produit", "Produit (type de crédit SAF)", "Famille",
+                    LigneRisqueDto::getFamille, r.getTotal(), "Total du périmètre", r.getParProduit());
+            feuille(wb, st, titre, sousTitre, "Par famille", "Famille", null, null,
+                    r.getTotal(), "Total du périmètre", r.getParFamille());
+            String sousTitrePhoto = r.getDatePhoto() == null
+                    ? "Aucune photo disponible : la ventilation par agent est prise chaque matin à 08h40 GMT."
+                    : "Photo du " + r.getDatePhoto().format(FMT_DATE) + " à 08h40 GMT : SAF ne connaît pas les affectations digi, la ventilation par agent se lit dans la photo du matin."
+                      + " Seuils d'attention : PAR 30 ≥ " + r.getSeuilPar30() + " %, PAR 90 ≥ " + r.getSeuilPar90() + " %.";
+            feuille(wb, st, titre, sousTitrePhoto, "Par agent (photo)", "Gestionnaire désigné", "Statut",
+                    PortefeuilleRisqueExcelUtils::statutAgent, null, null, r.getParAgent());
+            wb.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    // ------------------------------------------------------------------ interne
+
+    private static String cartouche(LocalDate dateLecture, BigDecimal s30, BigDecimal s90, String complement) {
+        return "Crédits en cours lus dans SAF le " + dateLecture.format(FMT_DATE)
+                + " — exporté le " + LocalDateTime.now().format(FMT_HORODATAGE)
+                + " — seuils d'attention : PAR 30 ≥ " + s30 + " %, PAR 90 ≥ " + s90 + " %"
+                + (complement == null ? "" : " — " + complement);
+    }
+
+    private static String statutAgent(LigneRisqueDto l) {
+        return l.isNonAffecte() ? "sans gestionnaire"
+                : Boolean.FALSE.equals(l.getDisponible()) ? "parti ou désactivé" : "agent du point de service";
+    }
+
+    private static void feuille(Workbook wb, Styles st, String titre, String sousTitre, String nom,
+                                String premiereColonne, String deuxiemeColonne, Function<LigneRisqueDto, String> valeur2,
+                                LigneRisqueDto total, String libelleTotal, List<LigneRisqueDto> lignes) {
         Sheet s = wb.createSheet(nom);
         int r = 0;
-        Cell titre = s.createRow(r++).createCell(0);
-        titre.setCellValue("Portefeuille à risque — " + nvl(p.getDesAgencia()) + " (" + p.getCodAgencia() + ")");
-        titre.setCellStyle(st.titre);
-        s.createRow(r++).createCell(0).setCellValue("Crédits en cours lus dans SAF le " + p.getDateLecture().format(FMT_DATE)
-                + " — exporté le " + LocalDateTime.now().format(FMT_HORODATAGE)
-                + " — seuils d'attention : PAR 30 ≥ " + p.getSeuilPar30() + " %, PAR 90 ≥ " + p.getSeuilPar90() + " %");
-        s.createRow(r++).createCell(0).setCellValue("PAR 30 : encours des crédits en cours dont la plus ancienne échéance impayée a 30 jours ou plus, rapporté à l'encours des crédits en cours. Même règle que le bandeau du portefeuille et que la déclaration BCRG.");
+        Cell ct = s.createRow(r++).createCell(0);
+        ct.setCellValue(titre);
+        ct.setCellStyle(st.titre);
+        s.createRow(r++).createCell(0).setCellValue(sousTitre);
+        s.createRow(r++).createCell(0).setCellValue(DEFINITION);
         r++;
 
         Row entete = s.createRow(r++);
         int col = 0;
         cell(entete, col++, premiereColonne, st.entete);
-        if (avecStatutAgent) cell(entete, col++, "Statut", st.entete);
+        if (deuxiemeColonne != null) cell(entete, col++, deuxiemeColonne, st.entete);
         for (String e : ENTETES) cell(entete, col++, e, st.entete);
 
-        BigDecimal encoursTotal = p.getTotal() == null ? BigDecimal.ZERO : p.getTotal().getEncours();
-        if (p.getTotal() != null) {
-            ligne(s.createRow(r++), p.getTotal(), "Total du point de service", avecStatutAgent ? "" : null, encoursTotal, st, true);
+        BigDecimal encoursTotal = total == null
+                ? (lignes == null ? BigDecimal.ZERO : lignes.stream().map(LigneRisqueDto::getEncours).reduce(BigDecimal.ZERO, BigDecimal::add))
+                : total.getEncours();
+        if (total != null) {
+            ligne(s.createRow(r++), total, libelleTotal, deuxiemeColonne == null ? null : "", encoursTotal, st, true);
         }
-        for (LigneRisqueDto l : lignes) {
-            String statut = !avecStatutAgent ? null
-                    : l.isNonAffecte() ? "sans gestionnaire"
-                    : Boolean.FALSE.equals(l.getDisponible()) ? "parti ou désactivé" : "agent du point de service";
-            ligne(s.createRow(r++), l, l.getLibelle(), statut, encoursTotal, st, false);
+        if (lignes != null) {
+            for (LigneRisqueDto l : lignes) {
+                String v2 = deuxiemeColonne == null ? null : valeur2 == null ? "" : nvl(valeur2.apply(l));
+                ligne(s.createRow(r++), l, l.getLibelle(), v2, encoursTotal, st, false);
+            }
         }
-        int nbCol = ENTETES.length + (avecStatutAgent ? 2 : 1);
+        int nbCol = ENTETES.length + (deuxiemeColonne != null ? 2 : 1);
         for (int c = 0; c < nbCol; c++) s.autoSizeColumn(c);
         s.createFreezePane(0, 5);
     }
 
-    private static void ligne(Row row, LigneRisqueDto l, String libelle, String statut, BigDecimal encoursTotal,
+    private static void ligne(Row row, LigneRisqueDto l, String libelle, String colonne2, BigDecimal encoursTotal,
                               Styles st, boolean gras) {
         int c = 0;
         cell(row, c++, libelle, gras ? st.gras : null);
-        if (statut != null) cell(row, c++, statut, null);
-        nombre(row, c++, l.getNbCredits(), null);
+        if (colonne2 != null) cell(row, c++, colonne2, null);
+        nombre(row, c++, l.getNbCredits());
         montant(row, c++, l.getEncours(), st.montant);
-        pourcent(row, c++, ratio(l.getEncours(), encoursTotal), st.pourcent);
-        nombre(row, c++, l.getNbEnRetard(), null);
+        pourcent(row, c++, LigneRisqueDto.taux(l.getEncours(), encoursTotal), st.pourcent);
+        nombre(row, c++, l.getNbEnRetard());
         montant(row, c++, l.getImpaye(), st.montant);
         montant(row, c++, l.getEncoursPar30(), st.montant);
         pourcent(row, c++, l.getTauxPar30(), st.pourcent);
-        nombre(row, c++, l.getNbPar30(), null);
+        nombre(row, c++, l.getNbPar30());
         montant(row, c++, l.getEncoursPar90(), st.montant);
         pourcent(row, c++, l.getTauxPar90(), st.pourcent);
-        nombre(row, c++, l.getNbPar90(), null);
-        nombre(row, c, l.getNbContentieuxDeclares(), null);
+        nombre(row, c++, l.getNbPar90());
+        nombre(row, c, l.getNbContentieuxDeclares());
     }
 
     /** Taux deja exprime en pourcentage (12.5 pour 12,5 %) : Excel attend une fraction. */
@@ -112,20 +170,14 @@ public final class PortefeuilleRisqueExcelUtils {
         cell.setCellStyle(style);
     }
 
-    private static BigDecimal ratio(BigDecimal part, BigDecimal total) {
-        return LigneRisqueDto.taux(part, total);
-    }
-
     private static void montant(Row row, int col, BigDecimal valeur, CellStyle style) {
         Cell cell = row.createCell(col);
         cell.setCellValue(valeur == null ? 0 : valeur.doubleValue());
         cell.setCellStyle(style);
     }
 
-    private static void nombre(Row row, int col, long valeur, CellStyle style) {
-        Cell cell = row.createCell(col);
-        cell.setCellValue(valeur);
-        if (style != null) cell.setCellStyle(style);
+    private static void nombre(Row row, int col, long valeur) {
+        row.createCell(col).setCellValue(valeur);
     }
 
     private static void cell(Row row, int col, String valeur, CellStyle style) {

@@ -1,24 +1,30 @@
 package io.digiservices.ecreditservice.service;
 
+import io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationDto;
+import io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.FamilleProduitDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.LigneRisqueDto;
+import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository.PointVenteHierarchie;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.FAMILLE_AUTRES;
 import static io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.NON_AFFECTE;
 
 /**
- * Ventile les credits en cours d'un point de service par produit (type de credit SAF), par
- * agent (gestionnaire designe digi) et par croisement des deux, avec le PAR 30 et le PAR 90.
+ * Ventile les credits en cours par produit (type de credit SAF), par agent (gestionnaire
+ * designe digi), par croisement des deux et par niveau de la hierarchie, avec le PAR 30 et le
+ * PAR 90.
  *
  * <p>Pur et sans etat : il recoit les credits deja lus dans SAF et les affectations deja lues
  * dans digi, et rend des sommes. C'est ce qui permet de le tester a sec et de garantir que
@@ -26,7 +32,8 @@ import static io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.NON_AFFE
  *
  * <p>Arbitrages de la proposition du 29/10/2026 appliques ici : l'agent est le gestionnaire
  * designe et jamais le gestionnaire SAF ; les credits sans gestionnaire forment une ligne a
- * part ; les dossiers passes au contentieux par le DA restent dans la base et sont comptes.</p>
+ * part ; les dossiers passes au contentieux par le DA restent dans la base et sont comptes ;
+ * un type de credit sans famille tombe dans « Autres », jamais hors des totaux.</p>
  */
 public final class PortefeuilleRisqueCalculateur {
 
@@ -37,8 +44,18 @@ public final class PortefeuilleRisqueCalculateur {
     public static final String TRANCHE_90 = "90";
     public static final String TRANCHE_RETARD = "retard";
 
+    public static final String NIVEAU_PS = "ps";
+    public static final String NIVEAU_AGENCE = "agence";
+    public static final String NIVEAU_DELEGATION = "delegation";
+    private static final String NON_RATTACHE = "Non rattaché";
+
     public record Resultat(LigneRisqueDto total, List<LigneRisqueDto> parProduit,
                            List<LigneRisqueDto> parAgent, List<LigneRisqueDto> croisement) {}
+
+    public record ResultatReseau(LigneRisqueDto total, List<LigneRisqueDto> parProduit,
+                                 List<LigneRisqueDto> parNiveau) {}
+
+    // ================================================================== un point de service
 
     /**
      * @param credits             credits EN COURS du point de service (le filtre de categorie est fait en amont)
@@ -60,7 +77,7 @@ public final class PortefeuilleRisqueCalculateur {
 
         for (PortefeuilleCreditDto c : credits) {
             AffectationDto aff = affectations.get(c.getNumCredito());
-            String cleProduit = cleProduit(c);
+            String cleProduit = cleProduit(c.getTipCredito());
             String cleAgent = aff == null ? NON_AFFECTE : String.valueOf(aff.getAgentUserId());
 
             LigneRisqueDto p = produits.computeIfAbsent(cleProduit, k -> ligneProduit(c));
@@ -69,7 +86,7 @@ public final class PortefeuilleRisqueCalculateur {
                 LigneRisqueDto l = ligneAgent(aff, codAgencia);
                 l.setCle(k);
                 l.setTipCredito(c.getTipCredito());
-                l.setLibelle(l.getLibelle() + " · " + libelleProduit(c));
+                l.setProduit(libelleProduit(c.getTipCredito(), c.getDesTipCredito()));
                 return l;
             });
 
@@ -118,7 +135,110 @@ public final class PortefeuilleRisqueCalculateur {
         return true;
     }
 
+    // ================================================================== le reseau (lot 2)
+
+    /**
+     * Agrege les lignes SAF « point de service x type de credit » d'un perimetre : total, par
+     * produit, et par niveau de la hierarchie digi (delegation, agence ou point de service).
+     * Un point de service que digi ne rattache a rien se range sous « Non rattache ».
+     */
+    public static ResultatReseau agregerReseau(List<IndicateursProduitAgenceDto> lignes,
+                                               List<PointVenteHierarchie> hierarchie, String niveau) {
+        Map<String, PointVenteHierarchie> parCode = new LinkedHashMap<>();
+        hierarchie.forEach(h -> parCode.putIfAbsent(h.code(), h));
+
+        LigneRisqueDto total = LigneRisqueDto.vide("TOTAL", "Périmètre");
+        Map<String, LigneRisqueDto> produits = new LinkedHashMap<>();
+        Map<String, LigneRisqueDto> niveaux = new LinkedHashMap<>();
+        Map<String, Set<String>> psParNiveau = new LinkedHashMap<>();
+
+        for (IndicateursProduitAgenceDto i : lignes) {
+            LigneRisqueDto contribution = depuisSaf(i);
+            total.ajouter(contribution);
+
+            LigneRisqueDto p = produits.computeIfAbsent(cleProduit(i.getTipCredito()), k -> {
+                LigneRisqueDto l = LigneRisqueDto.vide(k, libelleProduit(i.getTipCredito(), i.getDesTipCredito()));
+                l.setTipCredito(i.getTipCredito());
+                return l;
+            });
+            p.ajouter(contribution);
+
+            PointVenteHierarchie h = parCode.get(i.getCodAgencia());
+            String cleNiveau;
+            LigneRisqueDto gabarit;
+            if (NIVEAU_PS.equals(niveau)) {
+                cleNiveau = i.getCodAgencia();
+                gabarit = LigneRisqueDto.vide(cleNiveau, h != null && h.libelle() != null ? h.libelle()
+                        : i.getDesAgencia() != null ? i.getDesAgencia() : i.getCodAgencia());
+                gabarit.setNiveau("PS");
+                gabarit.setCode(i.getCodAgencia());
+                gabarit.setRattachement(h == null ? NON_RATTACHE : h.agence());
+            } else if (NIVEAU_AGENCE.equals(niveau)) {
+                Long id = h == null ? null : h.agenceId();
+                cleNiveau = "A" + id;
+                gabarit = LigneRisqueDto.vide(cleNiveau, h == null || h.agence() == null ? NON_RATTACHE : h.agence());
+                gabarit.setNiveau("AGENCE");
+                gabarit.setId(id);
+                gabarit.setRattachement(h == null ? null : h.delegation());
+            } else {
+                Long id = h == null ? null : h.delegationId();
+                cleNiveau = "D" + id;
+                gabarit = LigneRisqueDto.vide(cleNiveau, h == null || h.delegation() == null ? NON_RATTACHE : h.delegation());
+                gabarit.setNiveau("DELEGATION");
+                gabarit.setId(id);
+            }
+            LigneRisqueDto n = niveaux.computeIfAbsent(cleNiveau, k -> gabarit);
+            n.ajouter(contribution);
+            psParNiveau.computeIfAbsent(cleNiveau, k -> new LinkedHashSet<>()).add(i.getCodAgencia());
+        }
+
+        total.figerTaux();
+        niveaux.forEach((k, l) -> l.setNbPointsService(psParNiveau.getOrDefault(k, Set.of()).size()));
+        return new ResultatReseau(total, trier(new ArrayList<>(produits.values())), trier(new ArrayList<>(niveaux.values())));
+    }
+
+    /** Pose sur chaque ligne produit la famille, le libelle court et les seuils choisis par la Direction de l'exploitation. */
+    public static void appliquerFamilles(List<LigneRisqueDto> produits, Map<Long, FamilleProduitDto> familles) {
+        for (LigneRisqueDto p : produits) {
+            FamilleProduitDto f = p.getTipCredito() == null ? null : familles.get(p.getTipCredito());
+            p.setFamille(f == null || f.getFamille() == null || f.getFamille().isBlank() ? FAMILLE_AUTRES : f.getFamille());
+            p.setLibelleCourt(f == null ? null : f.getLibelleCourt());
+            p.setSeuilPar30(f == null ? null : f.getSeuilPar30());
+            p.setSeuilPar90(f == null ? null : f.getSeuilPar90());
+        }
+    }
+
+    /** Regroupe les lignes produit par famille ; le seuil d'une famille est celui de son premier produit qui en porte un. */
+    public static List<LigneRisqueDto> parFamille(List<LigneRisqueDto> produits) {
+        Map<String, LigneRisqueDto> familles = new LinkedHashMap<>();
+        for (LigneRisqueDto p : produits) {
+            String nom = p.getFamille() == null ? FAMILLE_AUTRES : p.getFamille();
+            LigneRisqueDto f = familles.computeIfAbsent(nom, k -> {
+                LigneRisqueDto l = LigneRisqueDto.vide("F|" + k, k);
+                l.setFamille(k);
+                return l;
+            });
+            f.ajouter(p);
+            if (f.getSeuilPar30() == null) f.setSeuilPar30(p.getSeuilPar30());
+            if (f.getSeuilPar90() == null) f.setSeuilPar90(p.getSeuilPar90());
+        }
+        return trier(new ArrayList<>(familles.values()));
+    }
+
     // ------------------------------------------------------------------ interne
+
+    private static LigneRisqueDto depuisSaf(IndicateursProduitAgenceDto i) {
+        LigneRisqueDto l = LigneRisqueDto.vide(i.getCodAgencia(), i.getDesAgencia());
+        l.setNbCredits(i.getNbCredits());
+        l.setEncours(nvl(i.getEncours()));
+        l.setNbEnRetard(i.getNbEnRetard());
+        l.setImpaye(nvl(i.getImpaye()));
+        l.setEncoursPar30(nvl(i.getEncoursPar30()));
+        l.setNbPar30(i.getNbPar30());
+        l.setEncoursPar90(nvl(i.getEncoursPar90()));
+        l.setNbPar90(i.getNbPar90());
+        return l;
+    }
 
     private static void cumuler(LigneRisqueDto l, PortefeuilleCreditDto c, LocalDate d30, LocalDate d90, boolean contentieux) {
         BigDecimal solde = nvl(c.getMonSaldo());
@@ -150,18 +270,18 @@ public final class PortefeuilleRisqueCalculateur {
         return lignes;
     }
 
-    private static String cleProduit(PortefeuilleCreditDto c) {
-        return c.getTipCredito() == null ? "SANS_TYPE" : String.valueOf(c.getTipCredito());
+    public static String cleProduit(Long tipCredito) {
+        return tipCredito == null ? "SANS_TYPE" : String.valueOf(tipCredito);
     }
 
-    private static String libelleProduit(PortefeuilleCreditDto c) {
-        String des = c.getDesTipCredito() == null ? "" : c.getDesTipCredito().trim();
+    private static String libelleProduit(Long tipCredito, String desTipCredito) {
+        String des = desTipCredito == null ? "" : desTipCredito.trim();
         if (!des.isEmpty()) return des;
-        return c.getTipCredito() == null ? "Sans type" : "Type " + c.getTipCredito();
+        return tipCredito == null ? "Sans type" : "Type " + tipCredito;
     }
 
     private static LigneRisqueDto ligneProduit(PortefeuilleCreditDto c) {
-        LigneRisqueDto l = LigneRisqueDto.vide(cleProduit(c), libelleProduit(c));
+        LigneRisqueDto l = LigneRisqueDto.vide(cleProduit(c.getTipCredito()), libelleProduit(c.getTipCredito(), c.getDesTipCredito()));
         l.setTipCredito(c.getTipCredito());
         return l;
     }
