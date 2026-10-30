@@ -233,6 +233,9 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-credit-card',
                 items: [
                     { label: 'Dossiers du réseau', icon: 'pi pi-fw pi-folder-open', routerLink: ['/dashboards/credits-valides-de'] },
+                    { label: 'Journal des décisions', icon: 'pi pi-fw pi-history', routerLink: ['/dashboards/audit/decisions'] },
+                    { label: 'Annulations et sorties', icon: 'pi pi-fw pi-ban', routerLink: ['/dashboards/audit/annulations'] },
+                    { label: 'Corrections de numéro de membre', icon: 'pi pi-fw pi-pencil', routerLink: ['/dashboards/audit/numeros-membre'] },
                     { label: 'Indicateurs mensuels', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboards/rapport-mensuel'] }
                 ]
             });
@@ -278,6 +281,7 @@ export class AppMenu {
                 label: 'Accès & traces',
                 icon: 'pi pi-fw pi-key',
                 items: [
+                    { label: 'Comptes et habilitations', icon: 'pi pi-fw pi-key', routerLink: ['/dashboards/audit/comptes'] },
                     { label: 'Usage de la plateforme', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboards/usage-plateforme'] },
                     { label: 'Contacts des agents', icon: 'pi pi-fw pi-address-book', routerLink: ['/dashboards/contacts-equipe'] }
                 ]

@@ -1936,6 +1936,30 @@ export class UserService {
     exportCreditsNegatifs$ = (corriges = false) =>
         this.http.get(`${this.server}/ecredit/credits-negatifs/export?corriges=${corriges}`, { responseType: 'blob', observe: 'response' });
     // Dossier SAF d'un credit negatif : les 5 tables du script d'extraction DSIG (29/10/2026)
+    // ==================== Journaux du service Audit (lot 2, 30/10/2026) ====================
+    getAuditDecisions$ = (f: { dossier: number | null; acteur: string | null; evenement: string | null; etat: string | null; du: string | null; au: string | null }, page: number, size: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/audit/decisions`, { params: { ...this.paramsAudit(f), page, size } }).pipe(catchError(this.handleError));
+    getAuditDecisionsSynthese$ = () =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/audit/decisions/synthese`).pipe(catchError(this.handleError));
+    exportAuditDecisions$ = (f: { dossier: number | null; acteur: string | null; evenement: string | null; etat: string | null; du: string | null; au: string | null }) =>
+        this.http.get(`${this.server}/ecredit/audit/decisions/export`, { params: this.paramsAudit(f), responseType: 'blob', observe: 'response' });
+    private paramsAudit(f: { dossier: number | null; acteur: string | null; evenement: string | null; etat: string | null; du: string | null; au: string | null }): Record<string, string | number> {
+        const p: Record<string, string | number> = {};
+        if (f.dossier !== null && f.dossier !== undefined) p['dossier'] = f.dossier;
+        if (f.acteur) p['acteur'] = f.acteur;
+        if (f.evenement) p['evenement'] = f.evenement;
+        if (f.etat) p['etat'] = f.etat;
+        if (f.du) p['du'] = f.du;
+        if (f.au) p['au'] = f.au;
+        return p;
+    }
+    getAuditAnnulations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/audit/annulations`).pipe(catchError(this.handleError));
+    exportAuditAnnulations$ = () => this.http.get(`${this.server}/ecredit/audit/annulations/export`, { responseType: 'blob', observe: 'response' });
+    getAuditNumerosMembre$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/audit/numeros-membre`).pipe(catchError(this.handleError));
+    exportAuditNumerosMembre$ = () => this.http.get(`${this.server}/ecredit/audit/numeros-membre/export`, { responseType: 'blob', observe: 'response' });
+    getAuditComptes$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/audit/comptes`).pipe(catchError(this.handleError));
+    exportAuditComptes$ = () => this.http.get(`${this.server}/ecredit/audit/comptes/export`, { responseType: 'blob', observe: 'response' });
+
     getDossierCreditNegatif$ = (id: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/dossier`).pipe(catchError(this.handleError));
     exportDossierCreditNegatif$ = (id: number) =>

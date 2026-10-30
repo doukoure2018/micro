@@ -104,6 +104,30 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-saf.component').then((c) => c.PortefeuilleSafComponent)
     },
     {
+        path: 'audit/decisions',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Journal des décisions', rubrique: 'AUDIT_CREDIT' },
+        loadComponent: () => import('./audit/audit-decisions.component').then((c) => c.AuditDecisionsComponent)
+    },
+    {
+        path: 'audit/annulations',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Annulations et sorties de dossiers', rubrique: 'AUDIT_CREDIT' },
+        loadComponent: () => import('./audit/audit-annulations.component').then((c) => c.AuditAnnulationsComponent)
+    },
+    {
+        path: 'audit/numeros-membre',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Corrections de numéro de membre', rubrique: 'AUDIT_CREDIT' },
+        loadComponent: () => import('./audit/audit-numeros-membre.component').then((c) => c.AuditNumerosMembreComponent)
+    },
+    {
+        path: 'audit/comptes',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Comptes et habilitations', rubrique: 'AUDIT_ACCES' },
+        loadComponent: () => import('./audit/audit-comptes.component').then((c) => c.AuditComptesComponent)
+    },
+    {
         path: 'portefeuille-risque',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Portefeuille à risque', rubriques: ['PORTEFEUILLE_RISQUE', 'AUDIT_PORTEFEUILLE'] },
