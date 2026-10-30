@@ -2,6 +2,8 @@ name: CD - Deploy Microservices to OVH
 
 permissions:
   contents: write
+  # Lecture des images de base sur ghcr.io par le jeton du run, au lieu d'un acces anonyme limite.
+  packages: read
 
 # Un seul deploiement a la fois. Le 24/10/2026, deux livraisons poussees a quatre minutes
 # d'intervalle se sont chevauchees : le « docker compose down » de la premiere a coupe la
@@ -71,8 +73,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
-       # ADD THIS NEW STEP HERE
-      - name: Configure Maven settings for Docker Hub
+      # Jib s'authentifie aupres d'un registre par une entree <server> de settings.xml dont
+      # l'id est l'hote du registre. Docker Hub y etait, mais PAS ghcr.io, d'ou viennent
+      # pourtant les images de base des neuf services (ghcr.io/graalvm/jdk-community:21).
+      # Jib retombait donc sur un acces anonyme, limite en nombre de tirages : le 30/10/2026
+      # le deploiement a echoue au SEPTIEME service, le notificationservice, apres six images
+      # tirees sans probleme dans le meme run — la signature meme d'une limite atteinte.
+      # Le jeton fourni par GitHub a chaque run suffit a s'authentifier sur ghcr.io.
+      - name: Configure Maven settings for Docker Hub and ghcr.io
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml << EOF
@@ -86,9 +94,14 @@ jobs:
               <server>
                 <id>registry.hub.docker.com</id>
                 <username>${{ secrets.DOCKERHUB_USERNAME }}</username>
-                  <password>${{ secrets.DOCKERHUB_ACCESS_TOKEN }}</password>
-                </server>
-              </servers>
+                <password>${{ secrets.DOCKERHUB_ACCESS_TOKEN }}</password>
+              </server>
+              <server>
+                <id>ghcr.io</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
           </settings>
           EOF
 
