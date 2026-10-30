@@ -169,3 +169,91 @@ export interface FiltresDecisions {
     du: string | null;
     au: string | null;
 }
+
+// ==================== Journal unifié des actions sensibles (lot 3) ====================
+
+/** Une action sensible, d'où qu'elle vienne : `origine` nomme la table qui la porte. */
+export interface ActionSensible {
+    quand: string;
+    type: string;
+    compte: string | null;
+    objet: string | null;
+    detail: string | null;
+    origine: string;
+}
+
+export interface FiltresActions {
+    type: string | null;
+    compte: string | null;
+    recherche: string | null;
+    du: string | null;
+    au: string | null;
+}
+
+// ==================== Délais et dérogations (lot 3) ====================
+
+/** Un dossier validé par un niveau dont le plafond de délégation est inférieur au montant. */
+export interface Derogation {
+    demandeId: number;
+    client: string | null;
+    montant: number | null;
+    niveau: string | null;
+    plafond: number | null;
+    depassement: number | null;
+    valideur: string | null;
+    dateValidation: string | null;
+    pointVente: string | null;
+    agence: string | null;
+    delegation: string | null;
+}
+
+export interface DelaiEtape {
+    etape: string;
+    passages: number;
+    moyenneHeures: number | null;
+    maxHeures: number | null;
+}
+
+export interface DelaiAgence {
+    agence: string;
+    delegation: string | null;
+    evenements: number;
+    moyenneHeures: number | null;
+}
+
+export interface DossierDormant {
+    demandeId: number;
+    client: string | null;
+    montant: number | null;
+    etat: string | null;
+    dernierEvenement: string | null;
+    joursSansMouvement: number | null;
+    pointVente: string | null;
+    agence: string | null;
+    delegation: string | null;
+}
+
+export interface Resoumission {
+    demandeId: number;
+    client: string | null;
+    montant: number | null;
+    nbCorrections: number;
+    etats: string | null;
+    etatActuel: string | null;
+    derniereCorrection: string | null;
+    pointVente: string | null;
+    agence: string | null;
+}
+
+export interface DelaisDerogations {
+    nbDerogations: number;
+    montantDerogations: number | null;
+    nbDormants: number;
+    nbResoumis: number;
+    derogations: Derogation[];
+    parEtape: DelaiEtape[];
+    parAgence: DelaiAgence[];
+    dormants: DossierDormant[];
+    resoumissions: Resoumission[];
+    seuilDormantJours: number;
+}

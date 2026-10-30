@@ -128,6 +128,18 @@ export default [
         loadComponent: () => import('./audit/audit-comptes.component').then((c) => c.AuditComptesComponent)
     },
     {
+        path: 'audit/actions',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Actions sensibles', rubriques: ['AUDIT_CREDIT', 'AUDIT_ACCES'] },
+        loadComponent: () => import('./audit/audit-actions.component').then((c) => c.AuditActionsComponent)
+    },
+    {
+        path: 'audit/delais',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Délais et dérogations', rubrique: 'AUDIT_CREDIT' },
+        loadComponent: () => import('./audit/audit-delais.component').then((c) => c.AuditDelaisComponent)
+    },
+    {
         path: 'portefeuille-risque',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Portefeuille à risque', rubriques: ['PORTEFEUILLE_RISQUE', 'AUDIT_PORTEFEUILLE'] },

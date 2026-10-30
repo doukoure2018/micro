@@ -227,6 +227,12 @@ export class AppMenu {
     private menuAudit(): MenuItem[] {
         const groupes: MenuItem[] = [];
 
+        // Le journal unifie reunit les huit journaux : il est en tete, hors des cinq familles,
+        // parce qu'il ne depend d'aucune et que l'une ou l'autre rubrique d'audit y donne acces.
+        if (this.peutUne('AUDIT_CREDIT', 'AUDIT_ACCES')) {
+            groupes.push({ label: 'Actions sensibles', icon: 'pi pi-fw pi-list-check', routerLink: ['/dashboards/audit/actions'] });
+        }
+
         if (this.peut('AUDIT_CREDIT')) {
             groupes.push({
                 label: 'Crédit',
@@ -236,6 +242,7 @@ export class AppMenu {
                     { label: 'Journal des décisions', icon: 'pi pi-fw pi-history', routerLink: ['/dashboards/audit/decisions'] },
                     { label: 'Annulations et sorties', icon: 'pi pi-fw pi-ban', routerLink: ['/dashboards/audit/annulations'] },
                     { label: 'Corrections de numéro de membre', icon: 'pi pi-fw pi-pencil', routerLink: ['/dashboards/audit/numeros-membre'] },
+                    { label: 'Délais et dérogations', icon: 'pi pi-fw pi-clock', routerLink: ['/dashboards/audit/delais'] },
                     { label: 'Indicateurs mensuels', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboards/rapport-mensuel'] }
                 ]
             });
