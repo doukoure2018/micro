@@ -233,6 +233,126 @@ public final class AuditDtos {
         private List<String> rubriques;
     }
 
+    // ==================== Journal unifie des actions sensibles (lot 3) ====================
+
+    /**
+     * Une action sensible, d'ou qu'elle vienne. Huit journaux sont ramenes a ces six colonnes :
+     * les decisions de credit, les corrections de numero, les blocages de comptes, les reglages
+     * d'habilitations, les affectations de portefeuille, les signalements de telephone, les
+     * episodes de credits negatifs, et les consultations de l'Audit lui-meme.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ActionSensibleDto {
+        private OffsetDateTime quand;
+        private String type;        // DECISION, CORRECTION_NUMERO, COMPTE, HABILITATION, AFFECTATION, SIGNALEMENT, CREDIT_NEGATIF, CONSULTATION
+        private String compte;      // qui a agi, tel que le journal d'origine l'a inscrit
+        private String objet;       // sur quoi
+        private String detail;      // ce qui a change
+        private String origine;     // la table d'ou vient la ligne, pour remonter a la source
+    }
+
+    // ==================== Delais et derogations (lot 3) ====================
+
+    /**
+     * Un dossier valide par un niveau dont le plafond de delegation est inferieur au montant.
+     * L'echelle en vigueur depuis aout 2026 : DA jusqu'a 25 M, DR 50 M, DE 100 M, DG au-dela.
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DerogationDto {
+        private Long demandeId;
+        private String client;
+        private BigDecimal montant;
+        private String niveau;          // le plus haut niveau qui a valide
+        private BigDecimal plafond;     // le plafond de ce niveau
+        private BigDecimal depassement; // montant - plafond
+        private String valideur;
+        private LocalDateTime dateValidation;
+        private String pointVente;
+        private String agence;
+        private String delegation;
+    }
+
+    /** Le temps d'attente moyen avant d'atteindre une etape, et le pire cas observe. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DelaiEtapeDto {
+        private String etape;
+        private long passages;
+        private Long moyenneHeures;
+        private Long maxHeures;
+    }
+
+    /** Le meme temps d'attente, vu par agence : ou les dossiers avancent vite, ou ils trainent. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DelaiAgenceDto {
+        private String delegation;
+        private String agence;
+        private long evenements;
+        private Long moyenneHeures;
+    }
+
+    /** Un dossier vivant que plus rien n'a fait bouger depuis longtemps. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DossierDormantDto {
+        private Long demandeId;
+        private String client;
+        private BigDecimal montant;
+        private String etat;
+        private LocalDateTime dernierEvenement;
+        private Long joursSansMouvement;
+        private String pointVente;
+        private String agence;
+        private String delegation;
+    }
+
+    /** Un dossier renvoye plus d'une fois en correction : le circuit a tourne en rond. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResoumissionDto {
+        private Long demandeId;
+        private String client;
+        private BigDecimal montant;
+        private long nbCorrections;
+        private String etats;
+        private String etatActuel;
+        private LocalDateTime derniereCorrection;
+        private String pointVente;
+        private String agence;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DelaisDerogationsDto {
+        private long nbDerogations;
+        private BigDecimal montantDerogations;
+        private long nbDormants;
+        private long nbResoumis;
+        private List<DerogationDto> derogations;
+        private List<DelaiEtapeDto> parEtape;
+        private List<DelaiAgenceDto> parAgence;
+        private List<DossierDormantDto> dormants;
+        private List<ResoumissionDto> resoumissions;
+        private int seuilDormantJours;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

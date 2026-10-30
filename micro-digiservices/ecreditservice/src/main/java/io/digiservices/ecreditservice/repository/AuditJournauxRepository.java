@@ -1,6 +1,12 @@
 package io.digiservices.ecreditservice.repository;
 
+import io.digiservices.ecreditservice.dto.AuditDtos.ActionSensibleDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.CompteAuditDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DelaiAgenceDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DelaiEtapeDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DerogationDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DossierDormantDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.ResoumissionDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.CompteurDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.CorrectionNumeroDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.DecisionDto;
@@ -12,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -374,6 +381,286 @@ public class AuditJournauxRepository {
                 .query(String.class).optional().map("true"::equalsIgnoreCase).orElse(false);
     }
 
+
+    // ==================== Journal unifie des actions sensibles (lot 3) ====================
+
+    /**
+     * Les huit journaux ramenes a six colonnes. Chaque source garde son vocabulaire dans
+     * {@code detail} ; {@code origine} nomme la table, pour qu'un auditeur puisse remonter a
+     * la source d'une ligne sans deviner.
+     */
+    private static final String ACTIONS_BASE = """
+            WITH actions AS (
+                SELECT h.date_evenement::timestamptz AS quand, 'DECISION' AS type,
+                       COALESCE(NULLIF(TRIM(h.acteur), ''), '(automatique)') AS compte,
+                       'Dossier ' || h.demandeindividuel_id AS objet,
+                       COALESCE(h.ancien_etat, '(creation)') || ' → ' || COALESCE(h.nouvel_etat, '') AS detail,
+                       'demande_etat_historique' AS origine
+                  FROM demande_etat_historique h
+                UNION ALL
+                SELECT c.date_correction, 'CORRECTION_NUMERO', COALESCE(c.par_nom, ''),
+                       'Dossier ' || c.demandeindividuel_id,
+                       COALESCE(c.ancien_numero, '(vide)') || ' → ' || c.nouveau_numero,
+                       'demande_numero_membre_correction'
+                  FROM demande_numero_membre_correction c
+                UNION ALL
+                SELECT j.date_action, 'COMPTE', COALESCE(j.par_nom, ''),
+                       COALESCE((SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))
+                                   FROM users u WHERE u.user_id = j.user_id), 'Compte ' || j.user_id),
+                       j.action || COALESCE(' · ' || j.motif, ''), 'compte_journal'
+                  FROM compte_journal j
+                UNION ALL
+                SELECT j.date_action, 'HABILITATION', COALESCE(j.par_nom, ''),
+                       COALESCE(j.departement, j.service, ''),
+                       j.action || ' ' || COALESCE(j.rubrique_code, '')
+                           || COALESCE(' (' || j.valeur_avant || ' → ' || j.valeur_apres || ')', ''),
+                       'habilitation_journal'
+                  FROM habilitation_journal j
+                UNION ALL
+                SELECT a.date_affectation, 'AFFECTATION',
+                       COALESCE((SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))
+                                   FROM users u WHERE u.user_id = a.affecte_par_user_id), ''),
+                       'Credit ' || a.cod_agencia || '/' || a.num_credito,
+                       'confie a ' || COALESCE((SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))
+                                   FROM users u WHERE u.user_id = a.agent_user_id), 'agent ' || a.agent_user_id)
+                           || COALESCE(' · ' || a.motif, ''),
+                       'portefeuille_affectation'
+                  FROM portefeuille_affectation a
+                UNION ALL
+                SELECT s.signale_at, 'SIGNALEMENT',
+                       COALESCE((SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))
+                                   FROM users u WHERE u.user_id = s.signale_par_user_id), ''),
+                       COALESCE(s.nom_client, s.cod_cliente, ''),
+                       'telephone signale · ' || COALESCE(s.motif, ''), 'signalement_telephone'
+                  FROM signalement_telephone s
+                UNION ALL
+                SELECT n.traite_at, 'CREDIT_NEGATIF',
+                       COALESCE((SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))
+                                   FROM users u WHERE u.user_id = n.traite_par_user_id), ''),
+                       'Credit ' || n.cod_agencia || '/' || n.num_credito,
+                       'pris en charge' || COALESCE(' · ' || n.commentaire, ''), 'credit_negatif'
+                  FROM credit_negatif n WHERE n.traite_at IS NOT NULL
+                UNION ALL
+                SELECT t.date_consultation, 'CONSULTATION', COALESCE(t.par_nom, ''),
+                       COALESCE(t.objet, ''), t.ecran || COALESCE(' · ' || t.detail, ''), 'audit_consultation'
+                  FROM audit_consultation t
+            )
+            SELECT quand, type, compte, objet, detail, origine
+              FROM actions
+             WHERE (:type IS NULL OR type = :type)
+               AND (:compte IS NULL OR LOWER(compte) LIKE LOWER('%' || :compte || '%'))
+               AND (:recherche IS NULL OR LOWER(objet || ' ' || detail) LIKE LOWER('%' || :recherche || '%'))
+               AND (CAST(:du AS TIMESTAMPTZ) IS NULL OR quand >= CAST(:du AS TIMESTAMPTZ))
+               AND (CAST(:au AS TIMESTAMPTZ) IS NULL OR quand < CAST(:au AS TIMESTAMPTZ))
+            """;
+
+    public List<ActionSensibleDto> actionsSensibles(String type, String compte, String recherche,
+                                                    OffsetDateTime du, OffsetDateTime au, int page, int taille) {
+        return parametresActions(jdbcClient.sql(ACTIONS_BASE + " ORDER BY quand DESC OFFSET :offset LIMIT :limite"),
+                type, compte, recherche, du, au)
+                .param("offset", (long) page * taille).param("limite", taille)
+                .query((rs, n) -> ActionSensibleDto.builder()
+                        .quand(rs.getObject("quand", OffsetDateTime.class))
+                        .type(rs.getString("type")).compte(texte(rs.getString("compte")))
+                        .objet(rs.getString("objet")).detail(rs.getString("detail"))
+                        .origine(rs.getString("origine"))
+                        .build())
+                .list();
+    }
+
+    public long compterActionsSensibles(String type, String compte, String recherche,
+                                        OffsetDateTime du, OffsetDateTime au) {
+        return parametresActions(jdbcClient.sql("SELECT COUNT(*) FROM (" + ACTIONS_BASE + ") t"),
+                type, compte, recherche, du, au).query(Long.class).single();
+    }
+
+    /** Les volumes par type, sans filtre : les chiffres que l'ecran montre en tete. */
+    public List<CompteurDto> actionsParType() {
+        return parametresActions(jdbcClient.sql(
+                        "SELECT type AS cle, COUNT(*) AS nombre FROM (" + ACTIONS_BASE + ") t GROUP BY type ORDER BY 2 DESC"),
+                null, null, null, null, null)
+                .query(AuditJournauxRepository::versCompteur).list();
+    }
+
+    private JdbcClient.StatementSpec parametresActions(JdbcClient.StatementSpec spec, String type, String compte,
+                                                       String recherche, OffsetDateTime du, OffsetDateTime au) {
+        return spec.param("type", vide(type)).param("compte", vide(compte))
+                .param("recherche", vide(recherche)).param("du", du).param("au", au);
+    }
+
+    /** Inscrit une consultation sensible de l'Audit. Jamais appele pour un simple affichage. */
+    public void tracerConsultation(Long userId, String parNom, String service, String ecran,
+                                   String objet, String detail) {
+        jdbcClient.sql("""
+                        INSERT INTO audit_consultation (user_id, par_nom, par_service, ecran, objet, detail)
+                        VALUES (:user, :nom, :service, :ecran, :objet, :detail)
+                        """)
+                .param("user", userId).param("nom", parNom).param("service", service)
+                .param("ecran", ecran).param("objet", tronquer(objet, 160)).param("detail", tronquer(detail, 300))
+                .update();
+    }
+
+    // ==================== Delais et derogations (lot 3) ====================
+
+    /**
+     * Les dossiers valides par un niveau dont le plafond est inferieur au montant. Le niveau
+     * retenu est le plus haut qui a valide : si le DG a valide, c'est le sien, quoi qu'aient
+     * fait les niveaux en dessous.
+     */
+    public List<DerogationDto> derogations(long plafondDa, long plafondDr, long plafondDe) {
+        return jdbcClient.sql("""
+                        WITH valides AS (
+                            SELECT d.demandeindividuel_id, d.montant_demande, d.pos, d.agence, d.delegation,
+                                   TRIM(COALESCE(d.nom,'') || ' ' || COALESCE(d.prenom,'')) AS client,
+                                   CASE WHEN COALESCE(d.validated_by_dg,'') <> '' THEN 'DG'
+                                        WHEN COALESCE(d.validated_by_de,'') <> '' THEN 'DE'
+                                        WHEN COALESCE(d.validated_by_dr,'') <> '' THEN 'DR'
+                                        WHEN COALESCE(d.validated_by_da,'') <> '' THEN 'DA' END AS niveau,
+                                   COALESCE(d.validated_by_dg, d.validated_by_de, d.validated_by_dr, d.validated_by_da) AS valideur,
+                                   COALESCE(d.date_validation_dg, d.date_validation_de,
+                                            d.date_validation_dr, d.date_validation_da) AS date_validation
+                              FROM demandeindividuel d
+                             WHERE d.validation_state = 'VALIDATED_FINAL' AND d.montant_demande IS NOT NULL
+                        )
+                        SELECT v.*, pv.libele AS point_vente, a.libele AS agence_lib, dl.libele AS delegation_lib,
+                               CASE v.niveau WHEN 'DA' THEN :plafondDa WHEN 'DR' THEN :plafondDr
+                                             WHEN 'DE' THEN :plafondDe END AS plafond
+                          FROM valides v
+                          LEFT JOIN pointvente pv ON pv.id = v.pos
+                          LEFT JOIN agence a      ON a.id  = v.agence
+                          LEFT JOIN delegation dl ON dl.id = v.delegation
+                         WHERE (v.niveau = 'DA' AND v.montant_demande > :plafondDa)
+                            OR (v.niveau = 'DR' AND v.montant_demande > :plafondDr)
+                            OR (v.niveau = 'DE' AND v.montant_demande > :plafondDe)
+                         ORDER BY v.montant_demande DESC
+                        """)
+                .param("plafondDa", plafondDa).param("plafondDr", plafondDr).param("plafondDe", plafondDe)
+                .query((rs, n) -> {
+                    BigDecimal montant = rs.getBigDecimal("montant_demande");
+                    BigDecimal plafond = rs.getBigDecimal("plafond");
+                    return DerogationDto.builder()
+                            .demandeId(rs.getLong("demandeindividuel_id")).client(texte(rs.getString("client")))
+                            .montant(montant).niveau(rs.getString("niveau")).plafond(plafond)
+                            .depassement(montant == null || plafond == null ? null : montant.subtract(plafond))
+                            .valideur(rs.getString("valideur"))
+                            .dateValidation(rs.getObject("date_validation", LocalDateTime.class))
+                            .pointVente(rs.getString("point_vente")).agence(rs.getString("agence_lib"))
+                            .delegation(rs.getString("delegation_lib"))
+                            .build();
+                })
+                .list();
+    }
+
+    /** L'attente moyenne et la pire attente avant d'atteindre chaque etape. */
+    public List<DelaiEtapeDto> delaisParEtape() {
+        return jdbcClient.sql("""
+                        WITH h AS (
+                            SELECT nouvel_etat, date_evenement,
+                                   LAG(date_evenement) OVER (PARTITION BY demandeindividuel_id
+                                                             ORDER BY date_evenement, historique_id) AS precedent
+                              FROM demande_etat_historique
+                        )
+                        SELECT COALESCE(nouvel_etat, '(aucun)') AS etape, COUNT(*) AS passages,
+                               ROUND(AVG(EXTRACT(EPOCH FROM (date_evenement - precedent)) / 3600))::BIGINT AS moyenne,
+                               ROUND(MAX(EXTRACT(EPOCH FROM (date_evenement - precedent)) / 3600))::BIGINT AS pire
+                          FROM h WHERE precedent IS NOT NULL
+                         GROUP BY 1 HAVING COUNT(*) >= 5 ORDER BY 3 DESC
+                        """)
+                .query((rs, n) -> DelaiEtapeDto.builder()
+                        .etape(rs.getString("etape")).passages(rs.getLong("passages"))
+                        .moyenneHeures((Long) rs.getObject("moyenne")).maxHeures((Long) rs.getObject("pire"))
+                        .build())
+                .list();
+    }
+
+    /** La meme attente, par agence : ou les dossiers avancent, ou ils trainent. */
+    public List<DelaiAgenceDto> delaisParAgence() {
+        return jdbcClient.sql("""
+                        WITH h AS (
+                            SELECT demandeindividuel_id, date_evenement,
+                                   LAG(date_evenement) OVER (PARTITION BY demandeindividuel_id
+                                                             ORDER BY date_evenement, historique_id) AS precedent
+                              FROM demande_etat_historique
+                        )
+                        SELECT COALESCE(a.libele, '(non rattache)') AS agence,
+                               COALESCE(dl.libele, '') AS delegation, COUNT(*) AS evenements,
+                               ROUND(AVG(EXTRACT(EPOCH FROM (h.date_evenement - h.precedent)) / 3600))::BIGINT AS moyenne
+                          FROM h
+                          JOIN demandeindividuel d ON d.demandeindividuel_id = h.demandeindividuel_id
+                          LEFT JOIN agence a      ON a.id  = d.agence
+                          LEFT JOIN delegation dl ON dl.id = d.delegation
+                         WHERE h.precedent IS NOT NULL
+                         GROUP BY 1, 2 HAVING COUNT(*) >= 20 ORDER BY 4 DESC
+                        """)
+                .query((rs, n) -> DelaiAgenceDto.builder()
+                        .agence(rs.getString("agence")).delegation(rs.getString("delegation"))
+                        .evenements(rs.getLong("evenements")).moyenneHeures((Long) rs.getObject("moyenne"))
+                        .build())
+                .list();
+    }
+
+    /** Les dossiers vivants que plus rien n'a fait bouger depuis le seuil donne. */
+    public List<DossierDormantDto> dormants(int jours) {
+        return jdbcClient.sql("""
+                        SELECT d.demandeindividuel_id, d.montant_demande, d.validation_state,
+                               TRIM(COALESCE(d.nom,'') || ' ' || COALESCE(d.prenom,'')) AS client,
+                               pv.libele AS point_vente, a.libele AS agence, dl.libele AS delegation,
+                               m.dernier,
+                               EXTRACT(DAY FROM (now() - m.dernier))::BIGINT AS jours
+                          FROM demandeindividuel d
+                          JOIN LATERAL (SELECT MAX(h.date_evenement) AS dernier FROM demande_etat_historique h
+                                         WHERE h.demandeindividuel_id = d.demandeindividuel_id) m ON TRUE
+                          LEFT JOIN pointvente pv ON pv.id = d.pos
+                          LEFT JOIN agence a      ON a.id  = d.agence
+                          LEFT JOIN delegation dl ON dl.id = d.delegation
+                         WHERE d.validation_state NOT IN ('VALIDATED_FINAL', 'VALIDATION')
+                           AND COALESCE(d.statut_demande, '') NOT IN ('ANNULE', 'REJET')
+                           AND m.dernier < now() - make_interval(days => :jours)
+                         ORDER BY m.dernier
+                        """)
+                .param("jours", jours)
+                .query((rs, n) -> DossierDormantDto.builder()
+                        .demandeId(rs.getLong("demandeindividuel_id")).client(texte(rs.getString("client")))
+                        .montant(rs.getBigDecimal("montant_demande")).etat(rs.getString("validation_state"))
+                        .dernierEvenement(rs.getObject("dernier", LocalDateTime.class))
+                        .joursSansMouvement((Long) rs.getObject("jours"))
+                        .pointVente(rs.getString("point_vente")).agence(rs.getString("agence"))
+                        .delegation(rs.getString("delegation"))
+                        .build())
+                .list();
+    }
+
+    /** Les dossiers renvoyes plus d'une fois en correction : le circuit a tourne en rond. */
+    public List<ResoumissionDto> resoumissions() {
+        return jdbcClient.sql("""
+                        WITH c AS (
+                            SELECT demandeindividuel_id, COUNT(*) AS nb,
+                                   STRING_AGG(DISTINCT nouvel_etat, ', ') AS etats,
+                                   MAX(date_evenement) AS derniere
+                              FROM demande_etat_historique
+                             WHERE nouvel_etat LIKE 'CORRECTION%'
+                             GROUP BY 1 HAVING COUNT(*) > 1
+                        )
+                        SELECT c.demandeindividuel_id, c.nb, c.etats, c.derniere,
+                               d.montant_demande, d.validation_state,
+                               TRIM(COALESCE(d.nom,'') || ' ' || COALESCE(d.prenom,'')) AS client,
+                               pv.libele AS point_vente, a.libele AS agence
+                          FROM c
+                          JOIN demandeindividuel d ON d.demandeindividuel_id = c.demandeindividuel_id
+                          LEFT JOIN pointvente pv ON pv.id = d.pos
+                          LEFT JOIN agence a      ON a.id  = d.agence
+                         ORDER BY c.nb DESC, c.derniere DESC
+                        """)
+                .query((rs, n) -> ResoumissionDto.builder()
+                        .demandeId(rs.getLong("demandeindividuel_id")).client(texte(rs.getString("client")))
+                        .montant(rs.getBigDecimal("montant_demande")).nbCorrections(rs.getLong("nb"))
+                        .etats(rs.getString("etats")).etatActuel(rs.getString("validation_state"))
+                        .derniereCorrection(rs.getObject("derniere", LocalDateTime.class))
+                        .pointVente(rs.getString("point_vente")).agence(rs.getString("agence"))
+                        .build())
+                .list();
+    }
+
     // ------------------------------------------------------------------ interne
 
     private static String vide(String s) {
@@ -382,6 +669,10 @@ public class AuditJournauxRepository {
 
     private static String texte(String s) {
         return s == null ? null : s.trim();
+    }
+
+    private static String tronquer(String s, int max) {
+        return s == null ? null : s.length() <= max ? s : s.substring(0, max);
     }
 
     private static CompteurDto versCompteur(ResultSet rs, int n) throws SQLException {

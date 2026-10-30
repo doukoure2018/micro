@@ -1,10 +1,17 @@
 package io.digiservices.ecreditservice.utils;
 
+import io.digiservices.ecreditservice.dto.AuditDtos.ActionSensibleDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.AnnulationsDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.CompteAuditDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.ComptesAuditDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.CorrectionNumeroDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.DecisionDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DelaiAgenceDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DelaiEtapeDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DelaisDerogationsDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DerogationDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.DossierDormantDto;
+import io.digiservices.ecreditservice.dto.AuditDtos.ResoumissionDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.MatriceLectureDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.SortieDossierDto;
 import io.digiservices.ecreditservice.dto.AuditDtos.TraceCompteDto;
@@ -258,6 +265,138 @@ public final class AuditExcelUtils {
     }
 
     // ------------------------------------------------------------------ interne
+
+
+    // ==================== Journal unifie des actions sensibles (lot 3) ====================
+
+    public static byte[] actions(List<ActionSensibleDto> lignes, long total, boolean tronque) throws IOException {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Styles st = new Styles(wb);
+            Sheet f = wb.createSheet("Actions sensibles");
+            int r = titre(f, st, "Journal des actions sensibles — " + total + " action(s)",
+                    tronque ? "Export limité aux lignes affichées : la sélection dépasse le plafond d'export."
+                            : "Huit journaux réunis. La colonne Origine nomme la table d'où vient la ligne.");
+            String[] entetes = {"Date et heure", "Type", "Auteur", "Objet", "Ce qui a changé", "Origine"};
+            r = entetes(f, st, r, entetes);
+            for (ActionSensibleDto a : lignes) {
+                Row row = f.createRow(r++);
+                cel(row, 0, heure(a.getQuand()), null);
+                cel(row, 1, a.getType(), null);
+                cel(row, 2, a.getCompte(), null);
+                cel(row, 3, a.getObjet(), null);
+                cel(row, 4, a.getDetail(), null);
+                cel(row, 5, a.getOrigine(), null);
+            }
+            ajuster(f, entetes.length);
+            wb.write(out);
+            return out.toByteArray();
+        }
+    }
+
+    // ==================== Delais et derogations (lot 3) ====================
+
+    public static byte[] delais(DelaisDerogationsDto d) throws IOException {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Styles st = new Styles(wb);
+
+            Sheet f = wb.createSheet("Derogations");
+            int r = titre(f, st, "Dossiers validés au-dessus du plafond — " + d.getNbDerogations() + " dossier(s)",
+                    "Échelle de délégation : DA jusqu'à 25 M, DR 50 M, DE 100 M, DG au-delà. "
+                            + montantTexte(d.getMontantDerogations()) + " GNF au total.");
+            String[] e1 = {"Dossier", "Client", "Montant", "Validé par", "Niveau", "Plafond du niveau",
+                    "Dépassement", "Date de validation", "Point de service", "Agence", "Délégation"};
+            r = entetes(f, st, r, e1);
+            for (DerogationDto x : d.getDerogations()) {
+                Row row = f.createRow(r++);
+                int c = 0;
+                nombre(row, c++, x.getDemandeId());
+                cel(row, c++, x.getClient(), null);
+                montant(row, c++, x.getMontant(), st.montant);
+                cel(row, c++, x.getValideur(), null);
+                cel(row, c++, x.getNiveau(), null);
+                montant(row, c++, x.getPlafond(), st.montant);
+                montant(row, c++, x.getDepassement(), st.montant);
+                cel(row, c++, heure(x.getDateValidation()), null);
+                cel(row, c++, x.getPointVente(), null);
+                cel(row, c++, x.getAgence(), null);
+                cel(row, c, x.getDelegation(), null);
+            }
+            ajuster(f, e1.length);
+
+            Sheet f2 = wb.createSheet("Delais par etape");
+            int r2 = titre(f2, st, "Attente moyenne avant chaque étape",
+                    "Temps écoulé depuis l'évènement précédent du même dossier, en heures.");
+            String[] e2 = {"Étape", "Passages", "Attente moyenne (h)", "Pire attente (h)"};
+            r2 = entetes(f2, st, r2, e2);
+            for (DelaiEtapeDto x : d.getParEtape()) {
+                Row row = f2.createRow(r2++);
+                cel(row, 0, x.getEtape(), null);
+                nombre(row, 1, x.getPassages());
+                nombre(row, 2, x.getMoyenneHeures());
+                nombre(row, 3, x.getMaxHeures());
+            }
+            ajuster(f2, e2.length);
+
+            Sheet f3 = wb.createSheet("Delais par agence");
+            int r3 = titre(f3, st, "Attente moyenne par agence", "Agences totalisant au moins 20 évènements.");
+            String[] e3 = {"Agence", "Délégation", "Évènements", "Attente moyenne (h)"};
+            r3 = entetes(f3, st, r3, e3);
+            for (DelaiAgenceDto x : d.getParAgence()) {
+                Row row = f3.createRow(r3++);
+                cel(row, 0, x.getAgence(), null);
+                cel(row, 1, x.getDelegation(), null);
+                nombre(row, 2, x.getEvenements());
+                nombre(row, 3, x.getMoyenneHeures());
+            }
+            ajuster(f3, e3.length);
+
+            Sheet f4 = wb.createSheet("Dossiers dormants");
+            int r4 = titre(f4, st, "Dossiers sans mouvement — " + d.getNbDormants() + " dossier(s)",
+                    "Dossiers encore dans le circuit dont plus rien n'a bougé depuis "
+                            + d.getSeuilDormantJours() + " jours ou plus.");
+            String[] e4 = {"Dossier", "Client", "Montant", "Étape", "Dernier évènement",
+                    "Jours sans mouvement", "Point de service", "Agence", "Délégation"};
+            r4 = entetes(f4, st, r4, e4);
+            for (DossierDormantDto x : d.getDormants()) {
+                Row row = f4.createRow(r4++);
+                int c = 0;
+                nombre(row, c++, x.getDemandeId());
+                cel(row, c++, x.getClient(), null);
+                montant(row, c++, x.getMontant(), st.montant);
+                cel(row, c++, x.getEtat(), null);
+                cel(row, c++, heure(x.getDernierEvenement()), null);
+                nombre(row, c++, x.getJoursSansMouvement());
+                cel(row, c++, x.getPointVente(), null);
+                cel(row, c++, x.getAgence(), null);
+                cel(row, c, x.getDelegation(), null);
+            }
+            ajuster(f4, e4.length);
+
+            Sheet f5 = wb.createSheet("Allers-retours");
+            int r5 = titre(f5, st, "Dossiers renvoyés plus d'une fois — " + d.getNbResoumis() + " dossier(s)",
+                    "Le circuit a tourné en rond : autant de renvois en correction que de lignes ci-dessous.");
+            String[] e5 = {"Dossier", "Client", "Montant", "Renvois", "Étapes de renvoi",
+                    "Étape actuelle", "Dernier renvoi", "Point de service", "Agence"};
+            r5 = entetes(f5, st, r5, e5);
+            for (ResoumissionDto x : d.getResoumissions()) {
+                Row row = f5.createRow(r5++);
+                int c = 0;
+                nombre(row, c++, x.getDemandeId());
+                cel(row, c++, x.getClient(), null);
+                montant(row, c++, x.getMontant(), st.montant);
+                nombre(row, c++, x.getNbCorrections());
+                cel(row, c++, x.getEtats(), null);
+                cel(row, c++, x.getEtatActuel(), null);
+                cel(row, c++, heure(x.getDerniereCorrection()), null);
+                cel(row, c++, x.getPointVente(), null);
+                cel(row, c, x.getAgence(), null);
+            }
+            ajuster(f5, e5.length);
+
+            wb.write(out);
+            return out.toByteArray();
+        }
+    }
 
     private static int titre(Sheet f, Styles st, String titre, String sous) {
         int r = 0;

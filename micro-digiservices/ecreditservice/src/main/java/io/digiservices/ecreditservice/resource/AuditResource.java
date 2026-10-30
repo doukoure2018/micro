@@ -121,6 +121,63 @@ public class AuditResource {
         return fichier(service.exporterComptes(authentication.getName(), recherche), "Audit_comptes_habilitations");
     }
 
+
+    // ------------------------------------------------------------------ actions sensibles (lot 3)
+
+    /** Les huit journaux en une seule liste, du plus recent au plus ancien. */
+    @GetMapping("/actions")
+    public ResponseEntity<Response> actions(@NotNull Authentication authentication,
+                                           @RequestParam(name = "type", required = false) String type,
+                                           @RequestParam(name = "compte", required = false) String compte,
+                                           @RequestParam(name = "recherche", required = false) String recherche,
+                                           @RequestParam(name = "du", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+                                           @RequestParam(name = "au", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+                                           @RequestParam(name = "page", defaultValue = "0") int page,
+                                           @RequestParam(name = "size", defaultValue = "50") int size,
+                                           HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("actions", service.actions(authentication.getName(), type, compte, recherche, du, au, page, size)),
+                "Journal des actions sensibles", OK));
+    }
+
+    /** Les volumes par type, sur le journal entier. */
+    @GetMapping("/actions/synthese")
+    public ResponseEntity<Response> syntheseActions(@NotNull Authentication authentication,
+                                                    HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("parType", service.syntheseActions(authentication.getName())),
+                "Synthese des actions sensibles", OK));
+    }
+
+    @GetMapping("/actions/export")
+    public ResponseEntity<byte[]> exporterActions(@NotNull Authentication authentication,
+                                                  @RequestParam(name = "type", required = false) String type,
+                                                  @RequestParam(name = "compte", required = false) String compte,
+                                                  @RequestParam(name = "recherche", required = false) String recherche,
+                                                  @RequestParam(name = "du", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+                                                  @RequestParam(name = "au", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au) {
+        return fichier(service.exporterActions(authentication.getName(), type, compte, recherche, du, au),
+                "Audit_actions_sensibles");
+    }
+
+    // ------------------------------------------------------------------ delais et derogations (lot 3)
+
+    /** Derogations de delegation, attentes par etape et par agence, dossiers dormants, allers-retours. */
+    @GetMapping("/delais")
+    public ResponseEntity<Response> delais(@NotNull Authentication authentication,
+                                           @RequestParam(name = "seuilJours", required = false) Integer seuilJours,
+                                           HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("delais", service.delais(authentication.getName(), seuilJours)),
+                "Delais et derogations", OK));
+    }
+
+    @GetMapping("/delais/export")
+    public ResponseEntity<byte[]> exporterDelais(@NotNull Authentication authentication,
+                                                 @RequestParam(name = "seuilJours", required = false) Integer seuilJours) {
+        return fichier(service.exporterDelais(authentication.getName(), seuilJours), "Audit_delais_derogations");
+    }
+
     // ------------------------------------------------------------------ interne
 
     private static ResponseEntity<byte[]> fichier(byte[] contenu, String prefixe) {
