@@ -119,7 +119,8 @@ public class PortefeuilleScoreService {
     /** Recalcul a la demande (DE, SUPER_ADMIN) : lance en arriere-plan, repond tout de suite. */
     public String recalculer(String uuid) {
         Perimetre p = perimetreSafService.perimetreDe(uuid);
-        if (!p.toutReseau()) {
+        if (!p.toutReseau() || p.lectureSeule()) {
+            // Le service Audit a un perimetre reseau mais ne declenche aucun traitement (V194).
             throw new ApiException("Le recalcul des scores est reserve a la Direction de l'Exploitation");
         }
         if (!recalculEnCours.compareAndSet(false, true)) {

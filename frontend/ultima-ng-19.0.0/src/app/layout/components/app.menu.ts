@@ -83,6 +83,16 @@ export class AppMenu {
         return this.habilitations.peut(rubrique);
     }
 
+    /** Une seule des rubriques suffit : un écran peut être ouvert par plusieurs clés (V194). */
+    private peutUne(...rubriques: string[]): boolean {
+        return rubriques.some((r) => this.habilitations.peut(r));
+    }
+
+    /** Le service Audit contrôle après coup : son groupe de menu est en lecture seule. */
+    private get estAudit(): boolean {
+        return this.estManager('Audit');
+    }
+
     /** Le DA voit combien de crédits attendent une affectation (non affectés + à réaffecter). */
     private chargerCompteurAffectation() {
         if (this.user?.role !== 'DA' || this.compteurAffectationCharge) {
@@ -171,6 +181,7 @@ export class AppMenu {
             this.groupe('Crédit', 'pi pi-credit-card', this.menuCredit()),
             this.groupe('Caisse & contrôle', 'pi pi-calculator', this.menuCaisse()),
             this.groupe('Clients & sociétariat', 'pi pi-users', this.menuClients()),
+            this.groupe('Audit', 'pi pi-search', this.menuAudit()),
             this.groupe('Ressources humaines', 'pi pi-briefcase', this.menuRh()),
             this.groupe('Avances sur salaire', 'pi pi-wallet', this.menuAvances()),
             this.groupe('Administration & outils', 'pi pi-cog', this.menuAdmin()),
@@ -202,6 +213,77 @@ export class AppMenu {
 
     private estManager(service: string): boolean {
         return this.role === 'MANAGER' && this.service === service;
+    }
+
+    // ==================== Audit ====================
+
+    /**
+     * Groupe du service Audit (V194) : cinq sous-menus qui suivent les missions d'un audit
+     * interne, et non l'architecture de la plateforme. Tous les écrans listés existent déjà et
+     * sont ouverts en LECTURE SEULE — le serveur refuse toute action à un compte du service,
+     * quoi que le navigateur envoie. Chaque sous-menu est commandé par sa propre rubrique, donc
+     * la responsable de l'audit peut n'en ouvrir qu'une partie à un auditeur.
+     */
+    private menuAudit(): MenuItem[] {
+        const groupes: MenuItem[] = [];
+
+        if (this.peut('AUDIT_CREDIT')) {
+            groupes.push({
+                label: 'Crédit',
+                icon: 'pi pi-fw pi-credit-card',
+                items: [
+                    { label: 'Dossiers du réseau', icon: 'pi pi-fw pi-folder-open', routerLink: ['/dashboards/credits-valides-de'] },
+                    { label: 'Indicateurs mensuels', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboards/rapport-mensuel'] }
+                ]
+            });
+        }
+        if (this.peut('AUDIT_CAISSE')) {
+            groupes.push({
+                label: 'Caisse & comptes',
+                icon: 'pi pi-fw pi-calculator',
+                items: [
+                    { label: 'Audit rapprochement', icon: 'pi pi-fw pi-shield', routerLink: ['/dashboards/audit-rapprochement'] },
+                    { label: 'Arrêtés de caisse', icon: 'pi pi-fw pi-money-bill', routerLink: ['/dashboards/suivi-arrete-caisse'] },
+                    { label: 'Crédits négatifs', icon: 'pi pi-fw pi-exclamation-circle', routerLink: ['/dashboards/credits-negatifs'] }
+                ]
+            });
+        }
+        if (this.peut('AUDIT_PORTEFEUILLE')) {
+            groupes.push({
+                label: 'Portefeuille',
+                icon: 'pi pi-fw pi-wallet',
+                items: [
+                    { label: 'Portefeuille à risque', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/dashboards/portefeuille-risque'] },
+                    { label: 'Portefeuille crédits SAF', icon: 'pi pi-fw pi-wallet', routerLink: ['/dashboards/portefeuille-saf'] },
+                    { label: 'Affectations par agent', icon: 'pi pi-fw pi-users', routerLink: ['/dashboards/portefeuille-affectation'] },
+                    { label: 'Appréciation des agents', icon: 'pi pi-fw pi-star', routerLink: ['/dashboards/portefeuille-scores'] },
+                    { label: 'Dossiers au contentieux', icon: 'pi pi-fw pi-flag', routerLink: ['/dashboards/portefeuille-contentieux'] }
+                ]
+            });
+        }
+        if (this.peut('AUDIT_CLIENTELE')) {
+            groupes.push({
+                label: 'Clientèle',
+                icon: 'pi pi-fw pi-users',
+                items: [
+                    { label: 'Membres et SAF', icon: 'pi pi-fw pi-verified', routerLink: ['/dashboards/membres-saf'] },
+                    { label: 'Fiche signalétique et rapprochement', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboards/verification-client'] },
+                    { label: 'Changements de téléphone', icon: 'pi pi-fw pi-phone', routerLink: ['/dashboards/changement-telephone/inspection'] },
+                    { label: 'Assainissement des fiches', icon: 'pi pi-fw pi-check-square', routerLink: ['/dashboards/assainissement'] }
+                ]
+            });
+        }
+        if (this.peut('AUDIT_ACCES')) {
+            groupes.push({
+                label: 'Accès & traces',
+                icon: 'pi pi-fw pi-key',
+                items: [
+                    { label: 'Usage de la plateforme', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboards/usage-plateforme'] },
+                    { label: 'Contacts des agents', icon: 'pi pi-fw pi-address-book', routerLink: ['/dashboards/contacts-equipe'] }
+                ]
+            });
+        }
+        return groupes;
     }
 
     // ==================== Crédit ====================
@@ -344,7 +426,7 @@ export class AppMenu {
                 routerLink: ['/dashboards/inspection-credits']
             });
         }
-        if (['AGENT_CREDIT', 'DA', 'DR', 'DG'].includes(this.role || '') || this.estManager('DE')) {
+        if (['AGENT_CREDIT', 'DA', 'DR', 'DG'].includes(this.role || '') || this.estManager('DE') || this.peut('AUDIT_PORTEFEUILLE')) {
             items.push({
                 label: 'Portefeuille crédits SAF',
                 icon: 'pi pi-fw pi-wallet',
@@ -375,7 +457,7 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-briefcase',
                 routerLink: ['/dashboards/portefeuille-affectation']
             });
-        } else if (['DR', 'DG'].includes(this.role || '') || this.estManager('DE')) {
+        } else if (['DR', 'DG'].includes(this.role || '') || this.estManager('DE') || this.peut('AUDIT_PORTEFEUILLE')) {
             items.push({
                 label: 'Portefeuille par agent',
                 icon: 'pi pi-fw pi-users',
@@ -384,7 +466,7 @@ export class AppMenu {
         }
         // Dossiers au contentieux (V166) : le DA les confie a ses agents de recouvrement,
         // le DR consulte sa delegation.
-        if (['DA', 'DR'].includes(this.role || '')) {
+        if (['DA', 'DR'].includes(this.role || '') || this.peut('AUDIT_PORTEFEUILLE')) {
             items.push({
                 label: 'Dossiers au contentieux',
                 icon: 'pi pi-fw pi-gavel',
@@ -414,7 +496,7 @@ export class AppMenu {
         // dossiers de son perimetre dont le numero est inconnu de SAF. Ouvert a tous les profils
         // du credit ; le serveur decide du perimetre de la liste.
         if (['AGENT_CREDIT', 'AGENT_ACCUEIL', 'DA', 'RA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '')
-            || this.estManager('DE') || this.estManager('DI') || this.peut('CREDITS_SUIVI') || this.peut('FICHE_RAPPROCHEMENT')) {
+            || this.estManager('DE') || this.estManager('DI') || this.peut('CREDITS_SUIVI') || this.peut('FICHE_RAPPROCHEMENT') || this.peut('AUDIT_CLIENTELE')) {
             items.push({
                 label: 'Membres et SAF',
                 icon: 'pi pi-fw pi-verified',
@@ -431,7 +513,7 @@ export class AppMenu {
             });
         }
         // Appreciation des agents a partir de leur portefeuille (V164) : DE, DG, DR (sa delegation).
-        if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE')) {
+        if (['DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '') || this.estManager('DE') || this.peut('AUDIT_PORTEFEUILLE')) {
             items.push({
                 label: 'Appréciation des agents',
                 icon: 'pi pi-fw pi-star',

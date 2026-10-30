@@ -52,6 +52,17 @@ public class HabilitationService {
     public static final String USAGE_PLATEFORME = "USAGE_PLATEFORME";
     public static final String ADMIN_OUTILS = "ADMIN_OUTILS";
 
+    /**
+     * Rubriques du service Audit (V194). Elles ne commandent pas un ecran chacune : chacune est
+     * un GROUPE de menu qui ouvre, en lecture seule, plusieurs ecrans existants. Elles valent
+     * donc cle alternative a cote de la rubrique propre de chaque ecran.
+     */
+    public static final String AUDIT_CREDIT = "AUDIT_CREDIT";
+    public static final String AUDIT_CAISSE = "AUDIT_CAISSE";
+    public static final String AUDIT_PORTEFEUILLE = "AUDIT_PORTEFEUILLE";
+    public static final String AUDIT_CLIENTELE = "AUDIT_CLIENTELE";
+    public static final String AUDIT_ACCES = "AUDIT_ACCES";
+
     private static final String MANAGER = "MANAGER";
 
     private final HabilitationRepository repository;
@@ -122,6 +133,31 @@ public class HabilitationService {
         if (!peut(uuid, rubrique)) {
             throw new ApiException("Vous n'avez pas accès à cet écran");
         }
+    }
+
+    /**
+     * Barriere serveur sur plusieurs cles : l'une suffit. Sert aux ecrans qu'une rubrique
+     * d'audit ouvre en plus de leur rubrique propre, sans qu'il faille accorder celle-ci a
+     * l'Audit (ce qui l'inscrirait, par exemple, aux envois de courriel des credits negatifs).
+     */
+    public void exigerUneDe(String uuid, String... rubriques) {
+        Set<String> accordees = rubriques(uuid);
+        for (String r : rubriques) {
+            if (accordees.contains(r)) {
+                return;
+            }
+        }
+        throw new ApiException("Vous n'avez pas accès à cet écran");
+    }
+
+    public boolean peutUneDe(String uuid, String... rubriques) {
+        Set<String> accordees = rubriques(uuid);
+        for (String r : rubriques) {
+            if (accordees.contains(r)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Les departements proposes a l'administrateur pour un service donne. */

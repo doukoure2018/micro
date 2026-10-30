@@ -161,7 +161,7 @@ public class PortefeuilleRisqueService {
      * lus en direct dans SAF (une requete), agents par la photo du matin.
      */
     public RisqueReseauDto reseau(String uuid, String niveau, Long agenceId, Long delegationId) {
-        habilitationService.exiger(uuid, RUBRIQUE);
+        habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.AUDIT_PORTEFEUILLE);
         Perimetre p = perimetreSafService.perimetreDe(uuid);
         List<String> niveaux = niveauxDisponibles(p);
         String niveauNorme = niveau == null || niveau.isBlank() || "auto".equalsIgnoreCase(niveau)
@@ -197,7 +197,7 @@ public class PortefeuilleRisqueService {
                 .dateLecture(LocalDate.now()).datePhoto(datePhoto.orElse(null)).photoEnCours(photo.estEnCours())
                 .seuilPar30(seuil(PortefeuilleRisqueRepository.CLE_SEUIL_PAR30, seuilPar30Defaut))
                 .seuilPar90(seuil(PortefeuilleRisqueRepository.CLE_SEUIL_PAR90, seuilPar90Defaut))
-                .peutParametrer(peutParametrer(p)).peutPhotographier(p.toutReseau())
+                .peutParametrer(peutParametrer(p)).peutPhotographier(p.toutReseau() && !p.lectureSeule())
                 .total(r.total()).parNiveau(r.parNiveau()).parProduit(r.parProduit())
                 .parFamille(PortefeuilleRisqueCalculateur.parFamille(r.parProduit()))
                 .parAgent(parAgent)
@@ -218,9 +218,9 @@ public class PortefeuilleRisqueService {
 
     /** Relance la photo du matin a la demande (Direction de l'exploitation, SUPER_ADMIN). */
     public String photographier(String uuid) {
-        habilitationService.exiger(uuid, RUBRIQUE);
+        habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.AUDIT_PORTEFEUILLE);
         Perimetre p = perimetreSafService.perimetreDe(uuid);
-        if (!p.toutReseau()) {
+        if (!p.toutReseau() || p.lectureSeule()) {
             throw new ApiException("La photo du reseau est reservee a la Direction de l'exploitation");
         }
         return photo.lancer(p.user().getUserId());
@@ -279,7 +279,7 @@ public class PortefeuilleRisqueService {
     // ================================================================== interne
 
     private Lecture lire(String uuid, String codAgencia) {
-        habilitationService.exiger(uuid, RUBRIQUE);
+        habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.AUDIT_PORTEFEUILLE);
         Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
         if (codAgencia == null || codAgencia.isBlank() || !perimetre.couvre(codAgencia)) {
             throw new ApiException("Ce point de service est hors de votre perimetre");
@@ -332,13 +332,17 @@ public class PortefeuilleRisqueService {
         };
     }
 
-    /** Familles et seuils : la Direction de l'exploitation, la direction generale et l'administrateur. */
+    /**
+     * Familles et seuils : la Direction de l'exploitation, la direction generale et
+     * l'administrateur. Le service Audit a bien un perimetre reseau, mais il controle sans
+     * regler : la lecture seule l'exclut (V194).
+     */
     private static boolean peutParametrer(Perimetre p) {
-        return p.toutReseau();
+        return p.toutReseau() && !p.lectureSeule();
     }
 
     private Perimetre exigerParametrage(String uuid) {
-        habilitationService.exiger(uuid, RUBRIQUE);
+        habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.AUDIT_PORTEFEUILLE);
         Perimetre p = perimetreSafService.perimetreDe(uuid);
         if (!peutParametrer(p)) {
             throw new ApiException("Les familles de produits et les seuils se reglent a la Direction de l'exploitation");

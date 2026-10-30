@@ -57,6 +57,7 @@ public class CreditNegatifService {
     private static final DateTimeFormatter FMT_HEURE = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH'h'mm");
 
     private final EbankingPortefeuilleClient portefeuilleClient;
+    private final PerimetreSafService perimetreSafService;
     private final CreditNegatifRepository repository;
     private final AlerteDestinatairesRepository destinataires;
     private final AlerteJournalRepository journal;
@@ -86,8 +87,13 @@ public class CreditNegatifService {
      * d'exploitation n'ont a les voir. Apres la bascule, la rubrique n'ira qu'au departement
      * operationnel et au responsable du service.</p>
      */
+    /**
+     * Lecture de l'ecran : la rubrique des credits negatifs, ou celle du groupe Audit (V194).
+     * L'Audit n'est volontairement PAS porteur de CREDITS_NEGATIFS : cette rubrique inscrit
+     * aussi aux envois de courriel, et un auditeur n'a pas a recevoir l'alerte quotidienne.
+     */
     private User verifierDsig(String uuid) {
-        habilitations.exiger(uuid, HabilitationService.CREDITS_NEGATIFS);
+        habilitations.exigerUneDe(uuid, HabilitationService.CREDITS_NEGATIFS, HabilitationService.AUDIT_CAISSE);
         User user = userClient.getUserByUuid(uuid);
         if (user == null) {
             throw new ApiException("Utilisateur non identifie");
@@ -206,6 +212,7 @@ public class CreditNegatifService {
      * moment est garde. Lecture seule : rien n'est ecrit dans SAF.
      */
     public Verification verifier(String uuid, Long id) {
+        exigerPeutAgir(uuid, "la verification");
         User user = verifierDsig(uuid);
         var cle = repository.cle(id).orElseThrow(() -> new ApiException("Crédit introuvable ou déjà clos"));
         return confronter(cle, "MANUEL", user.getUserId());
@@ -213,6 +220,7 @@ public class CreditNegatifService {
 
     /** Tous les credits pris en charge et encore ouverts, d'un coup. */
     public List<Verification> verifierPrisesEnCharge(String uuid) {
+        exigerPeutAgir(uuid, "la verification");
         User user = verifierDsig(uuid);
         List<Verification> resultats = new ArrayList<>();
         for (var cle : repository.prisesEnChargeOuvertes()) {
@@ -227,6 +235,7 @@ public class CreditNegatifService {
      * negatif aujourd'hui, la cloture etait prematuree : on le dit, sans le rouvrir d'office.
      */
     public Verification completerPreuve(String uuid, Long id) {
+        exigerPeutAgir(uuid, "la lecture du solde dans SAF");
         verifierDsig(uuid);
         var cle = repository.cleClose(id).orElseThrow(() -> new ApiException("Crédit introuvable ou encore ouvert"));
         io.digiservices.clients.portefeuille.CreditEtatDto etat;
@@ -317,8 +326,20 @@ public class CreditNegatifService {
         return io.digiservices.ecreditservice.utils.DossierCreditExcelUtils.classeur(dossier(uuid, id));
     }
 
+    /**
+     * Refuse une action a un compte qui ne fait que controler (service Audit, V194). Pose ici,
+     * cote serveur, parce que masquer un bouton ne protege rien.
+     */
+    private void exigerPeutAgir(String uuid, String action) {
+        if (perimetreSafService.perimetreDe(uuid).lectureSeule()) {
+            throw new ApiException("Le service Audit consulte les credits negatifs sans les modifier : "
+                    + action + " revient a la DSIG");
+        }
+    }
+
     /** Marque un credit comme pris en charge par la DSIG ; rien n'est ecrit dans SAF. */
     public String marquerTraite(String uuid, Long id, String commentaire, boolean traite) {
+        exigerPeutAgir(uuid, "la prise en charge");
         User user = verifierDsig(uuid);
         int n = traite ? repository.marquerTraite(id, user.getUserId(), commentaire)
                 : repository.annulerTraite(id);

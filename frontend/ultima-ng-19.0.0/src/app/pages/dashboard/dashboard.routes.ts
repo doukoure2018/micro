@@ -24,7 +24,7 @@ export default [
     {
         path: 'contacts-equipe',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Contacts des agents', rubrique: 'CONTACTS_AGENTS' },
+        data: { breadcrumb: 'Contacts des agents', rubriques: ['CONTACTS_AGENTS', 'AUDIT_ACCES'] },
         loadComponent: () => import('./profil/contacts-equipe.component').then((c) => c.ContactsEquipeComponent)
     },
     {
@@ -106,7 +106,7 @@ export default [
     {
         path: 'portefeuille-risque',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Portefeuille à risque', rubrique: 'PORTEFEUILLE_RISQUE' },
+        data: { breadcrumb: 'Portefeuille à risque', rubriques: ['PORTEFEUILLE_RISQUE', 'AUDIT_PORTEFEUILLE'] },
         loadComponent: () => import('./portefeuille/portefeuille-risque.component').then((c) => c.PortefeuilleRisqueComponent)
     },
     {
@@ -133,13 +133,13 @@ export default [
     {
         path: 'credits-negatifs',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Crédits négatifs', rubrique: 'CREDITS_NEGATIFS' },
+        data: { breadcrumb: 'Crédits négatifs', rubriques: ['CREDITS_NEGATIFS', 'AUDIT_CAISSE'] },
         loadComponent: () => import('./credits-negatifs/credits-negatifs.component').then((c) => c.CreditsNegatifsComponent)
     },
     {
         path: 'usage-plateforme',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Usage de la plateforme', rubrique: 'USAGE_PLATEFORME' },
+        data: { breadcrumb: 'Usage de la plateforme', rubriques: ['USAGE_PLATEFORME', 'AUDIT_ACCES'] },
         loadComponent: () => import('./usage/usage-plateforme.component').then((c) => c.UsagePlateformeComponent)
     },
     {
@@ -160,7 +160,7 @@ export default [
     {
         path: 'verification-client',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Verification Client', rubrique: 'FICHE_RAPPROCHEMENT' },
+        data: { breadcrumb: 'Verification Client', rubriques: ['FICHE_RAPPROCHEMENT', 'AUDIT_CLIENTELE'] },
         loadComponent: () => import('./agent-credit/digital-verification/digital-verification.component').then((c) => c.DigitalVerificationComponent)
     },
     {
@@ -447,7 +447,7 @@ export default [
     {
         path: 'assainissement',
         canActivate: [HabilitationGuard],
-        data: { rubrique: 'ASSAINISSEMENT', breadcrumb: 'Assainissement des fiches clients' },
+        data: { rubriques: ['ASSAINISSEMENT', 'AUDIT_CLIENTELE'], breadcrumb: 'Assainissement des fiches clients' },
         loadComponent: () => import('./agent-credit/societariat/societariat.component').then((c) => c.SocietariatComponent)
     },
     {
@@ -479,7 +479,7 @@ export default [
     {
         path: 'suivi-arrete-caisse',
         canActivate: [HabilitationGuard],
-        data: { rubrique: 'ARRETE_CAISSE', breadcrumb: 'Suivi des Arretes de Caisse' },
+        data: { rubriques: ['ARRETE_CAISSE', 'AUDIT_CAISSE'], breadcrumb: 'Suivi des Arretes de Caisse' },
         loadComponent: () => import('./admin/de/suivi-arrete-caisse/suivi-arrete-caisse.component').then((c) => c.SuiviArreteCaisseComponent)
     },
     {
@@ -500,7 +500,7 @@ export default [
     {
         path: 'audit-rapprochement',
         canActivate: [HabilitationGuard],
-        data: { rubrique: 'RAPPROCHEMENT_CAISSE', breadcrumb: 'Audit Rapprochement de Caisse' },
+        data: { rubriques: ['RAPPROCHEMENT_CAISSE', 'AUDIT_CAISSE'], breadcrumb: 'Audit Rapprochement de Caisse' },
         loadComponent: () => import('./admin/audit/audit.component').then((c) => c.AuditComponent)
     },
     {
@@ -522,7 +522,7 @@ export default [
     {
         path: 'changement-telephone/inspection',
         canActivate: [HabilitationGuard],
-        data: { rubrique: 'STATS_TELEPHONE', breadcrumb: 'Inspection Changement Telephone' },
+        data: { rubriques: ['STATS_TELEPHONE', 'AUDIT_CLIENTELE'], breadcrumb: 'Inspection Changement Telephone' },
         loadComponent: () => import('./changement-telephone/inspection-telephone.component').then((c) => c.InspectionTelephoneComponent)
     },
     {

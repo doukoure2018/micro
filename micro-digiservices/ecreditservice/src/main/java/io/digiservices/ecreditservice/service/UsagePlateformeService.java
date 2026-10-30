@@ -78,7 +78,8 @@ public class UsagePlateformeService {
         if (user == null) {
             throw new ApiException("Utilisateur non identifie");
         }
-        boolean autorise = habilitations.peut(uuid, HabilitationService.USAGE_PLATEFORME);
+        boolean autorise = habilitations.peutUneDe(uuid, HabilitationService.USAGE_PLATEFORME,
+                HabilitationService.AUDIT_ACCES);
         if ("DR".equals(user.getRole())) {
             if (!autorise) {
                 throw new ApiException("Vous n'avez pas accès à cet écran");
