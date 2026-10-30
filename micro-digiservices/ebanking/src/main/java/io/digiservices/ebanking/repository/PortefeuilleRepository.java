@@ -139,7 +139,12 @@ public class PortefeuilleRepository {
                    COALESCE(SUM(CASE WHEN t.DAT_PREM_IMP <= :date30 THEN t.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR30,
                    COALESCE(SUM(CASE WHEN t.DAT_PREM_IMP <= :date90 THEN t.MON_SALDO ELSE 0 END), 0) AS ENCOURS_PAR90
             FROM ("""
-            + CREDIT_BASE + ") t" + FILTRE_RETARD;
+            // Le saut de ligne n'est pas decoratif : FILTRE_RETARD commence par WHERE, et sans
+            // separateur la requete sortait « ) tWHERE (...) ». SQL Server lisait alors un alias
+            // nomme « tWHERE » et refusait la suite — les indicateurs du portefeuille repondaient
+            // 500 depuis le 04/09/2026. Les deux autres requetes qui reutilisent ce filtre passent
+            // par un bloc de texte qui garde son saut de ligne, et n'ont jamais eu le probleme.
+            + CREDIT_BASE + ") t\n" + FILTRE_RETARD;
 
     private static final String SQL_ECHEANCIER = """
             SELECT pp.NUM_CUOTA, pp.FEC_CUOTA, pp.MON_CUOTA, pp.MON_INT,
