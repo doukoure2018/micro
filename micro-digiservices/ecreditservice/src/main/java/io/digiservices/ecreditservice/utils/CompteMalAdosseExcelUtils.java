@@ -132,11 +132,7 @@ public final class CompteMalAdosseExcelUtils {
     }
 
     private static void ajuster(Sheet f, int colonnes) {
-        for (int i = 0; i < colonnes; i++) {
-            f.autoSizeColumn(i);
-            int largeur = f.getColumnWidth(i);
-            f.setColumnWidth(i, Math.min(Math.max(largeur, 2200), 12000));
-        }
+        ExcelLargeurs.ajuster(f, colonnes);
     }
 
     private static void cel(Row row, int col, String v, CellStyle style) {

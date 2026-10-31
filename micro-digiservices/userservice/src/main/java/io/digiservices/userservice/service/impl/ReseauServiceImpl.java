@@ -144,13 +144,41 @@ public class ReseauServiceImpl implements ReseauService {
                     row.createCell(8).setCellValue(p.getLatitude() + ", " + p.getLongitude());
                 }
             }
-            for (int i = 0; i < EXPORT_HEADERS.length; i++) sheet.autoSizeColumn(i);
+            ajusterLargeurs(sheet, EXPORT_HEADERS.length);
 
             wb.write(out);
             return out.toByteArray();
         } catch (Exception e) {
             log.error("Erreur export Excel reseau : {}", e.getMessage(), e);
             throw new ApiException("Impossible de generer le fichier Excel : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Largeur des colonnes deduite du nombre de caracteres, sans mesurer de police.
+     *
+     * <p>{@code autoSizeColumn} demande a AWT la largeur reelle du texte, donc une police. Les
+     * images de production n'embarquent ni police ni fontconfig : l'appel y echoue par
+     * {@code NoClassDefFoundError: Could not initialize class sun.awt.X11FontManager} et tout
+     * l'export part en erreur (constate le 31/10/2026 sur un autre export, puis verifie :
+     * zero police dans ce conteneur comme dans celui du credit).</p>
+     */
+    private static void ajusterLargeurs(org.apache.poi.ss.usermodel.Sheet feuille, int colonnes) {
+        for (int c = 0; c < colonnes; c++) {
+            int caracteres = 10;
+            for (org.apache.poi.ss.usermodel.Row ligne : feuille) {
+                org.apache.poi.ss.usermodel.Cell cellule = ligne.getCell(c);
+                if (cellule == null) {
+                    continue;
+                }
+                caracteres = Math.max(caracteres, switch (cellule.getCellType()) {
+                    case STRING -> cellule.getStringCellValue().length();
+                    case NUMERIC -> 14;
+                    case BOOLEAN -> 5;
+                    default -> 0;
+                });
+            }
+            feuille.setColumnWidth(c, Math.min(caracteres + 3, 60) * 256);
         }
     }
 

@@ -142,7 +142,7 @@ public final class PortefeuilleRisqueExcelUtils {
             }
         }
         int nbCol = ENTETES.length + (deuxiemeColonne != null ? 2 : 1);
-        for (int c = 0; c < nbCol; c++) s.autoSizeColumn(c);
+        ExcelLargeurs.ajuster(s, nbCol);
         s.createFreezePane(0, 5);
     }
 

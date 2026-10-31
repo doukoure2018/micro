@@ -418,12 +418,7 @@ public final class AuditExcelUtils {
     }
 
     private static void ajuster(Sheet f, int colonnes) {
-        for (int i = 0; i < colonnes; i++) {
-            f.autoSizeColumn(i);
-            if (f.getColumnWidth(i) > 60 * 256) {
-                f.setColumnWidth(i, 60 * 256);
-            }
-        }
+        ExcelLargeurs.ajuster(f, colonnes);
     }
 
     private static void cel(Row row, int col, String v, CellStyle style) {
