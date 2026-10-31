@@ -1,7 +1,17 @@
 package io.digiservices.ecreditservice.service;
 
 import io.digiservices.clients.EbankingPortefeuilleClient;
+import io.digiservices.clients.UserClient;
+import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.CompteMalAdosseDto;
+import io.digiservices.ecreditservice.dto.CompteMalAdosseDtos.CompteurDto;
+import io.digiservices.ecreditservice.dto.CompteMalAdosseDtos.LigneDto;
+import io.digiservices.ecreditservice.dto.CompteMalAdosseDtos.SituationDto;
+import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.repository.CompteMalAdosseRepository.Filtres;
+import io.digiservices.ecreditservice.repository.CompteMalAdosseRepository.Groupe;
+import io.digiservices.ecreditservice.repository.CompteMalAdosseRepository.Ligne;
+import io.digiservices.ecreditservice.utils.CompteMalAdosseExcelUtils;
 import io.digiservices.ecreditservice.enumeration.EventType;
 import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
@@ -65,6 +75,7 @@ public class CompteMalAdosseService {
     private final AlerteJournalRepository journal;
     private final ApplicationEventPublisher publisher;
     private final HabilitationService habilitations;
+    private final UserClient userClient;
     private final ClotureSaf cloture;
     private final DonneesSafService donneesSaf;
 
@@ -187,6 +198,157 @@ public class CompteMalAdosseService {
             }
         }
         return set;
+    }
+
+
+    // ==================== Page « Comptes mal adossés » (lot 2) ====================
+
+    /**
+     * Au-dela, la page ne se travaille plus. Le stock mesure au 31/10/2026 est de 14 221
+     * anomalies, dont 767 a traiter : la liste par defaut tient donc largement sous ce plafond,
+     * et « tout afficher » previent quand il tronque. Le classeur, lui, prend tout.
+     */
+    private static final int MAX_LIGNES_ECRAN = 1500;
+    private static final int MAX_LIGNES_EXPORT = 20000;
+
+    /**
+     * Lecture de l'ecran : la rubrique des credits negatifs, ou celle du groupe Audit. Cette
+     * page est jumelle de celle des credits negatifs et vise les memes personnes — c'est la
+     * decision du 31/10/2026 sur les destinataires, portee jusqu'a l'habilitation pour que les
+     * deux audiences ne puissent pas diverger.
+     */
+    private void verifierLecture(String uuid) {
+        habilitations.exigerUneDe(uuid, HabilitationService.CREDITS_NEGATIFS,
+                HabilitationService.AUDIT_CAISSE);
+    }
+
+    /**
+     * Ecriture : la rubrique des credits negatifs SEULE. Le groupe Audit lit et n'ecrit pas —
+     * c'est le principe pose avec son environnement, et la prise en charge est une ecriture.
+     */
+    private User verifierEcriture(String uuid) {
+        habilitations.exiger(uuid, HabilitationService.CREDITS_NEGATIFS);
+        User user = userClient.getUserByUuid(uuid);
+        if (user == null) {
+            throw new ApiException("Utilisateur non identifie");
+        }
+        return user;
+    }
+
+    /**
+     * La situation complete. Les compteurs portent toujours sur la totalite du stock ouvert,
+     * la liste sur ce que le filtre retient : masquer l'existence des quatorze mille lignes
+     * tromperait le lecteur, les afficher toutes ne se travaillerait pas.
+     */
+    public SituationDto situation(String uuid, Filtres filtres) {
+        verifierLecture(uuid);
+        var c = repository.compteurs();
+        long filtrees = repository.compterLignes(filtres);
+        List<Ligne> lignes = repository.lignes(filtres, MAX_LIGNES_ECRAN);
+        return SituationDto.builder()
+                .nbOuvertes(c.nbOuvertes()).encoursOuvert(c.encours())
+                .nbVivantes(c.nbVivantes()).nbATraiter(c.nbATraiter())
+                .nbPrisesEnCharge(c.nbPrises()).nbPrisesEnChargeAnciennes(c.nbPrisesAnciennes())
+                .nbCorrigeesCeMois(c.nbCorrigeesCeMois()).nbDetecteesAujourdhui(c.nbAujourdhui())
+                .parFamille(groupes(repository.parFamilleDetail(), true))
+                .parAgence(groupes(repository.parAgence(), false))
+                .parUsager(groupes(repository.parUsager(), false))
+                .lignes(lignes.stream().map(CompteMalAdosseService::ligne).toList())
+                .nbLignesFiltrees(filtrees)
+                .tronquee(filtrees > lignes.size())
+                .dernierPassage(repository.dernierPassage())
+                .message(message(c.nbATraiter(), filtrees, lignes.size()))
+                .build();
+    }
+
+    private static String message(long aTraiter, long filtrees, int affichees) {
+        if (filtrees > affichees) {
+            return filtrees + " ligne(s) retenues par le filtre, " + affichees
+                    + " affichées. L'export Excel reprend la totalité.";
+        }
+        return aTraiter + " anomalie(s) à traiter : crédit vivant et compte à rattacher.";
+    }
+
+    /** Le meme tableau en classeur, pour servir de feuille de travail. */
+    public byte[] exporter(String uuid, Filtres filtres) {
+        verifierLecture(uuid);
+        try {
+            return CompteMalAdosseExcelUtils.classeur(
+                    repository.lignes(filtres, MAX_LIGNES_EXPORT).stream()
+                            .map(CompteMalAdosseService::ligne).toList(),
+                    groupes(repository.parFamilleDetail(), true),
+                    groupes(repository.parAgence(), false),
+                    groupes(repository.parUsager(), false),
+                    repository.compteurs().nbOuvertes());
+        } catch (java.io.IOException e) {
+            throw new ApiException("Export Excel impossible : " + e.getMessage());
+        }
+    }
+
+    /**
+     * Suivi cote DSIG : qui s'en occupe et depuis quand. Digi n'ecrit pas dans SAF — cette
+     * marque sert seulement a eviter que deux personnes travaillent la meme anomalie.
+     */
+    public String marquerTraite(String uuid, Long id, String commentaire, boolean traite) {
+        User user = verifierEcriture(uuid);
+        int lignes = traite
+                ? repository.marquerTraite(id, user.getUserId(), commentaire)
+                : repository.annulerTraite(id);
+        if (lignes == 0) {
+            throw new ApiException("Anomalie introuvable");
+        }
+        log.info("[COMPTE MAL ADOSSE] Anomalie {} {} par {}", id,
+                traite ? "prise en charge" : "rendue a traiter", uuid);
+        return traite ? "Anomalie prise en charge" : "Prise en charge annulée";
+    }
+
+    private static List<CompteurDto> groupes(List<Groupe> groupes, boolean familles) {
+        return groupes.stream().map(g -> CompteurDto.builder()
+                        .cle(g.cle())
+                        .libelle(familles ? libelleFamille(g.cle())
+                                : g.libelle() == null || g.libelle().isBlank() ? g.cle() : g.libelle())
+                        .nb(g.nb()).nbVivants(g.nbVivants()).nbATraiter(g.nbATraiter())
+                        .encours(g.encours())
+                        .build())
+                .toList();
+    }
+
+    private static LigneDto ligne(Ligne l) {
+        return LigneDto.builder()
+                .id(l.id()).codAgencia(l.codAgencia()).desAgencia(l.desAgencia())
+                .numCredito(l.numCredito()).codCliente(l.codCliente()).nomCliente(l.nomCliente())
+                .tipCredito(l.tipCredito()).monCredito(l.monCredito()).monSaldo(l.monSaldo())
+                .fecApertura(l.fecApertura()).fecVencimiento(l.fecVencimiento())
+                .indEstado(l.indEstado()).etat(libelleEtat(l.indEstado()))
+                .idCuenta(l.idCuenta()).typeCompte(l.typeCompte())
+                .famille(l.famille()).familleLibelle(libelleFamille(l.famille()))
+                .compteClient(l.compteClient()).compteAgencia(l.compteAgencia())
+                .compteEtat(l.compteEtat()).compteSolde(l.compteSolde())
+                .saisiPar(l.saisiPar()).dateSaisie(l.dateSaisie()).agentCredit(l.agentCredit())
+                .detecteAt(l.detecteAt()).dernierVuAt(l.dernierVuAt())
+                .familleChangeeAt(l.familleChangeeAt()).signaleAt(l.signaleAt())
+                .corrigeAt(l.corrigeAt()).compteALaCorrection(l.compteALaCorrection())
+                .familleALaCorrection(l.familleALaCorrection())
+                .traitePar(l.traitePar()).traiteAt(l.traiteAt()).commentaire(l.commentaire())
+                .joursDepuisPriseEnCharge(l.traiteAt() == null ? null
+                        : java.time.Duration.between(l.traiteAt(),
+                                java.time.OffsetDateTime.now()).toDays())
+                .aTraiter(l.aTraiter())
+                .build();
+    }
+
+    /** L'etat SAF ecrit en clair, comme sur la page des credits negatifs. */
+    static String libelleEtat(String code) {
+        String c = code == null ? "" : code.trim().toUpperCase();
+        return switch (c) {
+            case "I" -> "Apuré";
+            case "J" -> "Contentieux";
+            case "C" -> "Clos";
+            case "T" -> "Transféré";
+            case "X" -> "Annulé";
+            case "", "D", "A" -> "En cours";
+            default -> "En cours (" + c + ")";
+        };
     }
 
     // ==================== Courriels ====================
