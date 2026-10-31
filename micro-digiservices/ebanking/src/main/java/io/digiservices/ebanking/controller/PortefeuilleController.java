@@ -236,6 +236,12 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.findCreditsNegatifs());
     }
 
+    /** Comptes de remboursement mal adosses : lecture de la PRODUCTION, forcee dans le depot. */
+    @GetMapping("/comptes-mal-adosses")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.CompteMalAdosseDto>> getComptesMalAdosses() {
+        return ResponseEntity.ok(repository.findComptesMalAdosses());
+    }
+
     @GetMapping("/echeances-avenir")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.EcheanceAvenirDto>> getEcheancesAvenir(
             @RequestParam(name = "joursAvant", defaultValue = "3") int joursAvant) {

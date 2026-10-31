@@ -958,6 +958,121 @@ public class PortefeuilleRepository {
         }
     }
 
+
+    // ==================== Comptes de remboursement mal adosses (V196) ====================
+
+    /**
+     * Le filtre et le classement des comptes de remboursement fautifs. Deux ecarts assumes avec
+     * le script DSIG d'origine, tous deux dans le sens de la severite :
+     *
+     * <p>1. Le script n'examinait le proprietaire et l'etat du compte que pour les comptes DEJA
+     * ecartes par leur type. Un credit adosse a un {@code 014} en bonne et due forme mais
+     * appartenant a un autre client, ou a un {@code 014} ferme, passait donc inapercu — alors
+     * que ce sont les deux cas les plus graves. Ici les cinq controles sont independants.</p>
+     *
+     * <p>2. Le classement suit un ordre de gravite : un compte d'un autre client reste classe
+     * comme tel meme si son type est par ailleurs interdit. Chaque credit porte donc l'anomalie
+     * la plus grave qui le concerne, et une seule.</p>
+     *
+     * <p>{@code %TYPES%} est remplace par la liste des types autorises avant execution : la
+     * liste est une configuration, jamais une saisie, et son format est verifie.</p>
+     */
+    private static final String SQL_COMPTES_MAL_ADOSSES = """
+            SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, cl.NOM_CLIENTE,
+                   cr.TIP_CREDITO, cr.MON_CREDITO, cr.MON_SALDO, cr.IND_ESTADO,
+                   cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
+                   cr.ID_CUENTA,
+                   CASE WHEN LEN(ISNULL(cr.ID_CUENTA, '')) >= 6
+                        THEN SUBSTRING(cr.ID_CUENTA, 4, 3) END AS TYPE_COMPTE,
+                   CASE
+                     WHEN cr.ID_CUENTA IS NULL OR LTRIM(RTRIM(cr.ID_CUENTA)) = '' THEN 'PAS_DE_COMPTE'
+                     WHEN cc.NUM_CUENTA IS NULL                                   THEN 'COMPTE_INEXISTANT'
+                     WHEN cc.COD_CLIENTE <> cr.COD_CLIENTE                        THEN 'COMPTE_AUTRE_CLIENT'
+                     WHEN cc.IND_ESTADO <> 'A'                                    THEN 'COMPTE_NON_ACTIF'
+                     ELSE 'TYPE_NON_AUTORISE'
+                   END AS FAMILLE,
+                   cc.COD_CLIENTE AS COMPTE_CLIENT, cc.COD_AGENCIA AS COMPTE_AGENCIA,
+                   cc.IND_ESTADO AS COMPTE_ETAT, cc.SAL_DISPONIBLE AS COMPTE_SOLDE,
+                   cr.COD_USUARIO AS SAISI_PAR, cr.FEC_ADICION AS DATE_SAISIE,
+                   cr.COD_OFICIAL AS AGENT_CREDIT
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN CC.CC_CUENTA_EFECTIVO cc
+                ON cc.COD_EMPRESA = cr.COD_EMPRESA AND cc.NUM_CUENTA = cr.ID_CUENTA
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = cr.COD_EMPRESA AND cl.COD_CLIENTE = cr.COD_CLIENTE
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = cr.COD_EMPRESA AND ag.COD_AGENCIA = cr.COD_AGENCIA
+            WHERE cr.IND_ESTADO <> 'C'
+              AND (   cr.ID_CUENTA IS NULL
+                   OR LTRIM(RTRIM(cr.ID_CUENTA)) = ''
+                   OR LEN(cr.ID_CUENTA) < 6
+                   OR SUBSTRING(cr.ID_CUENTA, 4, 3) NOT IN (%TYPES%)
+                   OR cc.NUM_CUENTA IS NULL
+                   OR cc.COD_CLIENTE <> cr.COD_CLIENTE
+                   OR cc.IND_ESTADO <> 'A')
+            ORDER BY cr.COD_AGENCIA, cr.NUM_CREDITO
+            """;
+
+    /** Les types de compte admis comme compte de remboursement : courant et epargne. */
+    @org.springframework.beans.factory.annotation.Value("${saf.compte-remboursement.types:014,011}")
+    private String typesCompteAutorises;
+
+    /**
+     * Credits dont le compte de remboursement est mal adosse, lus dans la base de PRODUCTION.
+     * La cible est forcee ici comme pour les credits negatifs : la surveillance tourne sans
+     * requete HTTP, et la sauvegarde de la veille ne verrait pas la saisie de ce matin.
+     */
+    public List<io.digiservices.clients.portefeuille.CompteMalAdosseDto> findComptesMalAdosses() {
+        String sql = SQL_COMPTES_MAL_ADOSSES.replace("%TYPES%", listeTypes(typesCompteAutorises));
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            return execute("portefeuille.comptesMalAdosses", () -> primary.query(sql,
+                    new MapSqlParameterSource(),
+                    (rs, n) -> new io.digiservices.clients.portefeuille.CompteMalAdosseDto(
+                            str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"), rs.getLong("NUM_CREDITO"),
+                            str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                            entier(rs, "TIP_CREDITO"),
+                            rs.getBigDecimal("MON_CREDITO"), rs.getBigDecimal("MON_SALDO"),
+                            str(rs, "IND_ESTADO"),
+                            dt(rs, "FEC_APERTURA"), dt(rs, "FEC_VENCIMIENTO"),
+                            str(rs, "ID_CUENTA"), str(rs, "TYPE_COMPTE"), str(rs, "FAMILLE"),
+                            str(rs, "COMPTE_CLIENT"), str(rs, "COMPTE_AGENCIA"),
+                            str(rs, "COMPTE_ETAT"), rs.getBigDecimal("COMPTE_SOLDE"),
+                            str(rs, "SAISI_PAR"), ts(rs, "DATE_SAISIE"), str(rs, "AGENT_CREDIT"))));
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
+    /**
+     * La liste des types autorises, mise en forme pour un {@code IN} SQL. Le format est verifie
+     * avant d'etre inline : trois chiffres par type, separes par des virgules. Un type se lit
+     * par position dans le numero de compte et ne peut pas etre passe en parametre nomme sans
+     * {@code STRING_SPLIT}, absent des anciennes versions de SQL Server.
+     */
+    static String listeTypes(String configuration) {
+        String brut = configuration == null ? "" : configuration.replace(" ", "");
+        if (!brut.matches("\\d{3}(,\\d{3})*")) {
+            log.warn("[COMPTE MAL ADOSSE] saf.compte-remboursement.types invalide (« {} »), repli sur 014,011", brut);
+            brut = "014,011";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String type : brut.split(",")) {
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
+            sb.append('\'').append(type).append('\'');
+        }
+        return sb.toString();
+    }
+
     private static BigDecimal nvl(BigDecimal v) {
         return v != null ? v : BigDecimal.ZERO;
     }
@@ -991,5 +1106,10 @@ public class PortefeuilleRepository {
     private static LocalDate dt(ResultSet rs, String col) throws SQLException {
         java.sql.Date d = rs.getDate(col);
         return d != null ? d.toLocalDate() : null;
+    }
+
+    private static java.time.LocalDateTime ts(ResultSet rs, String col) throws SQLException {
+        java.sql.Timestamp t = rs.getTimestamp(col);
+        return t != null ? t.toLocalDateTime() : null;
     }
 }

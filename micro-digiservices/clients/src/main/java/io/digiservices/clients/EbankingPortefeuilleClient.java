@@ -73,6 +73,9 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/credits-negatifs")
     List<io.digiservices.clients.portefeuille.CreditNegatifDto> getCreditsNegatifs();
 
+    @GetMapping("/ebanking/portefeuille/comptes-mal-adosses")
+    List<io.digiservices.clients.portefeuille.CompteMalAdosseDto> getComptesMalAdosses();
+
     @GetMapping("/ebanking/portefeuille/echeances-avenir")
     List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> getEcheancesAvenir(
             @RequestParam(value = "joursAvant", defaultValue = "3") int joursAvant);
