@@ -83,11 +83,12 @@ public class CompteMalAdosseService {
     private boolean actif;
 
     /**
-     * Les etats de credit qui declenchent une alerte. Un credit apure n'a plus d'echeance a
-     * prelever : son compte mal adosse n'a plus d'enjeu, il reste sur la liste sans encombrer la
-     * boite aux lettres. Meme regle que le PAR et que les credits negatifs.
+     * Les etats de credit qui declenchent une alerte : en cours et contentieux. Un credit apure
+     * n'a plus d'echeance a prelever — son compte mal adosse n'a plus d'enjeu, il reste sur la
+     * liste sans encombrer la boite aux lettres. Meme regle que le PAR et que les credits
+     * negatifs. L'etat A a quitte le perimetre le 31/10/2026 (solde nul sur ses 1 442 lignes).
      */
-    @Value("${credit.compte.etats-alerte:D,A,J}")
+    @Value("${credit.compte.etats-alerte:D,J}")
     private String etatsAlerte;
 
     /**
@@ -184,7 +185,7 @@ public class CompteMalAdosseService {
         if (etat.isEmpty()) {
             etat = "D";
         }
-        return liste(etatsAlerte, "D,A,J").contains(etat)
+        return liste(etatsAlerte, "D,J").contains(etat)
                 && liste(famillesAlerte, CompteMalAdosseDto.PAS_DE_COMPTE).contains(
                         c.getFamille() == null ? "" : c.getFamille().trim().toUpperCase());
     }

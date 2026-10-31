@@ -976,6 +976,13 @@ public class PortefeuilleRepository {
      *
      * <p>{@code %TYPES%} est remplace par la liste des types autorises avant execution : la
      * liste est une configuration, jamais une saisie, et son format est verifie.</p>
+     *
+     * <p>Le perimetre est {@code IND_ESTADO IN ('I', 'J', 'D')} depuis le 31/10/2026, et non
+     * plus « tout sauf C ». La mesure l'a justifie : sur les 14 221 anomalies du premier
+     * passage, les etats N (5 152), A (1 442), R (747) et T (46) portaient TOUS un solde nul,
+     * soit 7 387 lignes sans enjeu de prelevement. Restent les credits en cours (D), au
+     * contentieux (J) et apures (I) — ces derniers gardent un solde, 9,05 Md GNF, et relevent
+     * du suivi des pertes, pas du prelevement d'echeance.</p>
      */
     private static final String SQL_COMPTES_MAL_ADOSSES = """
             SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, cl.NOM_CLIENTE,
@@ -1002,7 +1009,7 @@ public class PortefeuilleRepository {
                 ON cl.COD_EMPRESA = cr.COD_EMPRESA AND cl.COD_CLIENTE = cr.COD_CLIENTE
             LEFT JOIN CF.CF_AGENCIAS ag
                 ON ag.COD_EMPRESA = cr.COD_EMPRESA AND ag.COD_AGENCIA = cr.COD_AGENCIA
-            WHERE cr.IND_ESTADO <> 'C'
+            WHERE cr.IND_ESTADO IN ('I', 'J', 'D')
               AND (   cr.ID_CUENTA IS NULL
                    OR LTRIM(RTRIM(cr.ID_CUENTA)) = ''
                    OR LEN(cr.ID_CUENTA) < 6

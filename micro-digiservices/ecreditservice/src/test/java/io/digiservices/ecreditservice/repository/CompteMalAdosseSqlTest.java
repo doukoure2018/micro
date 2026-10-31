@@ -98,8 +98,8 @@ class CompteMalAdosseSqlTest {
         String defaut = CompteMalAdosseRepository.filtre(
                 new Filtres(null, null, null, null, null, false, false));
         assertTrue(defaut.contains("corrige_at IS NULL"), "les lignes closes doivent etre exclues");
-        assertTrue(defaut.contains("ind_estado IN ('D', 'A', 'J')"),
-                "seuls les credits vivants sont a traiter");
+        assertTrue(defaut.contains("ind_estado IN ('D', 'J')"),
+                "seuls les credits en cours et au contentieux sont a traiter (perimetre du 31/10)");
         assertTrue(defaut.contains("famille <> 'TYPE_NON_AUTORISE'"),
                 "le type non autorise ne fait pas partie des cas a traiter");
 

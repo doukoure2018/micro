@@ -115,6 +115,7 @@ public class CompteMalAdosseRepository {
         var spec = jdbcClient.sql("""
                 UPDATE credit_compte_anomalie
                    SET corrige_at = CURRENT_TIMESTAMP,
+                       fermeture_motif = 'CORRIGE',
                        compte_a_la_correction = COALESCE(compte_a_la_correction, id_cuenta),
                        famille_a_la_correction = COALESCE(famille_a_la_correction, famille)
                  WHERE corrige_at IS NULL
@@ -152,16 +153,17 @@ public class CompteMalAdosseRepository {
     // ==================== Lecture de l'ecran (lot 2) ====================
 
     /**
-     * Ce qu'un credit vivant est, ici comme ailleurs dans la plateforme : en cours ou au
-     * contentieux. Un credit apure n'a plus d'echeance a prelever, son compte mal adosse n'a
-     * donc plus d'enjeu — il reste compte, jamais presente comme a traiter.
+     * Ce qu'un credit vivant est : en cours (D) ou au contentieux (J). Un credit apure (I) n'a
+     * plus d'echeance a prelever, son compte mal adosse n'a donc plus d'enjeu — il reste
+     * compte, jamais presente comme a traiter. L'etat A a disparu du perimetre le 31/10/2026 :
+     * ses 1 442 lignes portaient toutes un solde nul.
      *
      * <p>Les fragments de requete partages sont bordes d'espaces, et jamais colles a la fin
      * d'un bloc de texte : Java retire les espaces de fin de ligne d'un bloc de texte, et
      * {@code WHERE """ + FRAGMENT} produit alors « WHEREind_estado ». Ce piege a deja coute deux
      * mois de silence aux indicateurs du portefeuille (corrige le 30/10/2026).</p>
      */
-    static final String VIVANT = " ind_estado IN ('D', 'A', 'J') ";
+    static final String VIVANT = " ind_estado IN ('D', 'J') ";
     /** A traiter = vivant ET dans une famille qui declenche une alerte. */
     static final String A_TRAITER = VIVANT + " AND famille <> 'TYPE_NON_AUTORISE' ";
 
@@ -215,8 +217,11 @@ public class CompteMalAdosseRepository {
             + " FROM credit_compte_anomalie WHERE corrige_at IS NULL";
 
     private long corrigeesCeMois() {
+        // Seules les vraies corrections comptent : une ligne sortie du perimetre a ete fermee,
+        // pas corrigee, et la compter ici ferait croire a un travail qui n'a pas eu lieu.
         return jdbcClient.sql("SELECT count(*) FROM credit_compte_anomalie"
-                + " WHERE corrige_at >= date_trunc('month', CURRENT_DATE)").query(Long.class).single();
+                + " WHERE corrige_at >= date_trunc('month', CURRENT_DATE)"
+                + " AND COALESCE(fermeture_motif, 'CORRIGE') = 'CORRIGE'").query(Long.class).single();
     }
 
     public List<Groupe> parFamilleDetail() {

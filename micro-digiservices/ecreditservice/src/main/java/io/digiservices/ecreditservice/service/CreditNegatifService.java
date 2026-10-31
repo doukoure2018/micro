@@ -330,9 +330,20 @@ public class CreditNegatifService {
      * Refuse une action a un compte qui ne fait que controler (service Audit, V194). Pose ici,
      * cote serveur, parce que masquer un bouton ne protege rien.
      */
+    /**
+     * Qui peut agir : la DSIG, et elle seule. Deux verrous, parce qu'ils ne couvrent pas le
+     * meme cas.
+     *
+     * <p>Le premier ecarte le service Audit, dont les comptes controlent apres coup sans rien
+     * modifier. Le second exige la rubrique des credits negatifs : la rubrique d'audit
+     * {@code AUDIT_CAISSE} ouvre la LECTURE de cet ecran, jamais l'action — et sans ce
+     * second verrou, un compte porteur de la seule rubrique d'audit mais rattache a un autre
+     * service que l'Audit pouvait prendre un credit en charge (31/10/2026).</p>
+     */
     private void exigerPeutAgir(String uuid, String action) {
-        if (perimetreSafService.perimetreDe(uuid).lectureSeule()) {
-            throw new ApiException("Le service Audit consulte les credits negatifs sans les modifier : "
+        if (perimetreSafService.perimetreDe(uuid).lectureSeule()
+                || !habilitations.peut(uuid, HabilitationService.CREDITS_NEGATIFS)) {
+            throw new ApiException("Cet ecran se consulte sans etre modifie : "
                     + action + " revient a la DSIG");
         }
     }
