@@ -254,7 +254,8 @@ export class AppMenu {
                 items: [
                     { label: 'Audit rapprochement', icon: 'pi pi-fw pi-shield', routerLink: ['/dashboards/audit-rapprochement'] },
                     { label: 'Arrêtés de caisse', icon: 'pi pi-fw pi-money-bill', routerLink: ['/dashboards/suivi-arrete-caisse'] },
-                    { label: 'Crédits négatifs', icon: 'pi pi-fw pi-exclamation-circle', routerLink: ['/dashboards/credits-negatifs'] }
+                    { label: 'Crédits négatifs', icon: 'pi pi-fw pi-exclamation-circle', routerLink: ['/dashboards/credits-negatifs'] },
+                    { label: 'Comptes mal adossés', icon: 'pi pi-fw pi-link', routerLink: ['/dashboards/comptes-mal-adosses'] }
                 ]
             });
         }
@@ -539,6 +540,13 @@ export class AppMenu {
                 label: 'Crédits négatifs',
                 icon: 'pi pi-fw pi-exclamation-circle',
                 routerLink: ['/dashboards/credits-negatifs']
+            });
+            // Comptes de remboursement mal adosses (V196) : meme rubrique que les credits
+            // negatifs, parce que ce sont les memes personnes qui en repondent (31/10/2026).
+            items.push({
+                label: 'Comptes mal adossés',
+                icon: 'pi pi-fw pi-link',
+                routerLink: ['/dashboards/comptes-mal-adosses']
             });
         }
         // Barometre d'usage de la plateforme (V175) : reseau pour la direction, delegation pour

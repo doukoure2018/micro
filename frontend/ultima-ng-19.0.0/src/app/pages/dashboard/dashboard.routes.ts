@@ -173,6 +173,12 @@ export default [
         loadComponent: () => import('./credits-negatifs/credits-negatifs.component').then((c) => c.CreditsNegatifsComponent)
     },
     {
+        path: 'comptes-mal-adosses',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Comptes mal adossés', rubriques: ['CREDITS_NEGATIFS', 'AUDIT_CAISSE'] },
+        loadComponent: () => import('./comptes-mal-adosses/comptes-mal-adosses.component').then((c) => c.ComptesMalAdossesComponent)
+    },
+    {
         path: 'usage-plateforme',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Usage de la plateforme', rubriques: ['USAGE_PLATEFORME', 'AUDIT_ACCES'] },

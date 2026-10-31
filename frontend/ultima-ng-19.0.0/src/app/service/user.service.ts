@@ -1980,6 +1980,25 @@ export class UserService {
     exportAuditDelais$ = (seuilJours: number | null) =>
         this.http.get(`${this.server}/ecredit/audit/delais/export`, { params: seuilJours ? { seuilJours } : {}, responseType: 'blob', observe: 'response' });
 
+    // ==================== Comptes de remboursement mal adosses (V196, lot 2) ====================
+    getComptesMalAdosses$ = (f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-mal-adosses`, { params: this.paramsMalAdosses(f) }).pipe(catchError(this.handleError));
+    suiviCompteMalAdosse$ = (id: number, traite: boolean, commentaire: string | null) =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/${id}/suivi`, {}, { params: commentaire ? { traite, commentaire } : { traite } })
+            .pipe(catchError(this.handleError));
+    exportComptesMalAdosses$ = (f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
+        this.http.get(`${this.server}/ecredit/comptes-mal-adosses/export`, { params: this.paramsMalAdosses(f), responseType: 'blob', observe: 'response' });
+    private paramsMalAdosses(f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }): Record<string, string | boolean> {
+        const p: Record<string, string | boolean> = { inclureCorriges: f.inclureCorriges, tout: f.tout };
+        if (f.famille) p['famille'] = f.famille;
+        if (f.etat) p['etat'] = f.etat;
+        if (f.agence) p['agence'] = f.agence;
+        if (f.saisiPar) p['saisiPar'] = f.saisiPar;
+        if (f.recherche) p['recherche'] = f.recherche;
+        return p;
+    }
+
     getDossierCreditNegatif$ = (id: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/dossier`).pipe(catchError(this.handleError));
     exportDossierCreditNegatif$ = (id: number) =>
