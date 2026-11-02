@@ -1980,6 +1980,13 @@ export class UserService {
     exportAuditDelais$ = (seuilJours: number | null) =>
         this.http.get(`${this.server}/ecredit/audit/delais/export`, { params: seuilJours ? { seuilJours } : {}, responseType: 'blob', observe: 'response' });
 
+    getTendanceRisque$ = (jours = 30, agenceId: number | null = null, delegationId: number | null = null) => {
+        const p: Record<string, string | number> = { jours };
+        if (agenceId) p['agenceId'] = agenceId;
+        if (delegationId) p['delegationId'] = delegationId;
+        return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque/tendance`, { params: p }).pipe(catchError(this.handleError));
+    };
+
     // ==================== Synthese hebdomadaire de direction (V198) ====================
     getSyntheseDirection$ = (reference: string | null = null) =>
         <Observable<IResponse>>this.http

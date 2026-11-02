@@ -1,6 +1,6 @@
 import { DonneesSafComponent } from './donnees-saf.component';
 import { IResponse } from '@/interface/response';
-import { CreditRisque, FAMILLES_PROPOSEES, FamilleProduit, LigneRisque, NON_AFFECTE, PortefeuilleRisque, RisqueReseau, TrancheRisque } from '@/interface/portefeuille-risque';
+import { CreditRisque, FAMILLES_PROPOSEES, FamilleProduit, LigneRisque, NON_AFFECTE, PortefeuilleRisque, RisqueReseau, TrancheRisque , TendanceRisque } from '@/interface/portefeuille-risque';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
@@ -9,6 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
+import { ChartModule } from 'primeng/chart';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -41,7 +42,7 @@ type VueProduit = 'type' | 'famille';
 @Component({
     selector: 'app-portefeuille-risque',
     standalone: true,
-    imports: [CommonModule, DonneesSafComponent, FormsModule, ButtonModule, DialogModule, InputNumberModule, InputTextModule, SelectModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, ChartModule, DonneesSafComponent, FormsModule, ButtonModule, DialogModule, InputNumberModule, InputTextModule, SelectModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -94,6 +95,8 @@ type VueProduit = 'type' | 'famille';
 
             @if (reseau(); as r) {
             <ng-container *ngTemplateOutlet="tuiles; context: { $implicit: r.total, seuil30: r.seuilPar30, seuil90: r.seuilPar90 }"></ng-container>
+
+            <ng-container *ngTemplateOutlet="tendanceBloc"></ng-container>
 
             <h3 class="text-lg font-semibold mb-1">{{ libelleNiveau(r.niveau) }}</h3>
             <p class="text-xs text-gray-500 mb-2">Cliquez une ligne pour descendre jusqu'aux points de service, puis au détail d'un point de service.</p>
@@ -170,6 +173,8 @@ type VueProduit = 'type' | 'famille';
             @if (data(); as d) {
             <ng-container *ngTemplateOutlet="tuiles; context: { $implicit: d.total, seuil30: d.seuilPar30, seuil90: d.seuilPar90 }"></ng-container>
 
+            <ng-container *ngTemplateOutlet="tendanceBloc"></ng-container>
+
             <div *ngIf="filtreProduit() || filtreAgent()" class="flex flex-wrap items-center gap-2 mb-3 p-2 rounded bg-blue-50 border border-blue-200 text-sm">
                 <i class="pi pi-filter"></i>
                 <span *ngIf="filtreProduit() as f">Le tableau des agents ne montre que le produit <b>{{ f.libelle }}</b>.</span>
@@ -201,6 +206,27 @@ type VueProduit = 'type' | 'famille';
         </div>
 
         <!-- ========================= Gabarits ========================= -->
+        <ng-template #tendanceBloc>
+            @if (tendance(); as t) {
+            @if (t.serie.length > 1) {
+            <div class="border rounded p-3 mb-4">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-1">
+                    <span class="font-semibold">Tendance du portefeuille à risque</span>
+                    <div class="flex items-center gap-2">
+                        <p-selectButton [options]="periodes" [(ngModel)]="periode" optionLabel="label" optionValue="value" (onChange)="chargerTendance()" [allowEmpty]="false"></p-selectButton>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mb-2">
+                    Lue dans la photo quotidienne de 08 h 40 — aucune requête SAF, donc disponible même pendant une clôture. {{ t.nbPointsService }} point(s) de
+                    service.
+                    <span *ngIf="tranchesIncompletes(t)"> Les tranches 60 et 120 jours n'étaient pas encore photographiées avant le {{ t.tranchesCompletesDepuis | date: 'dd/MM' }} : elles ne sont pas tracées avant cette date.</span>
+                </p>
+                <p-chart type="line" [data]="graphTendance()" [options]="optionsTendance" height="220px"></p-chart>
+            </div>
+            }
+            }
+        </ng-template>
+
         <ng-template #tuiles let-t let-seuil30="seuil30" let-seuil90="seuil90">
             <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3 mb-4">
                 <div class="border rounded p-3">
@@ -550,7 +576,65 @@ export class PortefeuilleRisqueComponent implements OnInit {
 
     sommeEncours = computed(() => this.credits().reduce((s, c) => s + (c.credit.monSaldo || 0), 0));
 
+    // ==================== La tendance (lot 3) ====================
+
+    readonly tendance = signal<TendanceRisque | null>(null);
+    periode = 30;
+    periodes = [
+        { label: '7 j', value: 7 },
+        { label: '30 j', value: 30 },
+        { label: '90 j', value: 90 }
+    ];
+
+    /**
+     * Les trois tranches qui portent un seuil ou une décision. PAR 60 et 120 ne sont tracés
+     * qu'à partir du jour où ils ont commencé à être photographiés : avant, ils valaient zéro
+     * faute d'exister, et les tracer dessinerait une chute qui n'a jamais eu lieu.
+     */
+    readonly graphTendance = computed(() => {
+        const t = this.tendance();
+        if (!t) return { labels: [], datasets: [] };
+        const taux = (tranche: number | null, encours: number | null) => (tranche === null || !encours ? null : (tranche * 100) / encours);
+        const complet = (j: any) => j.date >= t.tranchesCompletesDepuis;
+        return {
+            labels: t.serie.map((j) => new Date(j.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })),
+            datasets: [
+                { label: 'PAR 30 j', data: t.serie.map((j) => taux(j.par30, j.encours)), borderColor: '#B3261E', backgroundColor: '#B3261E', tension: 0.3, spanGaps: true },
+                { label: 'PAR 60 j', data: t.serie.map((j) => (complet(j) ? taux(j.par60, j.encours) : null)), borderColor: '#9A6400', backgroundColor: '#9A6400', tension: 0.3, spanGaps: true },
+                { label: 'PAR 90 j', data: t.serie.map((j) => taux(j.par90, j.encours)), borderColor: '#1E6B4F', backgroundColor: '#1E6B4F', tension: 0.3, spanGaps: true },
+                { label: 'PAR 120 j', data: t.serie.map((j) => (complet(j) ? taux(j.par120, j.encours) : null)), borderColor: '#5C6B60', backgroundColor: '#5C6B60', borderDash: [4, 3], tension: 0.3, spanGaps: true }
+            ]
+        };
+    });
+
+    readonly optionsTendance = {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' as const } },
+        scales: {
+            y: {
+                ticks: { callback: (v: any) => Number(v).toFixed(1) + ' %' },
+                title: { display: true, text: "Part de l'encours" }
+            }
+        }
+    };
+
+    /** Vrai quand la série commence avant le jour où les quatre tranches existaient. */
+    tranchesIncompletes(t: TendanceRisque): boolean {
+        return t.serie.length > 0 && t.serie[0].date < t.tranchesCompletesDepuis;
+    }
+
+    chargerTendance(): void {
+        this.userService
+            .getTendanceRisque$(this.periode)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.tendance.set(((r.data as any)?.tendance as TendanceRisque) || null),
+                error: () => this.tendance.set(null)
+            });
+    }
+
     ngOnInit(): void {
+        this.chargerTendance();
         this.userService
             .getPortefeuilleAgences$()
             .pipe(takeUntilDestroyed(this.destroyRef))

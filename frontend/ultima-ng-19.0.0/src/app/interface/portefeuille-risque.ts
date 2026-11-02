@@ -106,3 +106,27 @@ export type TrancheRisque = '' | 'retard' | '30' | '60' | '90' | '120';
 
 /** Familles proposées à la Direction de l'exploitation ; la saisie reste libre. */
 export const FAMILLES_PROPOSEES = ['Agricole et campagne', 'Trésorerie et commerce', 'Équipement', 'Habitat', 'Consommation et salariés', 'Groupe et solidaire', 'Autres'];
+
+// ==================== La tendance, lue dans les photos quotidiennes (lot 3) ====================
+
+export interface JourTendance {
+    date: string;
+    nbCredits: number;
+    encours: number | null;
+    par30: number | null;
+    par60: number | null;
+    par90: number | null;
+    par120: number | null;
+}
+
+/**
+ * `tranchesCompletesDepuis` est la première photo portant les quatre tranches : avant cette
+ * date, PAR 60 et PAR 120 valent zéro faute d'exister encore, et les tracer donnerait une
+ * chute qui n'a jamais eu lieu.
+ */
+export interface TendanceRisque {
+    jours: number;
+    nbPointsService: number;
+    tranchesCompletesDepuis: string;
+    serie: JourTendance[];
+}
