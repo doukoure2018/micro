@@ -28,4 +28,10 @@ public class CreditNegatifDto {
     /** D en cours, I apure, J contentieux, C clos, T transfere ; vide ou inconnu = en cours. */
     private String indEstado;
     private String codEjecutivo;
+    /**
+     * Le nom de l'usager SAF derriere {@code codEjecutivo} ({@code SG.SG_USUARIOS.NOM_USUARIO}).
+     * Vide quand le code ne correspond a aucun usager : un agent parti dont le compte a ete
+     * supprime laisse son code sur les credits qu'il a portes.
+     */
+    private String nomEjecutivo;
 }

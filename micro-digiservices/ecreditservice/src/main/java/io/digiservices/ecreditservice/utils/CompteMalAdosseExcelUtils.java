@@ -51,7 +51,8 @@ public final class CompteMalAdosseExcelUtils {
             String[] entetes = {"Point de service", "Code PS", "Crédit", "Client", "N° membre",
                     "Nature de l'anomalie", "Compte saisi", "Type", "Propriétaire du compte",
                     "État du compte", "Octroyé (GNF)", "Solde (GNF)", "État du crédit",
-                    "Ouvert le", "Saisi par", "Saisi le", "Agent", "Détectée le",
+                    "Ouvert le", "Saisi par (code)", "Saisi par (nom)", "Saisi le",
+                    "Agent (code)", "Agent (nom)", "Détectée le",
                     "À traiter", "Prise en charge par", "Depuis (jours)", "Commentaire"};
             r = entetes(f, st, r, entetes);
             for (LigneDto l : lignes) {
@@ -73,8 +74,10 @@ public final class CompteMalAdosseExcelUtils {
                 cel(row, c++, l.getEtat(), null);
                 cel(row, c++, jour(l.getFecApertura()), null);
                 cel(row, c++, l.getSaisiPar(), null);
+                cel(row, c++, l.getNomSaisiPar(), null);
                 cel(row, c++, heure(l.getDateSaisie()), null);
                 cel(row, c++, l.getAgentCredit(), null);
+                cel(row, c++, l.getNomAgentCredit(), null);
                 cel(row, c++, heure(l.getDetecteAt()), null);
                 cel(row, c++, l.isATraiter() ? "Oui" : "Non", null);
                 cel(row, c++, l.getTraitePar(), null);

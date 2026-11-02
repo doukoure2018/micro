@@ -65,7 +65,33 @@ class CompteMalAdosseSqlTest {
         verifier("par agence", CompteMalAdosseRepository.sqlGroupes(
                 "cod_agencia", "cod_agencia", "COALESCE(max(des_agencia), '')"));
         verifier("par usager", CompteMalAdosseRepository.sqlGroupes(
-                "COALESCE(saisi_par, '(inconnu)')", "COALESCE(saisi_par, '(inconnu)')", null));
+                "COALESCE(saisi_par, '(inconnu)')", "COALESCE(saisi_par, '(inconnu)')",
+                "COALESCE(max(nom_saisi_par), '')"));
+    }
+
+    @Test
+    @DisplayName("le nom de l'usager SAF est lu, cherche et relance (V200)")
+    void leNomDeLUsagerEstPorte() {
+        // La liste le ramene : sans cela l'ecran n'afficherait que le code, qui ne dit rien a
+        // qui lit la liste et oblige a ouvrir SAF pour traduire chaque ligne.
+        String liste = CompteMalAdosseRepository.sqlLignes(
+                new Filtres(null, null, null, null, null, false, false));
+        assertTrue(liste.contains("nom_saisi_par"), "le nom de celui qui a saisi doit etre lu");
+        assertTrue(liste.contains("nom_agent_credit"), "le nom de l'agent porteur doit etre lu");
+
+        // La recherche libre doit trouver un agent par son nom, puisque c'est le nom qui est
+        // affiche : chercher « Soumah » sans resultat alors que la colonne l'affiche serait
+        // incomprehensible.
+        String cherche = CompteMalAdosseRepository.filtre(
+                new Filtres(null, null, null, null, "soumah", false, false));
+        assertTrue(cherche.contains("nom_saisi_par"), "la recherche doit porter sur le nom saisi");
+        assertTrue(cherche.contains("nom_agent_credit"), "la recherche doit porter sur l'agent");
+
+        // Le courriel de relance nomme l'auteur de la saisie.
+        for (boolean prises : new boolean[]{true, false}) {
+            assertTrue(CompteMalAdosseRepository.sqlARelancer(prises).contains("a.nom_saisi_par"),
+                    "la relance doit nommer l'usager, pas seulement son code");
+        }
     }
 
     @Test

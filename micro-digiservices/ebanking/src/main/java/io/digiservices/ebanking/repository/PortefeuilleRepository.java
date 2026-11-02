@@ -314,7 +314,10 @@ public class PortefeuilleRepository {
     private static final String SQL_CREDITS_NEGATIFS = """
             SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, c.NOM_CLIENTE,
                    cr.TIP_CREDITO, cr.MON_CREDITO, cr.MON_SALDO, cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
-                   cr.IND_ESTADO, cr.COD_EJECUTIVO
+                   cr.IND_ESTADO, cr.COD_EJECUTIVO,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = cr.COD_EMPRESA
+                       AND u.COD_USUARIO = cr.COD_EJECUTIVO) AS NOM_EJECUTIVO
             FROM PR.PR_CREDITOS cr
             LEFT JOIN CL.CL_CLIENTES c
                 ON c.COD_EMPRESA = cr.COD_EMPRESA AND c.COD_CLIENTE = cr.COD_CLIENTE
@@ -343,7 +346,8 @@ public class PortefeuilleRepository {
                             entier(rs, "TIP_CREDITO"),
                             rs.getBigDecimal("MON_CREDITO"), rs.getBigDecimal("MON_SALDO"),
                             dt(rs, "FEC_APERTURA"), dt(rs, "FEC_VENCIMIENTO"),
-                            str(rs, "IND_ESTADO"), str(rs, "COD_EJECUTIVO"))));
+                            str(rs, "IND_ESTADO"), str(rs, "COD_EJECUTIVO"),
+                            str(rs, "NOM_EJECUTIVO"))));
         } finally {
             if (avant == null) {
                 io.digiservices.ebanking.config.SafRoutage.effacer();
@@ -789,8 +793,11 @@ public class PortefeuilleRepository {
      *
      * <p>Les trois premieres passent par la cle du credit, donc par un index. Les deux dernieres
      * reprennent les liens du script, qui sont des recherches dans du texte libre et n'utilisent
-     * aucun index : elles sont bornees par l'entreprise, le point de service, la date d'ouverture
-     * du credit (aucune ecriture anterieure ne peut le concerner) et un plafond de lignes.</p>
+     * aucun index. Elles sont bornees par ce qui ne change aucune ligne du resultat :
+     * l'entreprise, la date d'ouverture du credit (aucune ecriture anterieure ne peut le
+     * concerner) et un plafond de lignes. Les ecritures comptables gardent en plus le point de
+     * service, que le script leur impose ; les mouvements de compte, non — voir
+     * {@code SQL_DOSSIER_COMPTE}, dont la mise a jour du 29/10/2026 couvre tout le reseau.</p>
      */
     private static final String SQL_DOSSIER_FICHE = """
             SELECT * FROM PR.PR_CREDITOS
@@ -809,17 +816,31 @@ public class PortefeuilleRepository {
              ORDER BY FEC_MOVIMIENTO, NUM_MOVIMIENTO
             """;
 
-    // Lien du script : le compte du credit, OU son numero cite dans le libelle du mouvement.
+    /**
+     * Lien du script, mis a jour le 29/10/2026 : le numero du credit cite dans le libelle du
+     * mouvement, et RIEN D'AUTRE.
+     *
+     * <p>Le script le dit en toutes lettres : « on ne filtre pas par COD_AGENCIA ni par
+     * NUM_CUENTA, car Power Query inclut aussi les mouvements trouves dans une autre agence ou
+     * un autre compte », et « cette regle n'extrait donc PAS tous les mouvements de
+     * ID_CUENTA ». Les deux conditions que portait cette requete lui faisaient donc dire autre
+     * chose que l'extraction de reference : elle manquait les mouvements passes dans une autre
+     * agence, et ajoutait tout l'historique du compte de remboursement, que le script ecarte.
+     * L'ecran et le classeur doivent montrer la meme chose, sans quoi on ne peut pas les
+     * comparer.</p>
+     *
+     * <p>Ce que cela coute : la recherche porte desormais sur le reseau entier, sans index
+     * puisqu'elle cherche dans du texte libre. Restent deux bornes qui ne changent AUCUNE ligne
+     * du resultat — l'entreprise, et la date d'ouverture du credit, puisqu'aucun mouvement
+     * anterieur ne peut citer un credit qui n'existait pas — plus le plafond de lignes.</p>
+     */
     private static final String SQL_DOSSIER_COMPTE = """
             SELECT TOP (:max) * FROM CC.CC_MOVIMTO_MENSUAL
-             WHERE COD_EMPRESA = :codEmpresa AND COD_AGENCIA = :codAgencia
+             WHERE COD_EMPRESA = :codEmpresa
                AND (:depuis IS NULL OR FEC_MOVIMIENTO >= :depuis)
-               AND ((:idCuenta IS NOT NULL
-                     AND CONVERT(VARCHAR(100), NUM_CUENTA) COLLATE DATABASE_DEFAULT
-                       = CONVERT(VARCHAR(100), :idCuenta) COLLATE DATABASE_DEFAULT)
-                 OR CHARINDEX(CONVERT(VARCHAR(30), :numTexte) COLLATE DATABASE_DEFAULT,
-                              ISNULL(CONVERT(VARCHAR(MAX), DES_MOVIMIENTO), '') COLLATE DATABASE_DEFAULT) > 0)
-             ORDER BY FEC_MOVIMIENTO, NUM_MOVIMIENTO
+               AND CHARINDEX(CONVERT(VARCHAR(30), :numTexte) COLLATE DATABASE_DEFAULT,
+                             ISNULL(CONVERT(VARCHAR(MAX), DES_MOVIMIENTO), '') COLLATE DATABASE_DEFAULT) > 0
+             ORDER BY COD_AGENCIA, NUM_CUENTA, FEC_MOVIMIENTO, NUM_MOVIMIENTO
             """;
 
     // Lien du script : le numero du credit cite dans la reference de l'ecriture.
@@ -862,7 +883,6 @@ public class PortefeuilleRepository {
                     .addValue("codEmpresa", empresa).addValue("codAgencia", codAgencia)
                     .addValue("max", max)
                     .addValue("numTexte", String.valueOf(numCredito))
-                    .addValue("idCuenta", idCuenta == null ? null : String.valueOf(idCuenta))
                     .addValue("depuis", fecApertura == null ? null : java.sql.Date.valueOf(fecApertura));
 
             List<java.util.Map<String, Object>> echeancier = chrono(millis, "echeancier",
@@ -1001,7 +1021,13 @@ public class PortefeuilleRepository {
                    cc.COD_CLIENTE AS COMPTE_CLIENT, cc.COD_AGENCIA AS COMPTE_AGENCIA,
                    cc.IND_ESTADO AS COMPTE_ETAT, cc.SAL_DISPONIBLE AS COMPTE_SOLDE,
                    cr.COD_USUARIO AS SAISI_PAR, cr.FEC_ADICION AS DATE_SAISIE,
-                   cr.COD_OFICIAL AS AGENT_CREDIT
+                   cr.COD_OFICIAL AS AGENT_CREDIT,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = cr.COD_EMPRESA
+                       AND u.COD_USUARIO = cr.COD_USUARIO) AS NOM_SAISI_PAR,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = cr.COD_EMPRESA
+                       AND u.COD_USUARIO = cr.COD_OFICIAL) AS NOM_AGENT_CREDIT
             FROM PR.PR_CREDITOS cr
             LEFT JOIN CC.CC_CUENTA_EFECTIVO cc
                 ON cc.COD_EMPRESA = cr.COD_EMPRESA AND cc.NUM_CUENTA = cr.ID_CUENTA
@@ -1048,7 +1074,8 @@ public class PortefeuilleRepository {
                             str(rs, "ID_CUENTA"), str(rs, "TYPE_COMPTE"), str(rs, "FAMILLE"),
                             str(rs, "COMPTE_CLIENT"), str(rs, "COMPTE_AGENCIA"),
                             str(rs, "COMPTE_ETAT"), rs.getBigDecimal("COMPTE_SOLDE"),
-                            str(rs, "SAISI_PAR"), ts(rs, "DATE_SAISIE"), str(rs, "AGENT_CREDIT"))));
+                            str(rs, "SAISI_PAR"), ts(rs, "DATE_SAISIE"), str(rs, "AGENT_CREDIT"),
+                            str(rs, "NOM_SAISI_PAR"), str(rs, "NOM_AGENT_CREDIT"))));
         } finally {
             if (avant == null) {
                 io.digiservices.ebanking.config.SafRoutage.effacer();
@@ -1125,7 +1152,13 @@ public class PortefeuilleRepository {
             SELECT cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, cl.NOM_CLIENTE,
                    cr.MON_CREDITO, cr.MON_SALDO, cr.IND_ESTADO,
                    cr.FEC_APERTURA, cr.FEC_VENCIMIENTO, cr.ID_CUENTA,
-                   cr.COD_USUARIO, cr.COD_OFICIAL
+                   cr.COD_USUARIO, cr.COD_OFICIAL,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = cr.COD_EMPRESA
+                       AND u.COD_USUARIO = cr.COD_USUARIO) AS NOM_USUARIO,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = cr.COD_EMPRESA
+                       AND u.COD_USUARIO = cr.COD_OFICIAL) AS NOM_OFICIAL
             FROM PR.PR_CREDITOS cr
             LEFT JOIN CL.CL_CLIENTES cl
                 ON cl.COD_EMPRESA = cr.COD_EMPRESA AND cl.COD_CLIENTE = cr.COD_CLIENTE
@@ -1195,6 +1228,7 @@ public class PortefeuilleRepository {
                                 .fecVencimiento(dt(rs, "FEC_VENCIMIENTO"))
                                 .idCuenta(str(rs, "ID_CUENTA"))
                                 .codUsuario(str(rs, "COD_USUARIO")).codOficial(str(rs, "COD_OFICIAL"))
+                                .nomUsuario(str(rs, "NOM_USUARIO")).nomOficial(str(rs, "NOM_OFICIAL"))
                                 .build());
                 if (credits.isEmpty()) {
                     return java.util.Optional.empty();

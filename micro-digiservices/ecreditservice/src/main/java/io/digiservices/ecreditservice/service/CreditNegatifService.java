@@ -109,7 +109,8 @@ public class CreditNegatifService {
                 .codCliente(l.codCliente()).nomCliente(l.nomCliente()).tipCredito(l.tipCredito())
                 .monCredito(l.monCredito()).monSaldo(l.monSaldo()).pireSolde(l.pireSolde())
                 .fecApertura(l.fecApertura()).indEstado(l.indEstado()).etat(libelleEtat(l.indEstado()))
-                .codEjecutivo(l.codEjecutivo()).detecteAt(l.detecteAt()).signaleAt(l.signaleAt())
+                .codEjecutivo(l.codEjecutivo()).nomEjecutivo(l.nomEjecutivo())
+                .detecteAt(l.detecteAt()).signaleAt(l.signaleAt())
                 .corrigeAt(l.corrigeAt()).traitePar(l.traitePar()).traiteAt(l.traiteAt())
                 .commentaire(l.commentaire())
                 .verifieSafAt(l.verifieSafAt()).soldeApres(l.soldeApres()).etatApres(l.etatApres())
@@ -327,21 +328,26 @@ public class CreditNegatifService {
     }
 
     /**
-     * Refuse une action a un compte qui ne fait que controler (service Audit, V194). Pose ici,
-     * cote serveur, parce que masquer un bouton ne protege rien.
-     */
-    /**
      * Qui peut agir : la DSIG, et elle seule. Deux verrous, parce qu'ils ne couvrent pas le
-     * meme cas.
+     * meme cas. Poses ici, cote serveur, parce que masquer un bouton ne protege rien.
      *
      * <p>Le premier ecarte le service Audit, dont les comptes controlent apres coup sans rien
-     * modifier. Le second exige la rubrique des credits negatifs : la rubrique d'audit
+     * modifier (V194). Le second exige la rubrique des credits negatifs : la rubrique d'audit
      * {@code AUDIT_CAISSE} ouvre la LECTURE de cet ecran, jamais l'action — et sans ce
      * second verrou, un compte porteur de la seule rubrique d'audit mais rattache a un autre
      * service que l'Audit pouvait prendre un credit en charge (31/10/2026).</p>
+     *
+     * <p>Ce qui ne doit PAS etre exige ici : un perimetre geographique. L'ecran porte sur tout
+     * le reseau, et le demander refusait les comptes de la DSIG — un operationnel se voyait
+     * repondre « Acces reserve aux agents de credit et niveaux de direction » au moment de
+     * prendre un credit en charge (02/11/2026). L'ecran des comptes mal adosses, lui, n'a
+     * jamais demande de perimetre : les deux disent desormais la meme chose.</p>
      */
     private void exigerPeutAgir(String uuid, String action) {
-        if (perimetreSafService.perimetreDe(uuid).lectureSeule()
+        // Lecture seule du service Audit, sans passer par le perimetre geographique : cet ecran
+        // porte sur tout le reseau, son autorisation est la rubrique et non le rattachement.
+        // Demander un perimetre refusait les comptes de la DSIG, a qui l'ecran est destine.
+        if (perimetreSafService.lectureSeule(uuid)
                 || !habilitations.peut(uuid, HabilitationService.CREDITS_NEGATIFS)) {
             throw new ApiException("Cet ecran se consulte sans etre modifie : "
                     + action + " revient a la DSIG");

@@ -55,13 +55,15 @@ public class CompteMalAdosseRepository {
                             tip_credito, mon_credito, mon_saldo, ind_estado, fec_apertura, fec_vencimiento,
                             id_cuenta, type_compte, famille,
                             compte_client, compte_agencia, compte_etat, compte_solde,
-                            saisi_par, date_saisie, agent_credit)
+                            saisi_par, date_saisie, agent_credit,
+                            nom_saisi_par, nom_agent_credit)
                         VALUES (
                             :codAgencia, :numCredito, :codCliente, :nomCliente, :desAgencia,
                             :tipCredito, :monCredito, :monSaldo, :indEstado, :fecApertura, :fecVencimiento,
                             :idCuenta, :typeCompte, :famille,
                             :compteClient, :compteAgencia, :compteEtat, :compteSolde,
-                            :saisiPar, :dateSaisie, :agentCredit)
+                            :saisiPar, :dateSaisie, :agentCredit,
+                            :nomSaisiPar, :nomAgentCredit)
                         RETURNING id
                         """), c)
                 .query(Long.class).single();
@@ -88,6 +90,8 @@ public class CompteMalAdosseRepository {
                                saisi_par = COALESCE(:saisiPar, saisi_par),
                                date_saisie = COALESCE(:dateSaisie, date_saisie),
                                agent_credit = COALESCE(:agentCredit, agent_credit),
+                               nom_saisi_par = COALESCE(:nomSaisiPar, nom_saisi_par),
+                               nom_agent_credit = COALESCE(:nomAgentCredit, nom_agent_credit),
                                tip_credito = COALESCE(:tipCredito, tip_credito),
                                mon_credito = COALESCE(:monCredito, mon_credito),
                                fec_apertura = COALESCE(:fecApertura, fec_apertura),
@@ -180,7 +184,8 @@ public class CompteMalAdosseRepository {
                         String idCuenta, String typeCompte, String famille,
                         String compteClient, String compteAgencia, String compteEtat,
                         BigDecimal compteSolde, String saisiPar, LocalDateTime dateSaisie,
-                        String agentCredit, OffsetDateTime detecteAt, OffsetDateTime dernierVuAt,
+                        String agentCredit, String nomSaisiPar, String nomAgentCredit,
+                        OffsetDateTime detecteAt, OffsetDateTime dernierVuAt,
                         OffsetDateTime familleChangeeAt, OffsetDateTime signaleAt,
                         OffsetDateTime corrigeAt, String compteALaCorrection,
                         String familleALaCorrection, String traitePar, OffsetDateTime traiteAt,
@@ -233,9 +238,16 @@ public class CompteMalAdosseRepository {
         return groupes("cod_agencia", "cod_agencia", "COALESCE(max(des_agencia), '')");
     }
 
-    /** Par usager SAF ayant saisi le credit : c'est la que se voit l'habitude. */
+    /**
+     * Par usager SAF ayant saisi le credit : c'est la que se voit l'habitude.
+     *
+     * <p>La cle reste le code, puisque c'est lui qui filtre l'ecran ; le libelle porte le nom,
+     * pour qu'on sache de qui l'on parle sans traduire le code dans SAF. Le nom est pris par
+     * {@code max} sur le groupe : toutes les lignes d'un meme code portent le meme nom.</p>
+     */
     public List<Groupe> parUsager() {
-        return groupes("COALESCE(saisi_par, '(inconnu)')", "COALESCE(saisi_par, '(inconnu)')", null);
+        return groupes("COALESCE(saisi_par, '(inconnu)')", "COALESCE(saisi_par, '(inconnu)')",
+                "COALESCE(max(nom_saisi_par), '')");
     }
 
     private List<Groupe> groupes(String expression, String groupBy, String libelle) {
@@ -287,6 +299,7 @@ public class CompteMalAdosseRepository {
                         rs.getString("saisi_par"),
                         rs.getObject("date_saisie", LocalDateTime.class),
                         rs.getString("agent_credit"),
+                        rs.getString("nom_saisi_par"), rs.getString("nom_agent_credit"),
                         rs.getObject("detecte_at", OffsetDateTime.class),
                         rs.getObject("dernier_vu_at", OffsetDateTime.class),
                         rs.getObject("famille_changee_at", OffsetDateTime.class),
@@ -303,7 +316,7 @@ public class CompteMalAdosseRepository {
             + " cod_cliente, nom_cliente, tip_credito, mon_credito, mon_saldo,"
             + " fec_apertura, fec_vencimiento, ind_estado, id_cuenta, type_compte, famille,"
             + " compte_client, compte_agencia, compte_etat, compte_solde,"
-            + " saisi_par, date_saisie, agent_credit,"
+            + " saisi_par, date_saisie, agent_credit, nom_saisi_par, nom_agent_credit,"
             + " detecte_at, dernier_vu_at, famille_changee_at, signale_at, corrige_at,"
             + " compte_a_la_correction, famille_a_la_correction,"
             + " (SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))"
@@ -338,6 +351,8 @@ public class CompteMalAdosseRepository {
         if (vide(f.recherche()) != null) {
             w.append(" AND (CAST(num_credito AS TEXT) LIKE '%' || :recherche || '%'")
                     .append(" OR LOWER(COALESCE(nom_cliente, '')) LIKE LOWER('%' || :recherche || '%')")
+                    .append(" OR LOWER(COALESCE(nom_saisi_par, '')) LIKE LOWER('%' || :recherche || '%')")
+                    .append(" OR LOWER(COALESCE(nom_agent_credit, '')) LIKE LOWER('%' || :recherche || '%')")
                     .append(" OR COALESCE(cod_cliente, '') LIKE '%' || :recherche || '%'")
                     .append(" OR COALESCE(id_cuenta, '') LIKE '%' || :recherche || '%') ");
         }
@@ -380,8 +395,8 @@ public class CompteMalAdosseRepository {
     /** Une anomalie a relancer : de quoi ecrire la ligne du courriel sans la relire ailleurs. */
     public record ARelancer(Long id, String codAgencia, String desAgencia, Long numCredito,
                             String nomCliente, String idCuenta, String famille,
-                            BigDecimal monSaldo, String saisiPar, String traitePar,
-                            Long joursDepuis, int nbRelances) {
+                            BigDecimal monSaldo, String saisiPar, String nomSaisiPar,
+                            String traitePar, Long joursDepuis, int nbRelances) {
     }
 
     /**
@@ -401,7 +416,8 @@ public class CompteMalAdosseRepository {
                         rs.getString("des_agencia"), rs.getLong("num_credito"),
                         rs.getString("nom_cliente"), rs.getString("id_cuenta"),
                         rs.getString("famille"), rs.getBigDecimal("mon_saldo"),
-                        rs.getString("saisi_par"), rs.getString("traite_par"),
+                        rs.getString("saisi_par"), rs.getString("nom_saisi_par"),
+                        rs.getString("traite_par"),
                         (Long) rs.getObject("jours_depuis"), rs.getInt("nb_relances")))
                 .list();
     }
@@ -419,6 +435,7 @@ public class CompteMalAdosseRepository {
                         + " AND a.detecte_at < CURRENT_TIMESTAMP - make_interval(days => :jours) ";
         return "SELECT a.id, a.cod_agencia, a.des_agencia, a.num_credito,"
                 + " a.nom_cliente, a.id_cuenta, a.famille, a.mon_saldo, a.saisi_par,"
+                + " a.nom_saisi_par,"
                 + " (SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))"
                 + "    FROM users u WHERE u.user_id = a.traite_par_user_id) AS traite_par,"
                 + " EXTRACT(DAY FROM (CURRENT_TIMESTAMP"
@@ -494,6 +511,8 @@ public class CompteMalAdosseRepository {
                 .param("compteClient", c.getCompteClient()).param("compteAgencia", c.getCompteAgencia())
                 .param("compteEtat", c.getCompteEtat()).param("compteSolde", c.getCompteSolde())
                 .param("saisiPar", c.getSaisiPar()).param("dateSaisie", c.getDateSaisie())
-                .param("agentCredit", c.getAgentCredit());
+                .param("agentCredit", c.getAgentCredit())
+                .param("nomSaisiPar", c.getNomSaisiPar())
+                .param("nomAgentCredit", c.getNomAgentCredit());
     }
 }

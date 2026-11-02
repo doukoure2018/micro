@@ -61,4 +61,11 @@ public class CompteMalAdosseDto {
     private LocalDateTime dateSaisie;
     /** L'agent de credit porteur du dossier ({@code COD_OFICIAL}). */
     private String agentCredit;
+    /**
+     * Les noms derriere les deux codes ci-dessus ({@code SG.SG_USUARIOS.NOM_USUARIO}). Un code
+     * ne dit rien a qui lit la liste : c'est le nom qui permet d'aller voir la personne. Vide
+     * quand le code ne correspond a aucun usager, par exemple un agent parti.
+     */
+    private String nomSaisiPar;
+    private String nomAgentCredit;
 }

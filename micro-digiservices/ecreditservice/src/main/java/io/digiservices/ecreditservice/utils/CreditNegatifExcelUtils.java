@@ -32,7 +32,8 @@ public final class CreditNegatifExcelUtils {
     private static final String[] ENTETES = {
             "Code PS", "Point de service", "N° crédit", "Code client", "Client", "Type",
             "Montant octroyé (GNF)", "Solde (GNF)", "Pire solde vu (GNF)", "Ouvert le",
-            "État SAF", "État", "Agent SAF", "Détecté le", "Signalé le", "Corrigé le",
+            "État SAF", "État", "Agent SAF (code)", "Agent SAF (nom)",
+            "Détecté le", "Signalé le", "Corrigé le",
             "Solde corrigé (GNF)", "Figé le", "Source", "Écart régularisé (GNF)",
             "Dernier solde lu dans SAF (GNF)", "Lu le", "Conclusion",
             "Pris en charge par", "Le", "Commentaire"
@@ -83,34 +84,35 @@ public final class CreditNegatifExcelUtils {
                 cel(r, 10, nvl(c.getIndEstado()), texte);
                 cel(r, 11, nvl(c.getEtat()), texte);
                 cel(r, 12, nvl(c.getCodEjecutivo()), texte);
-                cel(r, 13, c.getDetecteAt() == null ? "" : c.getDetecteAt().format(FMT_HEURE), texte);
-                cel(r, 14, c.getSignaleAt() == null ? "" : c.getSignaleAt().format(FMT_HEURE), texte);
-                cel(r, 15, c.getCorrigeAt() == null ? "" : c.getCorrigeAt().format(FMT_HEURE), texte);
+                cel(r, 13, nvl(c.getNomEjecutivo()), texte);
+                cel(r, 14, c.getDetecteAt() == null ? "" : c.getDetecteAt().format(FMT_HEURE), texte);
+                cel(r, 15, c.getSignaleAt() == null ? "" : c.getSignaleAt().format(FMT_HEURE), texte);
+                cel(r, 16, c.getCorrigeAt() == null ? "" : c.getCorrigeAt().format(FMT_HEURE), texte);
                 // Solde corrige (V193) : fige a la regularisation. Vide quand il n'y a rien eu a
                 // figer, plutot qu'un zero qui se confondrait avec un solde ramene a zero.
                 if (c.getSoldeCorrige() != null) {
-                    num(r, 16, c.getSoldeCorrige().doubleValue(), nombre);
+                    num(r, 17, c.getSoldeCorrige().doubleValue(), nombre);
                 } else {
-                    cel(r, 16, "", texte);
+                    cel(r, 17, "", texte);
                 }
-                cel(r, 17, c.getSoldeCorrigeAt() == null ? "" : c.getSoldeCorrigeAt().format(FMT_HEURE), texte);
-                cel(r, 18, "REPRISE".equals(c.getSoldeCorrigeSource()) ? "reconstitué"
+                cel(r, 18, c.getSoldeCorrigeAt() == null ? "" : c.getSoldeCorrigeAt().format(FMT_HEURE), texte);
+                cel(r, 19, "REPRISE".equals(c.getSoldeCorrigeSource()) ? "reconstitué"
                         : "SAF".equals(c.getSoldeCorrigeSource()) ? "lu dans SAF" : "", texte);
                 if (c.getEcartRegularise() != null) {
-                    num(r, 19, c.getEcartRegularise().doubleValue(), nombre);
-                } else {
-                    cel(r, 19, "", texte);
-                }
-                if (c.getSoldeApres() != null) {
-                    num(r, 20, c.getSoldeApres().doubleValue(), nombre);
+                    num(r, 20, c.getEcartRegularise().doubleValue(), nombre);
                 } else {
                     cel(r, 20, "", texte);
                 }
-                cel(r, 21, c.getVerifieSafAt() == null ? "" : c.getVerifieSafAt().format(FMT_HEURE), texte);
-                cel(r, 22, nvl(c.getConclusionLibelle()), texte);
-                cel(r, 23, nvl(c.getTraitePar()), texte);
-                cel(r, 24, c.getTraiteAt() == null ? "" : c.getTraiteAt().format(FMT), texte);
-                cel(r, 25, nvl(c.getCommentaire()), texte);
+                if (c.getSoldeApres() != null) {
+                    num(r, 21, c.getSoldeApres().doubleValue(), nombre);
+                } else {
+                    cel(r, 21, "", texte);
+                }
+                cel(r, 22, c.getVerifieSafAt() == null ? "" : c.getVerifieSafAt().format(FMT_HEURE), texte);
+                cel(r, 23, nvl(c.getConclusionLibelle()), texte);
+                cel(r, 24, nvl(c.getTraitePar()), texte);
+                cel(r, 25, c.getTraiteAt() == null ? "" : c.getTraiteAt().format(FMT), texte);
+                cel(r, 26, nvl(c.getCommentaire()), texte);
             }
             int[] largeurs = {10, 26, 13, 16, 30, 8, 20, 18, 20, 14, 11, 14, 16, 18, 18, 18,
                     20, 18, 14, 22, 26, 18, 20, 24, 13, 40};

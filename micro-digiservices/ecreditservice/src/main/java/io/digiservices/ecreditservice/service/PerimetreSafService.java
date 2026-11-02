@@ -43,12 +43,39 @@ public class PerimetreSafService {
          * est refuse comme l'ecran l'interdit.
          */
         public boolean lectureSeule() {
-            return SERVICE_AUDIT.equalsIgnoreCase(user == null ? null : user.getService());
+            return estAudit(user);
         }
     }
 
     /** Service dont les comptes ne modifient rien : ils controlent apres coup. */
     public static final String SERVICE_AUDIT = "Audit";
+
+    private static boolean estAudit(User user) {
+        return user != null && SERVICE_AUDIT.equalsIgnoreCase(user.getService());
+    }
+
+    /**
+     * Le compte est-il en lecture seule, SANS rien exiger de son perimetre geographique ?
+     *
+     * <p>{@link #perimetreDe(String)} refuse tout role hors agent de credit et direction,
+     * parce qu'il doit borner ce que le compte voit du reseau. Un ecran qui porte sur TOUT le
+     * reseau — les credits negatifs, les comptes mal adosses — n'a pas de perimetre a borner :
+     * son autorisation est la rubrique d'habilitation, pas le rattachement geographique. Lui
+     * demander un perimetre revient a refuser les comptes de la DSIG, qui sont precisement
+     * ceux a qui l'ecran est destine : c'est ce qui est arrive au bouton « Je m'en occupe »
+     * des credits negatifs, ou un operationnel se voyait repondre « Acces reserve aux agents
+     * de credit et niveaux de direction » (02/11/2026).</p>
+     *
+     * <p>Cette methode ne repond donc qu'a la question posee : ce compte appartient-il au
+     * service qui controle sans modifier ?</p>
+     */
+    public boolean lectureSeule(String uuid) {
+        User user = userClient.getUserByUuid(uuid);
+        if (user == null) {
+            throw new ApiException("Utilisateur non identifie");
+        }
+        return estAudit(user);
+    }
 
     public Perimetre perimetreDe(String uuid) {
         User user = userClient.getUserByUuid(uuid);

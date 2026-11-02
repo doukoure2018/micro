@@ -38,6 +38,8 @@ public final class CreditNegatifDtos {
         /** Le meme etat ecrit en clair : « En cours », « Apuré », « Contentieux »... */
         private String etat;
         private String codEjecutivo;
+        /** Le nom derriere le code : un code SAF ne dit rien a qui lit la liste. */
+        private String nomEjecutivo;
         private OffsetDateTime detecteAt;
         private OffsetDateTime signaleAt;
         private OffsetDateTime corrigeAt;

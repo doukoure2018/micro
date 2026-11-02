@@ -61,6 +61,9 @@ public class DossierCompteSafDto {
     private String idCuenta;
     private String codUsuario;
     private String codOficial;
+    /** Les noms derriere ces deux codes ({@code SG.SG_USUARIOS.NOM_USUARIO}). */
+    private String nomUsuario;
+    private String nomOficial;
 
     /** Le compte saisi, tel qu'il est reellement. Absent si le numero ne correspond a rien. */
     private CompteSafDto compteSaisi;

@@ -59,8 +59,12 @@ public final class CompteMalAdosseDtos {
         private BigDecimal compteSolde;
 
         private String saisiPar;
+        /** Le nom derriere saisiPar : un code SAF ne dit rien a qui lit la liste. */
+        private String nomSaisiPar;
         private LocalDateTime dateSaisie;
         private String agentCredit;
+        /** Le nom derriere agentCredit. */
+        private String nomAgentCredit;
 
         private OffsetDateTime detecteAt;
         private OffsetDateTime dernierVuAt;

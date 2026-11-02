@@ -25,6 +25,7 @@ public class CreditNegatifRepository {
     public record Ligne(Long id, String codAgencia, String desAgencia, Long numCredito, String codCliente,
                         String nomCliente, Integer tipCredito, BigDecimal monCredito, BigDecimal monSaldo,
                         BigDecimal pireSolde, LocalDate fecApertura, String indEstado, String codEjecutivo,
+                        String nomEjecutivo,
                         OffsetDateTime detecteAt, OffsetDateTime signaleAt, OffsetDateTime corrigeAt,
                         String traitePar, OffsetDateTime traiteAt, String commentaire,
                         OffsetDateTime verifieSafAt, BigDecimal soldeApres, String etatApres,
@@ -54,10 +55,12 @@ public class CreditNegatifRepository {
         return jdbcClient.sql("""
                 INSERT INTO credit_negatif (cod_agencia, des_agencia, num_credito, cod_cliente, nom_cliente,
                                             tip_credito, mon_credito, mon_saldo, pire_solde,
-                                            fec_apertura, fec_vencimiento, ind_estado, cod_ejecutivo)
+                                            fec_apertura, fec_vencimiento, ind_estado, cod_ejecutivo,
+                                            nom_ejecutivo)
                 VALUES (:codAgencia, :desAgencia, :numCredito, :codCliente, :nomCliente,
                         :tipCredito, :monCredito, :monSaldo, :monSaldo,
-                        :fecApertura, :fecVencimiento, :indEstado, :codEjecutivo)
+                        :fecApertura, :fecVencimiento, :indEstado, :codEjecutivo,
+                        :nomEjecutivo)
                 RETURNING id
                 """)
                 .param("codAgencia", c.getCodAgencia()).param("desAgencia", c.getDesAgencia())
@@ -66,6 +69,7 @@ public class CreditNegatifRepository {
                 .param("monCredito", c.getMonCredito()).param("monSaldo", c.getMonSaldo())
                 .param("fecApertura", c.getFecApertura()).param("fecVencimiento", c.getFecVencimiento())
                 .param("indEstado", c.getIndEstado()).param("codEjecutivo", c.getCodEjecutivo())
+                .param("nomEjecutivo", c.getNomEjecutivo())
                 .query(Long.class).single();
     }
 
@@ -78,11 +82,14 @@ public class CreditNegatifRepository {
                        ind_estado = :indEstado,
                        nom_cliente = COALESCE(:nomCliente, nom_cliente),
                        des_agencia = COALESCE(:desAgencia, des_agencia),
+                       cod_ejecutivo = COALESCE(:codEjecutivo, cod_ejecutivo),
+                       nom_ejecutivo = COALESCE(:nomEjecutivo, nom_ejecutivo),
                        dernier_vu_at = CURRENT_TIMESTAMP
                  WHERE cod_agencia = :codAgencia AND num_credito = :numCredito AND corrige_at IS NULL
                 """)
                 .param("monSaldo", c.getMonSaldo()).param("indEstado", c.getIndEstado())
                 .param("nomCliente", c.getNomCliente()).param("desAgencia", c.getDesAgencia())
+                .param("codEjecutivo", c.getCodEjecutivo()).param("nomEjecutivo", c.getNomEjecutivo())
                 .param("codAgencia", c.getCodAgencia()).param("numCredito", c.getNumCredito())
                 .update();
     }
@@ -142,7 +149,8 @@ public class CreditNegatifRepository {
         return jdbcClient.sql("""
                 SELECT c.id, c.cod_agencia, c.des_agencia, c.num_credito, c.cod_cliente, c.nom_cliente,
                        c.tip_credito, c.mon_credito, c.mon_saldo, c.pire_solde, c.fec_apertura,
-                       c.ind_estado, c.cod_ejecutivo, c.detecte_at, c.signale_at, c.corrige_at,
+                       c.ind_estado, c.cod_ejecutivo, c.nom_ejecutivo,
+                       c.detecte_at, c.signale_at, c.corrige_at,
                        TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS traite_par,
                        c.traite_at, c.commentaire,
                        c.verifie_saf_at, c.solde_apres, c.etat_apres, c.corrige_mode, c.conclusion,
@@ -162,6 +170,7 @@ public class CreditNegatifRepository {
                         rs.getBigDecimal("pire_solde"),
                         rs.getDate("fec_apertura") == null ? null : rs.getDate("fec_apertura").toLocalDate(),
                         rs.getString("ind_estado"), rs.getString("cod_ejecutivo"),
+                        rs.getString("nom_ejecutivo"),
                         rs.getObject("detecte_at", OffsetDateTime.class),
                         rs.getObject("signale_at", OffsetDateTime.class),
                         rs.getObject("corrige_at", OffsetDateTime.class),

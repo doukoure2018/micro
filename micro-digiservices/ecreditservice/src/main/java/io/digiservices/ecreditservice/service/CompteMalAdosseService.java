@@ -327,6 +327,7 @@ public class CompteMalAdosseService {
                 .compteClient(l.compteClient()).compteAgencia(l.compteAgencia())
                 .compteEtat(l.compteEtat()).compteSolde(l.compteSolde())
                 .saisiPar(l.saisiPar()).dateSaisie(l.dateSaisie()).agentCredit(l.agentCredit())
+                .nomSaisiPar(l.nomSaisiPar()).nomAgentCredit(l.nomAgentCredit())
                 .detecteAt(l.detecteAt()).dernierVuAt(l.dernierVuAt())
                 .familleChangeeAt(l.familleChangeeAt()).signaleAt(l.signaleAt())
                 .corrigeAt(l.corrigeAt()).compteALaCorrection(l.compteALaCorrection())
@@ -481,7 +482,8 @@ public class CompteMalAdosseService {
                             ? "(aucun)" : a.idCuenta()))
                     .append(cell(libelleFamille(a.famille())))
                     .append(cell(montant(a.monSaldo())))
-                    .append(cell(nvl(avecPreneur ? a.traitePar() : a.saisiPar())))
+                    .append(cell(avecPreneur ? nvl(a.traitePar())
+                            : usager(a.saisiPar(), a.nomSaisiPar())))
                     .append(cell(a.joursDepuis() == null ? "" : a.joursDepuis() + " j"))
                     .append(cell(a.nbRelances() == 0 ? "—" : String.valueOf(a.nbRelances())))
                     .append("</tr>");
@@ -598,8 +600,8 @@ public class CompteMalAdosseService {
                     .append(libelleFamille(c.getFamille())).append("</td>")
                     .append(cell(montant(c.getMonSaldo())))
                     .append(cell(date(c.getFecApertura())))
-                    .append(cell(nvl(c.getSaisiPar())))
-                    .append(cell(nvl(c.getAgentCredit())))
+                    .append(cell(usager(c.getSaisiPar(), c.getNomSaisiPar())))
+                    .append(cell(usager(c.getAgentCredit(), c.getNomAgentCredit())))
                     .append("</tr>");
         }
         h.append("</table>");
@@ -653,5 +655,17 @@ public class CompteMalAdosseService {
 
     private static String nvl(String s) {
         return s == null ? "" : s;
+    }
+
+    /**
+     * L'usager SAF tel qu'on l'ecrit partout : le nom, puis le code entre parentheses. Un code
+     * seul ne dit rien a qui lit le courriel ; le code seul subsiste quand le nom est inconnu,
+     * par exemple pour un agent parti dont le compte SAF a ete supprime.
+     */
+    private static String usager(String code, String nom) {
+        if (code == null || code.isBlank()) {
+            return nom == null || nom.isBlank() ? "" : nom;
+        }
+        return nom == null || nom.isBlank() ? code : nom + " (" + code + ")";
     }
 }
