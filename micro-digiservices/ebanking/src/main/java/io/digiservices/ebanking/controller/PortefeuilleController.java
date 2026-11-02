@@ -255,6 +255,13 @@ public class PortefeuilleController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /** La filiere agricole de chaque credit vivant d'un point de service. */
+    @GetMapping("/filieres")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.FiliereCreditDto>> getFilieres(
+            @RequestParam("codAgencia") String codAgencia) {
+        return ResponseEntity.ok(repository.findFilieresPointService(codAgencia));
+    }
+
     /** Octrois d'une periode, par point de service : la production de credit de la semaine. */
     @GetMapping("/octrois")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.OctroiSemaineDto>> getOctrois(

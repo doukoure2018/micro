@@ -8,6 +8,7 @@ import io.digiservices.ecreditservice.dto.PortefeuilleRisqueDtos.LigneRisqueDto;
 import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository.PointVenteHierarchie;
 import io.digiservices.ecreditservice.service.PortefeuilleRisqueCalculateur.ResultatReseau;
 import io.digiservices.ecreditservice.service.PortefeuilleRisqueCalculateur.Resultat;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -258,5 +259,43 @@ class PortefeuilleRisqueCalculateurTest {
 
     private static BigDecimal somme(List<LigneRisqueDto> lignes, java.util.function.Function<LigneRisqueDto, BigDecimal> f) {
         return lignes.stream().map(f).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Test
+    @DisplayName("le groupement par filiere retombe sur le total, « Sans filiere » comprise")
+    void leGroupementParFiliereRetombeSurLeTotal() {
+        // Deux credits sur une filiere connue, un sans filiere : c'est le cas reel, puisque SAF
+        // ne porte la sous-sous-activite que sur 99,3 % des credits agricoles.
+        Map<Long, String> filieres = Map.of(1L, "CÉRÉALE RIZ", 2L, "CÉRÉALE RIZ");
+        Resultat r = PortefeuilleRisqueCalculateur.calculer(credits, affectations, Set.of(), PS, JOUR,
+                null, filieres);
+
+        assertFalse(r.parFiliere().isEmpty(), "le groupement doit exister quand des filieres sont connues");
+        BigDecimal sommeEncours = r.parFiliere().stream()
+                .map(LigneRisqueDto::getEncours).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, sommeEncours.compareTo(r.total().getEncours()),
+                "la somme des filieres doit retomber exactement sur le point de service, "
+                        + "sinon un lecteur conclut a une perte de credits");
+        assertEquals(r.total().getNbCredits(),
+                r.parFiliere().stream().mapToLong(LigneRisqueDto::getNbCredits).sum());
+
+        // La ligne « Sans filiere » existe et ferme le tableau : la cacher ferait que la somme
+        // ne retombe plus, et l'y noyer en tete lui donnerait l'air d'une filiere.
+        var derniere = r.parFiliere().get(r.parFiliere().size() - 1);
+        assertEquals(PortefeuilleRisqueCalculateur.SANS_FILIERE, derniere.getCle(),
+                "les credits sans filiere ferment le tableau");
+    }
+
+    @Test
+    @DisplayName("sans filiere connue, le groupement est vide et rien d'autre ne change")
+    void sansFiliereConnueLeGroupementEstVide() {
+        Resultat avec = PortefeuilleRisqueCalculateur.calculer(credits, affectations, Set.of(), PS, JOUR,
+                null, Map.of());
+        Resultat sans = PortefeuilleRisqueCalculateur.calculer(credits, affectations, Set.of(), PS, JOUR, null);
+        assertTrue(avec.parFiliere().isEmpty(),
+                "aucune filiere connue : l'ecran doit masquer l'onglet, pas afficher un tableau vide");
+        assertEquals(0, sans.total().getEncours().compareTo(avec.total().getEncours()),
+                "le reste du calcul ne doit pas dependre de la presence des filieres");
+        assertEquals(sans.parProduit().size(), avec.parProduit().size());
     }
 }

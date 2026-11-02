@@ -27,7 +27,7 @@ interface AgenceSaf {
 }
 
 type Mode = 'ps' | 'perimetre';
-type VueProduit = 'type' | 'famille';
+type VueProduit = 'type' | 'famille' | 'filiere';
 
 /**
  * Portefeuille à risque par agent et par produit (proposition DSIG du 29/10/2026).
@@ -73,7 +73,7 @@ type VueProduit = 'type' | 'famille';
                     appendTo="body"
                 ></p-select>
                 <p-selectButton *ngIf="mode() === 'perimetre' && niveauOptions().length > 1" [options]="niveauOptions()" [ngModel]="niveau()" (ngModelChange)="changerNiveau($event)" optionLabel="label" optionValue="value" [allowEmpty]="false"></p-selectButton>
-                <p-selectButton [options]="vueProduitOptions" [ngModel]="vueProduit()" (ngModelChange)="vueProduit.set($event)" optionLabel="label" optionValue="value" [allowEmpty]="false" pTooltip="Lire les produits par type SAF ou par famille"></p-selectButton>
+                <p-selectButton [options]="vueProduitOptions()" [ngModel]="vueProduit()" (ngModelChange)="vueProduit.set($event)" optionLabel="label" optionValue="value" [allowEmpty]="false" pTooltip="Lire les produits par type SAF ou par famille"></p-selectButton>
                 <button *ngIf="peutParametrer()" pButton icon="pi pi-sliders-h" label="Familles et seuils" class="p-button-outlined" (click)="ouvrirFamilles()"></button>
                 <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-success p-button-outlined ml-auto" [loading]="exportEnCours()" [disabled]="mode() === 'ps' ? !data() : !reseau()" (click)="exporter()"></button>
             </div>
@@ -182,7 +182,7 @@ type VueProduit = 'type' | 'famille';
                 <button pButton label="Tout afficher" icon="pi pi-times" class="p-button-text p-button-sm ml-auto" (click)="effacerFiltres()"></button>
             </div>
 
-            <h3 class="text-lg font-semibold mb-1">{{ vueProduit() === 'famille' && !filtreAgent() ? 'Par famille de produits' : 'Par produit' }}</h3>
+            <h3 class="text-lg font-semibold mb-1">{{ titreProduits() }}</h3>
             <p class="text-xs text-gray-500 mb-2">Type de crédit SAF. Cliquez une ligne pour voir la part de chaque agent dans ce produit.</p>
             <ng-container *ngTemplateOutlet="tableProduits; context: { $implicit: lignesProduit(), total: d.total, seuil30: d.seuilPar30, seuil90: d.seuilPar90, cliquable: true, credits: true }"></ng-container>
 
@@ -486,10 +486,29 @@ export class PortefeuilleRisqueComponent implements OnInit {
         { label: 'Un point de service', value: 'ps' }
     ];
     vueProduit = signal<VueProduit>('type');
-    vueProduitOptions = [
-        { label: 'Par type', value: 'type' },
-        { label: 'Par famille', value: 'famille' }
-    ];
+
+    /** Le titre suit la vue choisie ; filtrer par agent ramene toujours au type. */
+    titreProduits(): string {
+        if (this.filtreAgent()) return 'Par produit';
+        if (this.vueProduit() === 'filiere') return 'Par filière agricole';
+        return this.vueProduit() === 'famille' ? 'Par famille de produits' : 'Par produit';
+    }
+    /**
+     * « Par filière » n'est propose que si SAF a repondu : une option qui ouvre un tableau vide
+     * laisse croire a une panne. La filiere n'existe que pour un point de service, la vue reseau
+     * ne la porte pas encore.
+     */
+    readonly vueProduitOptions = computed(() => {
+        const base = [
+            { label: 'Par type', value: 'type' },
+            { label: 'Par famille', value: 'famille' }
+        ];
+        const d = this.data();
+        if (d?.parFiliere?.length) {
+            base.push({ label: 'Par filière', value: 'filiere' });
+        }
+        return base;
+    });
 
     // Un point de service (lot 1)
     agence = signal<AgenceSaf | null>(null);
@@ -538,7 +557,10 @@ export class PortefeuilleRisqueComponent implements OnInit {
         const d = this.data();
         if (!d) return [];
         const agent = this.filtreAgent();
-        if (!agent) return this.vueProduit() === 'famille' ? d.parFamille : d.parProduit;
+        if (!agent) {
+            if (this.vueProduit() === 'filiere') return d.parFiliere || [];
+            return this.vueProduit() === 'famille' ? d.parFamille : d.parProduit;
+        }
         const produits = new Map(d.parProduit.map((p) => [this.cleProduit(p.tipCredito), p]));
         return d.croisement
             .filter((x) => this.cleAgent(x) === agent.cle)

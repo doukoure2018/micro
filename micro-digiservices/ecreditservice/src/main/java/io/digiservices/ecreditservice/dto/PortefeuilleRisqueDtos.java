@@ -146,6 +146,12 @@ public final class PortefeuilleRisqueDtos {
         private LigneRisqueDto total;
         private List<LigneRisqueDto> parProduit;
         private List<LigneRisqueDto> parFamille;
+        /**
+         * Le meme portefeuille a risque, groupe par filiere agricole. Vide quand SAF n'a pas
+         * repondu sur ce point : l'ecran masque alors l'onglet plutot que d'afficher un tableau
+         * vide sans explication.
+         */
+        private List<LigneRisqueDto> parFiliere;
         private List<LigneRisqueDto> parAgent;
         private List<LigneRisqueDto> croisement;
     }

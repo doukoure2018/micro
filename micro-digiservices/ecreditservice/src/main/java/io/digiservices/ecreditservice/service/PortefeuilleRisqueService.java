@@ -82,7 +82,7 @@ public class PortefeuilleRisqueService {
     /** Ce que le service a lu pour un point de service, partage par les points d'entree du lot 1. */
     private record Lecture(Perimetre perimetre, String codAgencia, String desAgencia, LocalDate jour,
                            List<PortefeuilleCreditDto> enCours, Map<Long, AffectationDto> affectations,
-                           Set<Long> contentieuxDeclares) {
+                           Set<Long> contentieuxDeclares, Map<Long, String> filieres) {
         boolean estAgent() {
             return "AGENT_CREDIT".equals(perimetre.role());
         }
@@ -95,7 +95,7 @@ public class PortefeuilleRisqueService {
     public PortefeuilleRisqueDto charger(String uuid, String codAgencia) {
         Lecture l = lire(uuid, codAgencia);
         Resultat r = PortefeuilleRisqueCalculateur.calculer(l.enCours(), l.affectations(), l.contentieuxDeclares(),
-                l.codAgencia(), l.jour(), l.agentSeul());
+                l.codAgencia(), l.jour(), l.agentSeul(), l.filieres());
         Map<Long, FamilleProduitDto> familles = repository.familles();
         PortefeuilleRisqueCalculateur.appliquerFamilles(r.parProduit(), familles);
         return PortefeuilleRisqueDto.builder()
@@ -106,6 +106,7 @@ public class PortefeuilleRisqueService {
                 .utilisateurId(l.perimetre().user().getUserId())
                 .total(r.total()).parProduit(r.parProduit())
                 .parFamille(PortefeuilleRisqueCalculateur.parFamille(r.parProduit()))
+                .parFiliere(r.parFiliere())
                 .parAgent(r.parAgent()).croisement(r.croisement())
                 .build();
     }
@@ -319,9 +320,26 @@ public class PortefeuilleRisqueService {
                 .filter(a -> !TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
                 .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
         Set<Long> contentieux = affectationRepository.contentieuxActifs(codAgencia).keySet();
+        // La filiere est lue a part : la requete des credits sert tous les ecrans du
+        // portefeuille, et on ne l'alourdit pas pour un groupement qui ne sert qu'ici. Si SAF ne
+        // repond pas sur ce point, l'ecran s'affiche sans l'onglet plutot que de ne pas
+        // s'afficher — la filiere est un confort, le PAR est l'essentiel.
+        Map<Long, String> filieres;
+        try {
+            filieres = portefeuilleClient.getFilieres(codAgencia).stream()
+                    .filter(f -> f.getDesFiliere() != null && !f.getDesFiliere().isBlank())
+                    .collect(Collectors.toMap(
+                            io.digiservices.clients.portefeuille.FiliereCreditDto::getNumCredito,
+                            io.digiservices.clients.portefeuille.FiliereCreditDto::getDesFiliere,
+                            (a, b) -> a));
+        } catch (Exception e) {
+            log.warn("[RISQUE] Filieres indisponibles pour {} : {}", codAgencia, e.getMessage());
+            filieres = Map.of();
+        }
         String des = tous.stream().map(PortefeuilleCreditDto::getDesAgencia).filter(d -> d != null && !d.isBlank())
                 .findFirst().orElse(codAgencia);
-        return new Lecture(perimetre, codAgencia, des, LocalDate.now(), enCours, affectations, contentieux);
+        return new Lecture(perimetre, codAgencia, des, LocalDate.now(), enCours, affectations, contentieux,
+                filieres);
     }
 
     /** Codes SAF du perimetre, restreints a une agence ou une delegation si demande. */

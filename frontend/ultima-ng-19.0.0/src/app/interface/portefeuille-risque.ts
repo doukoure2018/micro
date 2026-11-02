@@ -53,6 +53,8 @@ export interface PortefeuilleRisque {
     total: LigneRisque;
     parProduit: LigneRisque[];
     parFamille: LigneRisque[];
+    /** Par filière agricole. Vide quand SAF n'a pas répondu : l'onglet est alors masqué. */
+    parFiliere?: LigneRisque[];
     parAgent: LigneRisque[];
     croisement: LigneRisque[];
 }

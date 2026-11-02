@@ -51,7 +51,11 @@ public final class PortefeuilleRisqueCalculateur {
     public static final String NIVEAU_DELEGATION = "delegation";
     private static final String NON_RATTACHE = "Non rattaché";
 
+    /** Le libelle retenu quand SAF ne porte aucune filiere sur le credit. */
+    public static final String SANS_FILIERE = "Sans filière";
+
     public record Resultat(LigneRisqueDto total, List<LigneRisqueDto> parProduit,
+                           List<LigneRisqueDto> parFiliere,
                            List<LigneRisqueDto> parAgent, List<LigneRisqueDto> croisement) {}
 
     public record ResultatReseau(LigneRisqueDto total, List<LigneRisqueDto> parProduit,
@@ -71,10 +75,27 @@ public final class PortefeuilleRisqueCalculateur {
     public static Resultat calculer(List<PortefeuilleCreditDto> credits, Map<Long, AffectationDto> affectations,
                                     Set<Long> contentieuxDeclares, String codAgencia, LocalDate aujourdhui,
                                     Long agentSeul) {
+        return calculer(credits, affectations, contentieuxDeclares, codAgencia, aujourdhui, agentSeul,
+                Map.of());
+    }
+
+    /**
+     * La meme chose, en groupant aussi par filiere agricole quand elle est connue.
+     *
+     * <p>La filiere vient d'une lecture separee de SAF : le portefeuille a risque d'un point de
+     * service peut donc etre lu par produit ET par filiere, qui ne disent pas la meme chose — un
+     * meme produit finance plusieurs cultures, et une culture se finance par plusieurs produits.
+     * Les credits sans filiere forment leur propre ligne : les cacher ferait que la somme des
+     * filieres ne retombe pas sur le total du point de service.</p>
+     */
+    public static Resultat calculer(List<PortefeuilleCreditDto> credits, Map<Long, AffectationDto> affectations,
+                                    Set<Long> contentieuxDeclares, String codAgencia, LocalDate aujourdhui,
+                                    Long agentSeul, Map<Long, String> filieres) {
         LocalDate d30 = aujourdhui.minusDays(30), d60 = aujourdhui.minusDays(60),
                 d90 = aujourdhui.minusDays(90), d120 = aujourdhui.minusDays(120);
         LigneRisqueDto total = LigneRisqueDto.vide("TOTAL", "Point de service");
         Map<String, LigneRisqueDto> produits = new LinkedHashMap<>();
+        Map<String, LigneRisqueDto> parFiliere = new LinkedHashMap<>();
         Map<String, LigneRisqueDto> agents = new LinkedHashMap<>();
         Map<String, LigneRisqueDto> croisements = new LinkedHashMap<>();
 
@@ -94,7 +115,16 @@ public final class PortefeuilleRisqueCalculateur {
             });
 
             boolean contentieux = contentieuxDeclares.contains(c.getNumCredito());
-            for (LigneRisqueDto l : List.of(total, p, a, x)) {
+            List<LigneRisqueDto> aCumuler = new ArrayList<>(List.of(total, p, a, x));
+            if (!filieres.isEmpty()) {
+                String libelle = filieres.get(c.getNumCredito());
+                String cleFiliere = libelle == null || libelle.isBlank() ? SANS_FILIERE : libelle;
+                aCumuler.add(parFiliere.computeIfAbsent(cleFiliere, k -> {
+                    LigneRisqueDto l = LigneRisqueDto.vide(k, k);
+                    return l;
+                }));
+            }
+            for (LigneRisqueDto l : aCumuler) {
                 cumuler(l, c, d30, d60, d90, d120, contentieux);
             }
         }
@@ -110,7 +140,12 @@ public final class PortefeuilleRisqueCalculateur {
             parAgent = parAgent.stream().filter(l -> l.isNonAffecte() || agentSeul.equals(l.getAgentUserId())).toList();
             croisement = croisement.stream().filter(l -> l.isNonAffecte() || agentSeul.equals(l.getAgentUserId())).toList();
         }
-        return new Resultat(total, parProduit, parAgent, croisement);
+        List<LigneRisqueDto> filieresTriees = trier(new ArrayList<>(parFiliere.values()));
+        // La ligne « Sans filiere » ferme le tableau : elle n'est pas une filiere, mais la somme
+        // doit retomber sur le total du point de service.
+        filieresTriees = new ArrayList<>(filieresTriees);
+        filieresTriees.sort(Comparator.comparing(l -> SANS_FILIERE.equals(l.getCle())));
+        return new Resultat(total, parProduit, filieresTriees, parAgent, croisement);
     }
 
     /**

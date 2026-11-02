@@ -81,6 +81,10 @@ public interface EbankingPortefeuilleClient {
             @org.springframework.web.bind.annotation.PathVariable("codAgencia") String codAgencia,
             @org.springframework.web.bind.annotation.PathVariable("numCredito") Long numCredito);
 
+    @GetMapping("/ebanking/portefeuille/filieres")
+    List<io.digiservices.clients.portefeuille.FiliereCreditDto> getFilieres(
+            @RequestParam(value = "codAgencia") String codAgencia);
+
     @GetMapping("/ebanking/portefeuille/octrois")
     List<io.digiservices.clients.portefeuille.OctroiSemaineDto> getOctrois(
             @org.springframework.web.bind.annotation.RequestParam("debut") String debut,

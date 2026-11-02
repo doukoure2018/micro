@@ -1249,6 +1249,42 @@ public class PortefeuilleRepository {
                 .build();
     }
 
+
+    // ==================== La filiere agricole d'un point de service (lot 3) ====================
+
+    /**
+     * La filiere de chaque credit vivant d'un point de service.
+     *
+     * <p>{@code OUTER APPLY ... TOP 1} et non une jointure : le code de filiere se repete sous
+     * plusieurs sous-activites avec le MEME libelle — 53 codes distincts pour 129 lignes sous la
+     * seule activite agricole — et une jointure ordinaire multiplierait les lignes. Le piege a
+     * ete mesure lors du chantier AgriPilot ; la meme precaution s'applique ici.</p>
+     *
+     * <p>Requete separee de celle des credits, qui sert tous les ecrans du portefeuille : la
+     * filiere ne coute donc que la ou elle est demandee.</p>
+     */
+    private static final String SQL_FILIERES_PS = """
+            SELECT cr.NUM_CREDITO, cr.COD_SUBSUBACTIVIDAD AS COD_FILIERE, fl.DES_FILIERE
+            FROM PR.PR_CREDITOS cr
+            OUTER APPLY (
+                SELECT TOP 1 ss.DES_SUBSUBACTIV AS DES_FILIERE
+                FROM CL.CL_SUBSUBACT_ECONOMICA ss
+                WHERE ss.COD_EMPRESA = cr.COD_EMPRESA
+                  AND ss.COD_SUBSUBACTIV = cr.COD_SUBSUBACTIVIDAD
+            ) fl
+            WHERE cr.COD_AGENCIA = :codAgencia
+              AND cr.IND_ESTADO NOT IN ('C', 'T', 'X')
+            """;
+
+    /** Les filieres des credits vivants d'un point de service, pour le portefeuille a risque. */
+    public List<io.digiservices.clients.portefeuille.FiliereCreditDto> findFilieresPointService(
+            String codAgencia) {
+        return execute("portefeuille.filieres", () -> primary.query(SQL_FILIERES_PS,
+                new MapSqlParameterSource("codAgencia", codAgencia),
+                (rs, n) -> new io.digiservices.clients.portefeuille.FiliereCreditDto(
+                        rs.getLong("NUM_CREDITO"), str(rs, "COD_FILIERE"), str(rs, "DES_FILIERE"))));
+    }
+
     private static BigDecimal nvl(BigDecimal v) {
         return v != null ? v : BigDecimal.ZERO;
     }
