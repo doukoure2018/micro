@@ -549,6 +549,14 @@ export class AppMenu {
                 routerLink: ['/dashboards/comptes-mal-adosses']
             });
         }
+        // Synthese hebdomadaire de direction (V198) : le courriel du lundi, relisible a l'ecran.
+        if (this.peut('SYNTHESE_DIRECTION')) {
+            items.push({
+                label: 'Synthèse de direction',
+                icon: 'pi pi-fw pi-chart-bar',
+                routerLink: ['/dashboards/synthese-direction']
+            });
+        }
         // Barometre d'usage de la plateforme (V175) : reseau pour la direction, delegation pour
         // le DR. Le perimetre reste decide par le serveur, l'entree de menu par la matrice (V178).
         if (this.peut('USAGE_PLATEFORME')) {

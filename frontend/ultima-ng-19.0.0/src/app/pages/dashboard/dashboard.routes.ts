@@ -179,6 +179,12 @@ export default [
         loadComponent: () => import('./comptes-mal-adosses/comptes-mal-adosses.component').then((c) => c.ComptesMalAdossesComponent)
     },
     {
+        path: 'synthese-direction',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Synthèse de direction', rubrique: 'SYNTHESE_DIRECTION' },
+        loadComponent: () => import('./synthese-direction/synthese-direction.component').then((c) => c.SyntheseDirectionComponent)
+    },
+    {
         path: 'usage-plateforme',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Usage de la plateforme', rubriques: ['USAGE_PLATEFORME', 'AUDIT_ACCES'] },

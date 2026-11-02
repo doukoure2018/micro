@@ -1980,6 +1980,28 @@ export class UserService {
     exportAuditDelais$ = (seuilJours: number | null) =>
         this.http.get(`${this.server}/ecredit/audit/delais/export`, { params: seuilJours ? { seuilJours } : {}, responseType: 'blob', observe: 'response' });
 
+    // ==================== Synthese hebdomadaire de direction (V198) ====================
+    getSyntheseDirection$ = (reference: string | null = null) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/synthese-direction`, { params: reference ? { reference } : {} })
+            .pipe(catchError(this.handleError));
+    getSyntheseDirectionHistorique$ = (limite = 12) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/synthese-direction/historique`, { params: { limite } })
+            .pipe(catchError(this.handleError));
+    getSyntheseDirectionDelegations$ = (semaine: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/synthese-direction/delegations`, { params: { semaine } })
+            .pipe(catchError(this.handleError));
+    essaiSyntheseDirection$ = () =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/synthese-direction/essai`, {})
+            .pipe(catchError(this.handleError));
+    envoyerSyntheseDirection$ = () =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/synthese-direction/envoyer`, {})
+            .pipe(catchError(this.handleError));
+
     // ==================== Comptes de remboursement mal adosses (V196, lot 2) ====================
     getComptesMalAdosses$ = (f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-mal-adosses`, { params: this.paramsMalAdosses(f) }).pipe(catchError(this.handleError));
