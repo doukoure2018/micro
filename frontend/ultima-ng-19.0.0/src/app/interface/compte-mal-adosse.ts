@@ -84,3 +84,43 @@ export interface FiltresComptesMalAdosses {
     inclureCorriges: boolean;
     tout: boolean;
 }
+
+// ==================== Le dossier d'un crédit en regard de SAF (lot 3) ====================
+
+export interface CompteSaf {
+    numCuenta: string | null;
+    codProducto: string | null;
+    nomProducto: string | null;
+    codAgencia: string | null;
+    desAgencia: string | null;
+    codCliente: string | null;
+    nomCliente: string | null;
+    indEstado: string | null;
+    salDisponible: number | null;
+    fecApertura: string | null;
+    fecUltMovimiento: string | null;
+    typeCompte: string | null;
+}
+
+/**
+ * Ce que SAF dit à l'instant. Les comptes éligibles sont la raison d'être de cet écran : sans
+ * eux il faut rouvrir SAF pour chercher quel compte rattacher. Une liste vide est aussi une
+ * réponse — il faut ouvrir un compte au client avant de corriger le crédit.
+ */
+export interface DossierCompteSaf {
+    codAgencia: string | null;
+    numCredito: number;
+    codCliente: string | null;
+    nomCliente: string | null;
+    monCredito: number | null;
+    monSaldo: number | null;
+    indEstado: string | null;
+    fecApertura: string | null;
+    fecVencimiento: string | null;
+    idCuenta: string | null;
+    codUsuario: string | null;
+    codOficial: string | null;
+    compteSaisi: CompteSaf | null;
+    comptesEligibles: CompteSaf[];
+    autresComptes: CompteSaf[];
+}

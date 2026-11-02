@@ -1,4 +1,4 @@
-import { CompteurAnomalie, LigneCompteMalAdosse, SituationComptesMalAdosses } from '@/interface/compte-mal-adosse';
+import { CompteurAnomalie, DossierCompteSaf, LigneCompteMalAdosse, SituationComptesMalAdosses } from '@/interface/compte-mal-adosse';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
@@ -205,6 +205,7 @@ import { TooltipModule } from 'primeng/tooltip';
                             <span *ngIf="!l.traiteAt" class="text-gray-400">—</span>
                         </td>
                         <td>
+                            <button pButton icon="pi pi-search" class="p-button-text p-button-sm" pTooltip="Ce que SAF dit maintenant" (click)="ouvrirDossier(l)"></button>
                             <button *ngIf="!l.traiteAt" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" pTooltip="Prendre en charge" (click)="ouvrirSuivi(l)"></button>
                             <button *ngIf="l.traiteAt" pButton icon="pi pi-undo" class="p-button-text p-button-sm" pTooltip="Rendre à traiter" (click)="rendreATraiter(l)"></button>
                         </td>
@@ -218,6 +219,71 @@ import { TooltipModule } from 'primeng/tooltip';
             </p-table>
             }
         </div>
+
+        <p-dialog header="Ce que SAF dit maintenant" [(visible)]="dialogueDossier" [modal]="true" [style]="{ width: '56rem' }">
+            <div *ngIf="chargementDossier()" class="text-center py-4"><i class="pi pi-spin pi-spinner text-2xl"></i></div>
+            @if (dossier(); as d) {
+            <div class="mb-3">
+                <div class="font-semibold">Crédit {{ d.numCredito }} — {{ d.nomCliente || '(client inconnu)' }}</div>
+                <div class="text-sm text-gray-500">
+                    Membre {{ d.codCliente }} · solde {{ d.monSaldo | number: '1.0-0' }} GNF · état {{ d.indEstado }}
+                    <span *ngIf="d.codUsuario"> · saisi par {{ d.codUsuario }}</span>
+                    <span *ngIf="d.codOficial"> · agent {{ d.codOficial }}</span>
+                </div>
+            </div>
+
+            <div class="border rounded p-3 mb-3" [class.border-red-300]="true">
+                <div class="text-xs text-gray-500 uppercase mb-1">Compte de remboursement saisi</div>
+                <div *ngIf="!d.idCuenta" class="text-red-600 font-semibold">Aucun compte n'est saisi sur ce crédit.</div>
+                <div *ngIf="d.idCuenta && !d.compteSaisi" class="text-red-600 font-semibold">
+                    <span class="font-mono">{{ d.idCuenta }}</span> — aucun compte ne porte ce numéro dans SAF.
+                </div>
+                <div *ngIf="d.compteSaisi as c">
+                    <span class="font-mono font-semibold">{{ c.numCuenta }}</span>
+                    <span class="text-sm"> · {{ c.nomProducto || c.codProducto }} · type {{ c.typeCompte }}</span>
+                    <br />
+                    <span class="text-sm" [class.text-red-600]="c.codCliente !== d.codCliente">
+                        appartient à {{ c.nomCliente || c.codCliente }} ({{ c.codCliente }})
+                    </span>
+                    <span class="text-sm" [class.text-red-600]="c.indEstado !== 'A'"> · état {{ c.indEstado }}</span>
+                    <span class="text-sm text-gray-500"> · solde {{ c.salDisponible | number: '1.0-0' }} GNF</span>
+                </div>
+            </div>
+
+            <div class="text-xs text-gray-500 uppercase mb-1">Comptes du client qui conviendraient</div>
+            <p-table [value]="d.comptesEligibles" styleClass="p-datatable-sm" *ngIf="d.comptesEligibles.length">
+                <ng-template pTemplate="header">
+                    <tr><th>Compte</th><th>Produit</th><th>Type</th><th>Point de service</th><th class="text-right">Solde (GNF)</th><th>Dernier mouvement</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-c>
+                    <tr>
+                        <td class="font-mono font-semibold">{{ c.numCuenta }}</td>
+                        <td>{{ c.nomProducto || c.codProducto }}</td>
+                        <td>{{ c.typeCompte }}</td>
+                        <td>{{ c.desAgencia || c.codAgencia }}</td>
+                        <td class="text-right">{{ c.salDisponible | number: '1.0-0' }}</td>
+                        <td>{{ c.fecUltMovimiento | date: 'dd/MM/yyyy' }}</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+            <p *ngIf="!d.comptesEligibles.length" class="text-red-600 text-sm">
+                Ce client n'a aucun compte courant ni d'épargne actif. Il faut lui en ouvrir un avant de corriger le crédit.
+            </p>
+
+            <div *ngIf="d.autresComptes.length" class="mt-3">
+                <div class="text-xs text-gray-500 uppercase mb-1">Ses autres comptes ({{ d.autresComptes.length }})</div>
+                <div class="text-sm text-gray-500">
+                    <span *ngFor="let c of d.autresComptes; let last = last">
+                        <span class="font-mono">{{ c.numCuenta }}</span> ({{ c.typeCompte }}, état {{ c.indEstado }}){{ last ? '' : ' · ' }}
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-500 mt-3">
+                Lecture directe de la base de production SAF, à l'instant. La correction se fait dans SAF : digi lit la base, il n'y écrit pas.
+            </p>
+            }
+        </p-dialog>
 
         <p-dialog header="Prendre en charge" [(visible)]="dialogue" [modal]="true" [style]="{ width: '34rem' }">
             <p class="text-sm text-gray-500 mb-3" *ngIf="choisie()">
@@ -250,7 +316,10 @@ export class ComptesMalAdossesComponent implements OnInit {
     recherche: string | null = null;
     tout = false;
     dialogue = false;
+    dialogueDossier = false;
     commentaire: string | null = null;
+    readonly dossier = signal<DossierCompteSaf | null>(null);
+    readonly chargementDossier = signal(false);
 
     familleOptions = [
         { label: "Pas de compte de remboursement", value: 'PAS_DE_COMPTE' },
@@ -300,6 +369,27 @@ export class ComptesMalAdossesComponent implements OnInit {
         this.recherche = null;
         this.tout = false;
         this.charger();
+    }
+
+    /** Ce que SAF dit maintenant du crédit, du compte saisi et des comptes du client. */
+    ouvrirDossier(ligne: LigneCompteMalAdosse): void {
+        this.dossier.set(null);
+        this.dialogueDossier = true;
+        this.chargementDossier.set(true);
+        this.userService
+            .getDossierCompteMalAdosse$(ligne.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.dossier.set(((r.data as any)?.dossier as DossierCompteSaf) || null);
+                    this.chargementDossier.set(false);
+                },
+                error: (err) => {
+                    this.chargementDossier.set(false);
+                    this.dialogueDossier = false;
+                    this.messageService.add({ severity: 'error', summary: 'Dossier SAF', detail: err || 'SAF n\'a pas répondu', life: 6000 });
+                }
+            });
     }
 
     ouvrirSuivi(ligne: LigneCompteMalAdosse): void {

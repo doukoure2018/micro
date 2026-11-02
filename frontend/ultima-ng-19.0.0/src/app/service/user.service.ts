@@ -2009,6 +2009,8 @@ export class UserService {
         <Observable<IResponse>>this.http
             .post<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/${id}/suivi`, {}, { params: commentaire ? { traite, commentaire } : { traite } })
             .pipe(catchError(this.handleError));
+    getDossierCompteMalAdosse$ = (id: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/${id}/dossier`).pipe(catchError(this.handleError));
     exportComptesMalAdosses$ = (f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
         this.http.get(`${this.server}/ecredit/comptes-mal-adosses/export`, { params: this.paramsMalAdosses(f), responseType: 'blob', observe: 'response' });
     private paramsMalAdosses(f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }): Record<string, string | boolean> {
