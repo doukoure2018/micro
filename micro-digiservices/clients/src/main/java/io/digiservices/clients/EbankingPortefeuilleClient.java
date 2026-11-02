@@ -76,6 +76,11 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/comptes-mal-adosses")
     List<io.digiservices.clients.portefeuille.CompteMalAdosseDto> getComptesMalAdosses();
 
+    @GetMapping("/ebanking/portefeuille/octrois")
+    List<io.digiservices.clients.portefeuille.OctroiSemaineDto> getOctrois(
+            @org.springframework.web.bind.annotation.RequestParam("debut") String debut,
+            @org.springframework.web.bind.annotation.RequestParam("fin") String fin);
+
     @GetMapping("/ebanking/portefeuille/echeances-avenir")
     List<io.digiservices.clients.portefeuille.EcheanceAvenirDto> getEcheancesAvenir(
             @RequestParam(value = "joursAvant", defaultValue = "3") int joursAvant);

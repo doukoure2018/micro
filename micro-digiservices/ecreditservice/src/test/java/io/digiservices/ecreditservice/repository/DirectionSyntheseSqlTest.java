@@ -32,13 +32,34 @@ class DirectionSyntheseSqlTest {
         for (String sql : List.of(DirectionSyntheseRepository.SQL_STOCK_DEMANDES,
                 DirectionSyntheseRepository.SQL_PORTEFEUILLE,
                 DirectionSyntheseRepository.SQL_ASSAINISSEMENT,
-                DirectionSyntheseRepository.SQL_ARRETES)) {
+                DirectionSyntheseRepository.SQL_ARRETES,
+                DirectionSyntheseRepository.SQL_DEMANDES_DELEGATION,
+                DirectionSyntheseRepository.SQL_PORTEFEUILLE_DELEGATION,
+                DirectionSyntheseRepository.SQL_ASSAINISSEMENT_DELEGATION,
+                DirectionSyntheseRepository.SQL_ARRETES_DELEGATION)) {
             for (Pattern p : List.of(AVANT, APRES)) {
                 Matcher m = p.matcher(sql);
                 assertTrue(!m.find(), () -> "mot-cle colle : « "
                         + sql.substring(Math.max(0, m.start() - 20),
                                 Math.min(sql.length(), m.end() + 10)) + " »");
             }
+        }
+    }
+
+    @Test
+    @DisplayName("le rattachement a la delegation ne compte jamais un point de service deux fois")
+    void leRattachementNeDupliquePas() {
+        // Deux codes SAF sont partages par deux points de vente : 337 (Balandougouba et
+        // Sidikila) et 958 (tanene et tondon). Une jointure ordinaire sur pointvente.code
+        // dupliquait leurs lignes — 30 593 credits au lieu de 30 297 le 02/11/2026 — et la somme
+        // des delegations ne retombait plus sur le national. Sans DISTINCT ON, le defaut revient
+        // en silence : il ne se voit qu'en additionnant les lignes du courriel.
+        for (String sql : List.of(DirectionSyntheseRepository.SQL_PORTEFEUILLE_DELEGATION,
+                DirectionSyntheseRepository.SQL_ASSAINISSEMENT_DELEGATION)) {
+            assertTrue(sql.contains("DISTINCT ON (code)"),
+                    "le rattachement doit retenir un seul point de vente par code SAF");
+            assertTrue(!sql.contains("JOIN pointvente pv ON"),
+                    "une jointure directe sur pointvente.code duplique les codes partages");
         }
     }
 

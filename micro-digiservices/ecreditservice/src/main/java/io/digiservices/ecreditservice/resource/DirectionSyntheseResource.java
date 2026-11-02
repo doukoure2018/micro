@@ -58,6 +58,28 @@ public class DirectionSyntheseResource {
         return ResponseEntity.ok(getResponse(request, Map.of(), message, OK));
     }
 
+    /**
+     * Renvoi a tous les destinataires. A la difference de l'essai, celui-ci part vraiment : il
+     * sert quand l'envoi du lundi a echoue, ou quand la direction redemande la synthese.
+     */
+    @PostMapping("/envoyer")
+    public ResponseEntity<Response> envoyer(@NotNull Authentication authentication,
+                                            HttpServletRequest request) {
+        String message = service.renvoyer(authentication.getName());
+        return ResponseEntity.ok(getResponse(request, Map.of(), message, OK));
+    }
+
+    /** Le detail par delegation d'une semaine deja envoyee. */
+    @GetMapping("/delegations")
+    public ResponseEntity<Response> delegations(@NotNull Authentication authentication,
+                                                @RequestParam("semaine")
+                                                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate semaine,
+                                                HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("delegations", service.delegationsDe(authentication.getName(), semaine)),
+                "Detail par delegation", OK));
+    }
+
     /** Les dernieres semaines envoyees, pour relire ce qui a ete annonce. */
     @GetMapping("/historique")
     public ResponseEntity<Response> historique(@NotNull Authentication authentication,

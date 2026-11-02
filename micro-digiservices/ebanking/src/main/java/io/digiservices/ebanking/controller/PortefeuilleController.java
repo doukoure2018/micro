@@ -242,6 +242,19 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.findComptesMalAdosses());
     }
 
+    /** Octrois d'une periode, par point de service : la production de credit de la semaine. */
+    @GetMapping("/octrois")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.OctroiSemaineDto>> getOctrois(
+            @RequestParam("debut") @org.springframework.format.annotation.DateTimeFormat(iso =
+                    org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate debut,
+            @RequestParam("fin") @org.springframework.format.annotation.DateTimeFormat(iso =
+                    org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate fin) {
+        if (debut == null || fin == null || !debut.isBefore(fin)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(repository.findOctrois(debut, fin));
+    }
+
     @GetMapping("/echeances-avenir")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.EcheanceAvenirDto>> getEcheancesAvenir(
             @RequestParam(name = "joursAvant", defaultValue = "3") int joursAvant) {

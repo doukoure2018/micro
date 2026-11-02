@@ -64,6 +64,12 @@ public final class DirectionSyntheseDtos {
             Integer arrJamaisRemonte,
             BigDecimal arrRetardMoyen,
 
+            // Les octrois SAF de la semaine. La seule donnee venant de SAF : quand il n'a pas
+            // repondu, octIndisponible porte la raison et les deux chiffres restent nuls.
+            Integer octNb,
+            BigDecimal octMontant,
+            String octIndisponible,
+
             OffsetDateTime envoyeAt,
             Integer nbDestinataires,
             boolean essai) {
@@ -92,10 +98,34 @@ public final class DirectionSyntheseDtos {
     }
 
     /**
-     * Ce que le courriel a besoin de savoir : la semaine decrite, celle d'avant quand elle
-     * existe, et le nombre de destinataires que la matrice a designes.
+     * Une delegation et ce qu'elle pese dans chaque bloc. Une synthese nationale dit qu'un
+     * indicateur se degrade ; ce detail dit ou, ce qui est la premiere question d'un directeur.
+     * Les champs nuls signifient « non mesure pour cette delegation », jamais zero.
      */
-    public record SyntheseDto(SemaineDto courante, SemaineDto precedente, int nbDestinataires) {
+    public record DelegationDto(Long delegationId, String delegation,
+                                Integer demInstruction, Integer demAccordesSemaine,
+                                Integer octNb, BigDecimal octMontant,
+                                Integer pfCredits, BigDecimal pfEncours, BigDecimal pfImpaye,
+                                BigDecimal par30Encours, BigDecimal par90Encours,
+                                Integer assEnAttente, Integer assValideSemaine,
+                                Integer arrEnRetard, Integer arrJamaisRemonte) {
+
+        /** Le taux de portefeuille a risque de la delegation, sur son propre encours. */
+        public BigDecimal taux(BigDecimal tranche) {
+            if (tranche == null || pfEncours == null || pfEncours.compareTo(BigDecimal.ZERO) == 0) {
+                return null;
+            }
+            return tranche.multiply(BigDecimal.valueOf(100))
+                    .divide(pfEncours, 2, java.math.RoundingMode.HALF_UP);
+        }
+    }
+
+    /**
+     * Ce que le courriel a besoin de savoir : la semaine decrite, celle d'avant quand elle
+     * existe, le detail par delegation, et le nombre de destinataires que la matrice a designes.
+     */
+    public record SyntheseDto(SemaineDto courante, SemaineDto precedente,
+                              java.util.List<DelegationDto> delegations, int nbDestinataires) {
 
         /** Vrai quand aucune semaine de reference n'existe : les variations sont alors taues. */
         public boolean premiereSemaine() {

@@ -1080,6 +1080,44 @@ public class PortefeuilleRepository {
         return sb.toString();
     }
 
+
+    // ==================== Octrois d'une periode (synthese hebdomadaire, V198) ====================
+
+    /**
+     * Les credits dont la date d'ouverture tombe dans la periode : la production de credit de la
+     * semaine, en nombre et en montant octroye, par point de service.
+     *
+     * <p>Le perimetre exclut les credits annules et transferes, qui ne sont pas une production.
+     * Il n'exclut pas les credits deja clos ou apures depuis : un credit octroye dans la semaine
+     * et rembourse aussitot reste une production de la semaine.</p>
+     */
+    private static final String SQL_OCTROIS_PERIODE = """
+            SELECT cr.COD_AGENCIA, ag.DES_AGENCIA,
+                   COUNT(*) AS NB_CREDITS, SUM(cr.MON_CREDITO) AS MONTANT
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = cr.COD_EMPRESA AND ag.COD_AGENCIA = cr.COD_AGENCIA
+            WHERE cr.FEC_APERTURA >= :debut AND cr.FEC_APERTURA < :fin
+              AND cr.IND_ESTADO NOT IN ('X', 'T')
+            GROUP BY cr.COD_AGENCIA, ag.DES_AGENCIA
+            ORDER BY cr.COD_AGENCIA
+            """;
+
+    /**
+     * Les octrois d'une periode, lus dans la sauvegarde (routage par defaut) : la semaine est
+     * close, la copie de la veille en rend donc compte exactement, et la synthese hebdomadaire
+     * ne depend pas de l'ouverture de la production.
+     */
+    public List<io.digiservices.clients.portefeuille.OctroiSemaineDto> findOctrois(
+            java.time.LocalDate debut, java.time.LocalDate finExclue) {
+        return execute("portefeuille.octrois", () -> primary.query(SQL_OCTROIS_PERIODE,
+                new MapSqlParameterSource().addValue("debut", java.sql.Date.valueOf(debut))
+                        .addValue("fin", java.sql.Date.valueOf(finExclue)),
+                (rs, n) -> new io.digiservices.clients.portefeuille.OctroiSemaineDto(
+                        str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"),
+                        entier(rs, "NB_CREDITS"), rs.getBigDecimal("MONTANT"))));
+    }
+
     private static BigDecimal nvl(BigDecimal v) {
         return v != null ? v : BigDecimal.ZERO;
     }

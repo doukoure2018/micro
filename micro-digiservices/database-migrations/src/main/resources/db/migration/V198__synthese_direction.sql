@@ -92,6 +92,13 @@ CREATE TABLE IF NOT EXISTS direction_synthese_semaine (
     ass_valide_semaine   INTEGER,
     ass_rejete_semaine   INTEGER,
 
+    -- Bloc 1 (suite) : les octrois SAF de la semaine, seule donnée venant de SAF. Lue dans la
+    -- copie de sauvegarde, puisque la semaine est close : la synthèse ne dépend donc pas de
+    -- l'ouverture du compte de lecture de la production.
+    oct_nb               INTEGER,
+    oct_montant          NUMERIC(20,2),
+    oct_indisponible     VARCHAR(200),      -- la raison, quand SAF n'a pas répondu
+
     -- Bloc 5 : suivi des arrêtés de caisse, au dernier jour ouvré toléré
     arr_date_limite      DATE,
     arr_a_jour           INTEGER,
@@ -117,3 +124,51 @@ COMMENT ON COLUMN direction_synthese_semaine.ass_valide_semaine IS
 'Fiches passees a VALIDE dans la semaine, datees par personne_physique.updated_at faute de date de changement de statut. Mesure verifiee le 02/11/2026 : 22 fiches sur 1 331 en attente ont ete modifiees apres leur creation, contre 13 408 sur 15 655 validees — c''est donc bien la decision de correction qui met cette date a jour.';
 COMMENT ON COLUMN direction_synthese_semaine.essai IS
 'VRAI pour un envoi d''essai adresse a son seul demandeur : la ligne ne sert alors ni de reference de variation ni de preuve.';
+
+-- =====================================================================================
+-- Le détail par délégation
+-- =====================================================================================
+--
+-- Les mêmes mesures, mais par délégation, sous chaque bloc du courriel. Une synthèse nationale
+-- dit qu'un indicateur se dégrade ; le détail par délégation dit où, ce qui est la première
+-- question d'un directeur.
+--
+-- Photographié chaque lundi comme le national, pour que la variation par délégation existe dès
+-- le deuxième envoi. Six à sept lignes par semaine : le coût est négligeable, et sans elles
+-- personne ne saurait dire si une délégation s'améliore ou se dégrade.
+
+CREATE TABLE IF NOT EXISTS direction_synthese_delegation (
+    id                   BIGSERIAL     PRIMARY KEY,
+    semaine_du           DATE          NOT NULL,
+    delegation_id        BIGINT,                          -- NULL = points de service non rattachés
+    delegation           VARCHAR(120)  NOT NULL,
+
+    dem_instruction      INTEGER,
+    dem_accordes_semaine INTEGER,
+    oct_nb               INTEGER,
+    oct_montant          NUMERIC(20,2),
+
+    pf_credits           INTEGER,
+    pf_encours           NUMERIC(20,2),
+    pf_impaye            NUMERIC(20,2),
+    par30_encours        NUMERIC(20,2),
+    par90_encours        NUMERIC(20,2),
+
+    ass_en_attente       INTEGER,
+    ass_valide_semaine   INTEGER,
+
+    arr_en_retard        INTEGER,
+    arr_jamais_remonte   INTEGER,
+
+    calcule_at           TIMESTAMPTZ   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_direction_synthese_delegation UNIQUE (semaine_du, delegation)
+);
+
+CREATE INDEX IF NOT EXISTS idx_direction_synthese_delegation
+    ON direction_synthese_delegation (semaine_du DESC);
+
+COMMENT ON TABLE direction_synthese_delegation IS
+'Le detail par delegation de la synthese hebdomadaire, photographie chaque lundi : une synthese nationale dit qu''un indicateur se degrade, le detail par delegation dit ou.';
+COMMENT ON COLUMN direction_synthese_delegation.delegation IS
+'Le libelle de la delegation, qui sert de cle avec la semaine : il survit a une reorganisation des identifiants, et « Non rattache » regroupe les points de service sans delegation.';

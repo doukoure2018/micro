@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.repository;
 
+import io.digiservices.ecreditservice.dto.DirectionSyntheseDtos.DelegationDto;
 import io.digiservices.ecreditservice.dto.DirectionSyntheseDtos.SemaineDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -225,6 +226,199 @@ public class DirectionSyntheseRepository {
                           BigDecimal retardMoyen) {
     }
 
+
+    // ==================== Le detail par delegation (lot 2) ====================
+
+    /** Le libelle retenu quand un point de service n'est rattache a aucune delegation. */
+    public static final String NON_RATTACHE = "Non rattaché";
+
+    /**
+     * Le rattachement d'un code SAF a une delegation, UN SEUL point de vente par code.
+     *
+     * <p>Deux codes sont partages par deux points de vente : 337 (Balandougouba et Sidikila) et
+     * 958 (tanene et tondon). Une jointure ordinaire sur {@code pointvente.code} duplique donc
+     * leurs lignes — mesure du 02/11/2026 : 30 593 credits au lieu de 30 297, soit 296 de trop.
+     * La somme des delegations ne retombait plus sur le national, ce qu'un directeur remarque et
+     * qui ruine la confiance dans la synthese entiere. {@code DISTINCT ON} tranche en retenant le
+     * plus petit identifiant, de facon stable d'une semaine a l'autre.</p>
+     */
+    private static final String RATTACHEMENT = "(SELECT DISTINCT ON (code) code, delegation_id"
+            + " FROM pointvente WHERE code IS NOT NULL AND code <> '' ORDER BY code, id)";
+
+    /** Les dossiers en instruction et accordes dans la semaine, par delegation. */
+    public java.util.List<Object[]> demandesParDelegation(LocalDate debut, LocalDate finExclue) {
+        return jdbcClient.sql(SQL_DEMANDES_DELEGATION)
+                .param("debut", debut).param("fin", finExclue)
+                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                        rs.getString("delegation"), rs.getInt("instruction"), rs.getInt("accordes")})
+                .list();
+    }
+
+    static final String SQL_DEMANDES_DELEGATION = "SELECT d.delegation_id,"
+            + " COALESCE(dl.libele, '" + NON_RATTACHE + "') AS delegation,"
+            + " count(*) FILTER (WHERE etape = 'EN_INSTRUCTION') AS instruction,"
+            + " count(*) FILTER (WHERE accorde_semaine) AS accordes"
+            + " FROM (SELECT d.delegation AS delegation_id," + ETAPE + "AS etape,"
+            + "              EXISTS (SELECT 1 FROM demande_etat_historique h"
+            + "                       WHERE h.demandeindividuel_id = d.demandeindividuel_id"
+            + "                         AND h.nouvel_etat = 'VALIDATED_FINAL'"
+            + "                         AND h.date_evenement >= :debut AND h.date_evenement < :fin)"
+            + "                AS accorde_semaine"
+            + "         FROM demandeindividuel d) d"
+            + " LEFT JOIN delegation dl ON dl.id = d.delegation_id"
+            + " GROUP BY d.delegation_id, dl.libele"
+            + " HAVING count(*) FILTER (WHERE etape = 'EN_INSTRUCTION') > 0"
+            + "     OR count(*) FILTER (WHERE accorde_semaine) > 0"
+            + " ORDER BY 4 DESC";
+
+    /**
+     * Le portefeuille et les deux tranches qui comptent, par delegation.
+     *
+     * <p>La photo range les lignes par code SAF de point de service : le rattachement a la
+     * delegation passe donc par {@code pointvente.code}, qui est ce code. Un point de service
+     * que la table ne connait pas tombe dans « Non rattache » plutot que de disparaitre — sinon
+     * la somme des delegations ne retomberait pas sur le national.</p>
+     */
+    public java.util.List<Object[]> portefeuilleParDelegation(LocalDate datePhoto) {
+        return jdbcClient.sql(SQL_PORTEFEUILLE_DELEGATION)
+                .param("photo", datePhoto)
+                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                        rs.getString("delegation"), rs.getInt("credits"),
+                        rs.getBigDecimal("encours"), rs.getBigDecimal("impaye"),
+                        rs.getBigDecimal("par30"), rs.getBigDecimal("par90")})
+                .list();
+    }
+
+    static final String SQL_PORTEFEUILLE_DELEGATION = "SELECT pv.delegation_id,"
+            + " COALESCE(dl.libele, '" + NON_RATTACHE + "') AS delegation,"
+            + " sum(p.nb_credits) AS credits, sum(p.encours) AS encours, sum(p.impaye) AS impaye,"
+            + " sum(p.encours_par30) AS par30, sum(p.encours_par90) AS par90"
+            + " FROM portefeuille_risque_photo p"
+            + " LEFT JOIN " + RATTACHEMENT + " pv ON pv.code = p.cod_agencia"
+            + " LEFT JOIN delegation dl ON dl.id = pv.delegation_id"
+            + " WHERE p.date_photo = :photo"
+            + " GROUP BY pv.delegation_id, dl.libele"
+            + " ORDER BY 4 DESC";
+
+    /**
+     * L'assainissement par delegation. Les fiches portent le code SAF du point de service dans
+     * {@code code_agence} : verifie le 02/11/2026, les 17 319 fiches en portent un, et tous sont
+     * connus de {@code pointvente}.
+     */
+    public java.util.List<Object[]> assainissementParDelegation(LocalDate debut, LocalDate finExclue) {
+        return jdbcClient.sql(SQL_ASSAINISSEMENT_DELEGATION)
+                .param("debut", debut).param("fin", finExclue)
+                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                        rs.getString("delegation"), rs.getInt("en_attente"), rs.getInt("valide_semaine")})
+                .list();
+    }
+
+    static final String SQL_ASSAINISSEMENT_DELEGATION = "SELECT pv.delegation_id,"
+            + " COALESCE(dl.libele, '" + NON_RATTACHE + "') AS delegation,"
+            + " count(*) FILTER (WHERE pp.correction_statut = 'EN_ATTENTE') AS en_attente,"
+            + " count(*) FILTER (WHERE pp.correction_statut = 'VALIDE'"
+            + "        AND pp.updated_at >= :debut AND pp.updated_at < :fin) AS valide_semaine"
+            + " FROM personne_physique pp"
+            + " LEFT JOIN " + RATTACHEMENT + " pv ON pv.code = pp.code_agence"
+            + " LEFT JOIN delegation dl ON dl.id = pv.delegation_id"
+            + " GROUP BY pv.delegation_id, dl.libele"
+            + " HAVING count(*) FILTER (WHERE pp.correction_statut = 'EN_ATTENTE') > 0"
+            + "     OR count(*) FILTER (WHERE pp.correction_statut = 'VALIDE'"
+            + "            AND pp.updated_at >= :debut AND pp.updated_at < :fin) > 0"
+            + " ORDER BY 3 DESC";
+
+    /** Les points de service en retard ou n'ayant jamais remonte d'arrete, par delegation. */
+    public java.util.List<Object[]> arretesParDelegation(LocalDate dateLimite) {
+        return jdbcClient.sql(SQL_ARRETES_DELEGATION)
+                .param("limite", dateLimite)
+                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                        rs.getString("delegation"), rs.getInt("en_retard"), rs.getInt("jamais")})
+                .list();
+    }
+
+    static final String SQL_ARRETES_DELEGATION = "SELECT p.delegation_id,"
+            + " COALESCE(dl.libele, '" + NON_RATTACHE + "') AS delegation,"
+            + " count(*) FILTER (WHERE la.id IS NOT NULL AND la.date_arrete_caisse < :limite) AS en_retard,"
+            + " count(*) FILTER (WHERE la.id IS NULL) AS jamais"
+            + " FROM pointvente p"
+            + " LEFT JOIN delegation dl ON dl.id = p.delegation_id"
+            + " LEFT JOIN LATERAL ("
+            + "     SELECT ac.id, ac.date_arrete_caisse FROM arrete_caisse ac"
+            + "      WHERE ac.pointvente_id = p.id"
+            + "      ORDER BY ac.date_arrete_caisse DESC, ac.created_at DESC LIMIT 1"
+            + " ) la ON TRUE"
+            + " GROUP BY p.delegation_id, dl.libele"
+            + " HAVING count(*) FILTER (WHERE la.id IS NOT NULL AND la.date_arrete_caisse < :limite) > 0"
+            + "     OR count(*) FILTER (WHERE la.id IS NULL) > 0"
+            + " ORDER BY 3 DESC";
+
+    /**
+     * Le rattachement de chaque code SAF de point de service a sa delegation, pour ventiler les
+     * octrois que SAF rend par point de service.
+     */
+    public java.util.Map<String, String> delegationParCodeSaf() {
+        java.util.Map<String, String> m = new java.util.LinkedHashMap<>();
+        jdbcClient.sql("SELECT pv.code, COALESCE(dl.libele, '" + NON_RATTACHE + "') AS delegation"
+                        + " FROM " + RATTACHEMENT + " pv"
+                        + " LEFT JOIN delegation dl ON dl.id = pv.delegation_id")
+                .query((rs, n) -> m.put(rs.getString("code"), rs.getString("delegation")))
+                .list();
+        return m;
+    }
+
+    /** Enregistre le detail par delegation d'une semaine, en remplacant ce qui s'y trouvait. */
+    public void enregistrerDelegations(LocalDate semaineDu, java.util.List<DelegationDto> lignes) {
+        jdbcClient.sql("DELETE FROM direction_synthese_delegation WHERE semaine_du = :semaine")
+                .param("semaine", semaineDu).update();
+        for (DelegationDto l : lignes) {
+            jdbcClient.sql("INSERT INTO direction_synthese_delegation ("
+                            + " semaine_du, delegation_id, delegation,"
+                            + " dem_instruction, dem_accordes_semaine, oct_nb, oct_montant,"
+                            + " pf_credits, pf_encours, pf_impaye, par30_encours, par90_encours,"
+                            + " ass_en_attente, ass_valide_semaine, arr_en_retard, arr_jamais_remonte)"
+                            + " VALUES (:semaine, :delegationId, :delegation,"
+                            + " :demInstruction, :demAccordes, :octNb, :octMontant,"
+                            + " :pfCredits, :pfEncours, :pfImpaye, :par30, :par90,"
+                            + " :assEnAttente, :assValide, :arrEnRetard, :arrJamais)")
+                    .param("semaine", semaineDu).param("delegationId", l.delegationId())
+                    .param("delegation", l.delegation())
+                    .param("demInstruction", l.demInstruction())
+                    .param("demAccordes", l.demAccordesSemaine())
+                    .param("octNb", l.octNb()).param("octMontant", l.octMontant())
+                    .param("pfCredits", l.pfCredits()).param("pfEncours", l.pfEncours())
+                    .param("pfImpaye", l.pfImpaye())
+                    .param("par30", l.par30Encours()).param("par90", l.par90Encours())
+                    .param("assEnAttente", l.assEnAttente()).param("assValide", l.assValideSemaine())
+                    .param("arrEnRetard", l.arrEnRetard()).param("arrJamais", l.arrJamaisRemonte())
+                    .update();
+        }
+    }
+
+    /** Le detail par delegation d'une semaine deja photographiee. */
+    public java.util.List<DelegationDto> delegations(LocalDate semaineDu) {
+        return jdbcClient.sql("SELECT delegation_id, delegation,"
+                        + " dem_instruction, dem_accordes_semaine, oct_nb, oct_montant,"
+                        + " pf_credits, pf_encours, pf_impaye, par30_encours, par90_encours,"
+                        + " ass_en_attente, ass_valide_semaine, arr_en_retard, arr_jamais_remonte"
+                        + " FROM direction_synthese_delegation"
+                        + " WHERE semaine_du = :semaine"
+                        + " ORDER BY pf_encours DESC NULLS LAST, delegation")
+                .param("semaine", semaineDu)
+                .query((rs, n) -> new DelegationDto((Long) rs.getObject("delegation_id"),
+                        rs.getString("delegation"),
+                        (Integer) rs.getObject("dem_instruction"),
+                        (Integer) rs.getObject("dem_accordes_semaine"),
+                        (Integer) rs.getObject("oct_nb"), rs.getBigDecimal("oct_montant"),
+                        (Integer) rs.getObject("pf_credits"), rs.getBigDecimal("pf_encours"),
+                        rs.getBigDecimal("pf_impaye"), rs.getBigDecimal("par30_encours"),
+                        rs.getBigDecimal("par90_encours"),
+                        (Integer) rs.getObject("ass_en_attente"),
+                        (Integer) rs.getObject("ass_valide_semaine"),
+                        (Integer) rs.getObject("arr_en_retard"),
+                        (Integer) rs.getObject("arr_jamais_remonte")))
+                .list();
+    }
+
     // ==================== La photo hebdomadaire ====================
 
     /** La semaine demandee, si elle a deja ete photographiee. */
@@ -247,7 +441,8 @@ public class DirectionSyntheseRepository {
             + " par90_encours, par90_nb, par120_encours, par120_nb,"
             + " ass_en_attente, ass_valide, ass_rejete, ass_valide_semaine, ass_rejete_semaine,"
             + " arr_date_limite, arr_a_jour, arr_a_valider, arr_en_retard, arr_jamais_remonte,"
-            + " arr_retard_moyen, envoye_at, nb_destinataires, essai"
+            + " arr_retard_moyen, oct_nb, oct_montant, oct_indisponible,"
+            + " envoye_at, nb_destinataires, essai"
             + " FROM direction_synthese_semaine";
 
     /**
@@ -264,7 +459,8 @@ public class DirectionSyntheseRepository {
                         + " par90_encours, par90_nb, par120_encours, par120_nb,"
                         + " ass_en_attente, ass_valide, ass_rejete, ass_valide_semaine, ass_rejete_semaine,"
                         + " arr_date_limite, arr_a_jour, arr_a_valider, arr_en_retard, arr_jamais_remonte,"
-                        + " arr_retard_moyen, envoye_at, nb_destinataires, essai)"
+                        + " arr_retard_moyen, oct_nb, oct_montant, oct_indisponible,"
+                        + " envoye_at, nb_destinataires, essai)"
                         + " VALUES ("
                         + " :semaineDu, :semaineAu,"
                         + " :demRecu, :demInstruction, :demAccorde, :demRefuse, :demAnnule,"
@@ -274,7 +470,8 @@ public class DirectionSyntheseRepository {
                         + " :par90Encours, :par90Nb, :par120Encours, :par120Nb,"
                         + " :assEnAttente, :assValide, :assRejete, :assValideSemaine, :assRejeteSemaine,"
                         + " :arrDateLimite, :arrAJour, :arrAValider, :arrEnRetard, :arrJamais,"
-                        + " :arrRetardMoyen, CURRENT_TIMESTAMP, :nbDestinataires, :essai)"
+                        + " :arrRetardMoyen, :octNb, :octMontant, :octIndisponible,"
+                        + " CURRENT_TIMESTAMP, :nbDestinataires, :essai)"
                         + " ON CONFLICT (semaine_du) DO UPDATE SET"
                         + " semaine_au = EXCLUDED.semaine_au,"
                         + " dem_recu = EXCLUDED.dem_recu, dem_instruction = EXCLUDED.dem_instruction,"
@@ -298,6 +495,8 @@ public class DirectionSyntheseRepository {
                         + " arr_a_valider = EXCLUDED.arr_a_valider, arr_en_retard = EXCLUDED.arr_en_retard,"
                         + " arr_jamais_remonte = EXCLUDED.arr_jamais_remonte,"
                         + " arr_retard_moyen = EXCLUDED.arr_retard_moyen,"
+                        + " oct_nb = EXCLUDED.oct_nb, oct_montant = EXCLUDED.oct_montant,"
+                        + " oct_indisponible = EXCLUDED.oct_indisponible,"
                         + " envoye_at = CURRENT_TIMESTAMP,"
                         + " nb_destinataires = EXCLUDED.nb_destinataires,"
                         + " essai = EXCLUDED.essai,"
@@ -324,6 +523,8 @@ public class DirectionSyntheseRepository {
                 .param("arrAValider", s.arrAValider()).param("arrEnRetard", s.arrEnRetard())
                 .param("arrJamais", s.arrJamaisRemonte())
                 .param("arrRetardMoyen", s.arrRetardMoyen())
+                .param("octNb", s.octNb()).param("octMontant", s.octMontant())
+                .param("octIndisponible", s.octIndisponible())
                 .param("nbDestinataires", s.nbDestinataires()).param("essai", essai)
                 .update();
     }
@@ -350,6 +551,8 @@ public class DirectionSyntheseRepository {
                 rs.getObject("arr_date_limite", LocalDate.class), (Integer) rs.getObject("arr_a_jour"),
                 (Integer) rs.getObject("arr_a_valider"), (Integer) rs.getObject("arr_en_retard"),
                 (Integer) rs.getObject("arr_jamais_remonte"), rs.getBigDecimal("arr_retard_moyen"),
+                (Integer) rs.getObject("oct_nb"), rs.getBigDecimal("oct_montant"),
+                rs.getString("oct_indisponible"),
                 rs.getObject("envoye_at", OffsetDateTime.class),
                 (Integer) rs.getObject("nb_destinataires"), rs.getBoolean("essai"));
     }
