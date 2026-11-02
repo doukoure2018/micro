@@ -31,8 +31,11 @@ export interface LigneCompteMalAdosse {
     compteEtat: string | null;
     compteSolde: number | null;
     saisiPar: string | null;
+    /** Le nom derrière le code SAF ; vide si le code ne correspond à aucun usager. */
+    nomSaisiPar: string | null;
     dateSaisie: string | null;
     agentCredit: string | null;
+    nomAgentCredit: string | null;
     detecteAt: string | null;
     dernierVuAt: string | null;
     familleChangeeAt: string | null;
@@ -120,6 +123,9 @@ export interface DossierCompteSaf {
     idCuenta: string | null;
     codUsuario: string | null;
     codOficial: string | null;
+    /** Les noms derrière ces deux codes SAF. */
+    nomUsuario: string | null;
+    nomOficial: string | null;
     compteSaisi: CompteSaf | null;
     comptesEligibles: CompteSaf[];
     autresComptes: CompteSaf[];

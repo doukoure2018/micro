@@ -206,7 +206,10 @@ import { TooltipModule } from 'primeng/tooltip';
                             <td class="text-right font-medium text-red-600">{{ c.monSaldo | number: '1.0-0' }}</td>
                             <td>{{ c.fecApertura | date: 'dd/MM/yyyy' }}</td>
                             <td><p-tag [value]="c.etat" [severity]="severiteEtat(c)"></p-tag></td>
-                            <td class="text-xs">{{ c.codEjecutivo }}</td>
+                            <td class="text-xs">
+                                {{ c.nomEjecutivo || '—' }}
+                                <span *ngIf="c.codEjecutivo" class="block text-gray-400">{{ c.codEjecutivo }}</span>
+                            </td>
                             <td>
                                 <ng-container *ngIf="c.corrigeAt">
                                     <p-tag *ngIf="c.conclusion === 'CORRIGE'" value="Corrigé" severity="success"></p-tag>
@@ -366,19 +369,22 @@ import { TooltipModule } from 'primeng/tooltip';
                 <!-- Compte courant -->
                 <p-tabPanel [header]="'Compte courant (' + (d.mouvementsCompte?.length || 0) + ')'">
                     <p class="text-xs text-gray-500 mb-2">
-                        Table <span class="font-mono">CC_MOVIMTO_MENSUAL</span>, rattachée par le compte du crédit (<span class="font-mono">{{ d.idCuenta || '—' }}</span>) ou par son numéro cité dans le libellé.
-                        Un mouvement qui ne cite ni l'un ni l'autre n'apparaît pas : une absence n'est pas une preuve.
+                        Table <span class="font-mono">CC_MOVIMTO_MENSUAL</span>, rattachée par le numéro du crédit cité dans le libellé, et par lui seul — comme le script
+                        d'extraction de la DSIG : tout le réseau est balayé, y compris une autre agence et un autre compte que celui du crédit
+                        (<span class="font-mono">{{ d.idCuenta || '—' }}</span>). Ce n'est donc pas l'historique de ce compte : un mouvement qui ne cite pas le crédit
+                        n'apparaît pas, et une absence n'est pas une preuve.
                         <span *ngIf="!d.mouvementsCompteComplets" class="text-orange-600"> Plafond de lignes atteint.</span>
                     </p>
                     <p-table [value]="d.mouvementsCompte || []" styleClass="p-datatable-sm" [paginator]="(d.mouvementsCompte?.length || 0) > 30" [rows]="30" [scrollable]="true">
                         <ng-template pTemplate="header">
-                            <tr><th>N°</th><th>Date</th><th>Compte</th><th>Transaction</th><th class="text-right">Montant</th><th>Document</th><th>Libellé</th><th>Usager</th></tr>
+                            <tr><th>N°</th><th>Date</th><th>Agence</th><th>Compte</th><th>Transaction</th><th class="text-right">Montant</th><th>Document</th><th>Libellé</th><th>Usager</th></tr>
                         </ng-template>
                         <ng-template pTemplate="body" let-m>
                             <tr>
                                 <td class="font-mono text-xs">{{ m.NUM_MOVIMIENTO }}</td>
                                 <td class="text-xs">{{ jour(m.FEC_MOVIMIENTO) }}</td>
-                                <td class="font-mono text-xs">{{ m.NUM_CUENTA }}</td>
+                                <td class="font-mono text-xs" [class.text-orange-600]="m.COD_AGENCIA !== d.codAgencia">{{ m.COD_AGENCIA }}</td>
+                                <td class="font-mono text-xs" [class.text-orange-600]="m.NUM_CUENTA !== d.idCuenta">{{ m.NUM_CUENTA }}</td>
                                 <td class="text-xs">{{ m.TIP_TRANSACCION }}<span *ngIf="m.SUBTIP_TRANSAC">/{{ m.SUBTIP_TRANSAC }}</span></td>
                                 <td class="text-right">{{ m.MON_MOVIMIENTO | number: '1.0-2' }}</td>
                                 <td class="text-xs">{{ m.NUM_DOCUMENTO }}</td>
@@ -386,7 +392,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                 <td class="text-xs">{{ m.COD_USUARIO }}</td>
                             </tr>
                         </ng-template>
-                        <ng-template pTemplate="emptymessage"><tr><td colspan="8" class="text-center text-gray-500 py-4">Aucun mouvement rattaché.</td></tr></ng-template>
+                        <ng-template pTemplate="emptymessage"><tr><td colspan="9" class="text-center text-gray-500 py-4">Aucun mouvement rattaché.</td></tr></ng-template>
                     </p-table>
                 </p-tabPanel>
 
@@ -441,7 +447,7 @@ export class CreditsNegatifsComponent implements OnInit {
     ];
     corriges = computed(() => (this.data()?.lignes ?? []).filter((l) => !!l.corrigeAt).filter((l) => {
         const q = this.recherche().trim().toLowerCase();
-        return !q || [l.nomCliente, l.codCliente, String(l.numCredito), l.desAgencia].some((v) => (v || '').toLowerCase().includes(q));
+        return !q || [l.nomCliente, l.codCliente, String(l.numCredito), l.desAgencia, l.nomEjecutivo, l.codEjecutivo].some((v) => (v || '').toLowerCase().includes(q));
     }));
     nbAvecPreuve = computed(() => this.corriges().filter((l) => l.soldeApres !== null).length);
     nbClosSaf = computed(() => this.corriges().filter((l) => l.conclusion === 'CLOS_SAF').length);
@@ -506,7 +512,7 @@ export class CreditsNegatifsComponent implements OnInit {
             if (suivi === 'A_TRAITER' && (l.traiteAt || l.corrigeAt)) return false;
             if (suivi === 'PRIS' && !l.traiteAt) return false;
             if (!q) return true;
-            return [l.nomCliente, l.codCliente, l.desAgencia, l.codAgencia, String(l.numCredito), l.codEjecutivo]
+            return [l.nomCliente, l.codCliente, l.desAgencia, l.codAgencia, String(l.numCredito), l.codEjecutivo, l.nomEjecutivo]
                 .some((v) => (v || '').toLowerCase().includes(q));
         });
     });

@@ -132,7 +132,10 @@ import { TooltipModule } from 'primeng/tooltip';
                     </ng-template>
                     <ng-template pTemplate="body" let-l>
                         <tr class="cursor-pointer" (click)="filtrerPar(mode, l)">
-                            <td>{{ l.libelle }}</td>
+                            <td>
+                                {{ l.libelle }}
+                                <span *ngIf="mode !== 'famille' && l.cle && l.cle !== l.libelle" class="block text-xs text-gray-500">{{ l.cle }}</span>
+                            </td>
                             <td class="text-right">{{ l.nb | number }}</td>
                             <td class="text-right">{{ l.nbVivants | number }}</td>
                             <td class="text-right font-semibold" [class.text-red-600]="l.nbATraiter > 0">{{ l.nbATraiter | number }}</td>
@@ -178,6 +181,7 @@ import { TooltipModule } from 'primeng/tooltip';
                         <th class="text-right">Solde (GNF)</th>
                         <th>État</th>
                         <th>Saisi par</th>
+                        <th>Agent</th>
                         <th>Suivi</th>
                         <th style="width:7rem"></th>
                     </tr>
@@ -195,7 +199,14 @@ import { TooltipModule } from 'primeng/tooltip';
                         <td><p-tag [value]="l.familleLibelle" [severity]="severite(l.famille)"></p-tag></td>
                         <td class="text-right">{{ l.monSaldo | number: '1.0-0' }}</td>
                         <td>{{ l.etat }}</td>
-                        <td>{{ l.saisiPar || '—' }}</td>
+                        <td>
+                            {{ l.nomSaisiPar || '—' }}
+                            <span *ngIf="l.saisiPar" class="block text-xs text-gray-500">{{ l.saisiPar }}</span>
+                        </td>
+                        <td>
+                            {{ l.nomAgentCredit || '—' }}
+                            <span *ngIf="l.agentCredit" class="block text-xs text-gray-500">{{ l.agentCredit }}</span>
+                        </td>
                         <td class="text-sm">
                             <span *ngIf="l.traiteAt">
                                 {{ l.traitePar }}
@@ -227,8 +238,8 @@ import { TooltipModule } from 'primeng/tooltip';
                 <div class="font-semibold">Crédit {{ d.numCredito }} — {{ d.nomCliente || '(client inconnu)' }}</div>
                 <div class="text-sm text-gray-500">
                     Membre {{ d.codCliente }} · solde {{ d.monSaldo | number: '1.0-0' }} GNF · état {{ d.indEstado }}
-                    <span *ngIf="d.codUsuario"> · saisi par {{ d.codUsuario }}</span>
-                    <span *ngIf="d.codOficial"> · agent {{ d.codOficial }}</span>
+                    <span *ngIf="d.codUsuario"> · saisi par {{ d.nomUsuario || d.codUsuario }}<span *ngIf="d.nomUsuario" class="text-gray-400"> ({{ d.codUsuario }})</span></span>
+                    <span *ngIf="d.codOficial"> · agent {{ d.nomOficial || d.codOficial }}<span *ngIf="d.nomOficial" class="text-gray-400"> ({{ d.codOficial }})</span></span>
                 </div>
             </div>
 

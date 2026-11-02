@@ -15,6 +15,8 @@ export interface LigneCreditNegatif {
     indEstado: string | null;
     etat: string;
     codEjecutivo: string | null;
+    /** Le nom derrière le code SAF ; vide si le code ne correspond à aucun usager. */
+    nomEjecutivo: string | null;
     detecteAt: string | null;
     signaleAt: string | null;
     corrigeAt: string | null;
