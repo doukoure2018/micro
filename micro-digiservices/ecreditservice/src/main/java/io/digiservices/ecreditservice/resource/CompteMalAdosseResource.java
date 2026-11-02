@@ -71,6 +71,20 @@ public class CompteMalAdosseResource {
         return ResponseEntity.ok(getResponse(request, Map.of(), message, OK));
     }
 
+    /**
+     * Le dossier d'une anomalie en regard de SAF : le compte saisi tel qu'il est reellement, et
+     * les comptes du client qui conviendraient. C'est cette derniere liste qui permet de
+     * corriger sans rouvrir SAF pour chercher.
+     */
+    @GetMapping("/{id}/dossier")
+    public ResponseEntity<Response> dossier(@NotNull Authentication authentication,
+                                            @PathVariable("id") Long id,
+                                            HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("dossier", service.dossier(authentication.getName(), id)),
+                "Dossier SAF du credit", OK));
+    }
+
     @GetMapping("/export")
     public ResponseEntity<byte[]> exporter(@NotNull Authentication authentication,
                                            @RequestParam(name = "famille", required = false) String famille,

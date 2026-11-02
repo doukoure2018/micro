@@ -1118,6 +1118,137 @@ public class PortefeuilleRepository {
                         entier(rs, "NB_CREDITS"), rs.getBigDecimal("MONTANT"))));
     }
 
+
+    // ==================== Dossier d'un compte mal adosse (V199) ====================
+
+    private static final String SQL_CREDIT_POUR_DOSSIER = """
+            SELECT cr.COD_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, cl.NOM_CLIENTE,
+                   cr.MON_CREDITO, cr.MON_SALDO, cr.IND_ESTADO,
+                   cr.FEC_APERTURA, cr.FEC_VENCIMIENTO, cr.ID_CUENTA,
+                   cr.COD_USUARIO, cr.COD_OFICIAL
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = cr.COD_EMPRESA AND cl.COD_CLIENTE = cr.COD_CLIENTE
+            WHERE cr.COD_AGENCIA = :codAgencia AND cr.NUM_CREDITO = :numCredito
+            """;
+
+    /**
+     * Les comptes d'un client, tous produits confondus : c'est au lecteur de voir lesquels
+     * conviennent, et le tri se fait cote appelant pour que la regle des types autorises reste
+     * en un seul endroit.
+     */
+    private static final String SQL_COMPTES_DU_CLIENT = """
+            SELECT c.NUM_CUENTA, c.COD_PRODUCTO, p.NOM_PRODUCTO,
+                   c.COD_AGENCIA, ag.DES_AGENCIA, c.COD_CLIENTE, cl.NOM_CLIENTE,
+                   c.IND_ESTADO, c.SAL_DISPONIBLE, c.FEC_APERTURA, c.FEC_ULT_MOVIMIENTO
+            FROM CC.CC_CUENTA_EFECTIVO c
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            LEFT JOIN CF.CF_PRODUCTOS p
+                ON p.COD_EMPRESA = c.COD_EMPRESA AND p.COD_SISTEMA = c.COD_SISTEMA
+               AND p.COD_PRODUCTO = c.COD_PRODUCTO
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = c.COD_EMPRESA AND cl.COD_CLIENTE = c.COD_CLIENTE
+            WHERE c.COD_EMPRESA = cr_empresa AND c.COD_CLIENTE = :codCliente
+            ORDER BY c.IND_ESTADO, c.NUM_CUENTA
+            """;
+
+    /** Le compte saisi, quel que soit son proprietaire : c'est tout l'objet de l'anomalie. */
+    private static final String SQL_COMPTE_PAR_NUMERO = """
+            SELECT c.NUM_CUENTA, c.COD_PRODUCTO, p.NOM_PRODUCTO,
+                   c.COD_AGENCIA, ag.DES_AGENCIA, c.COD_CLIENTE, cl.NOM_CLIENTE,
+                   c.IND_ESTADO, c.SAL_DISPONIBLE, c.FEC_APERTURA, c.FEC_ULT_MOVIMIENTO
+            FROM CC.CC_CUENTA_EFECTIVO c
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            LEFT JOIN CF.CF_PRODUCTOS p
+                ON p.COD_EMPRESA = c.COD_EMPRESA AND p.COD_SISTEMA = c.COD_SISTEMA
+               AND p.COD_PRODUCTO = c.COD_PRODUCTO
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = c.COD_EMPRESA AND cl.COD_CLIENTE = c.COD_CLIENTE
+            WHERE c.NUM_CUENTA = :numCuenta
+            """;
+
+    /**
+     * Le dossier d'un credit mal adosse : le credit, le compte saisi tel qu'il est reellement,
+     * et les comptes du client. Lu dans la PRODUCTION, puisque la correction s'y fait a
+     * l'instant.
+     */
+    public java.util.Optional<io.digiservices.clients.portefeuille.DossierCompteSafDto>
+            findDossierCompte(String codAgencia, Long numCredito) {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            return execute("portefeuille.dossierCompte", () -> {
+                var credits = primary.query(SQL_CREDIT_POUR_DOSSIER,
+                        new MapSqlParameterSource().addValue("codAgencia", codAgencia)
+                                .addValue("numCredito", numCredito),
+                        (rs, n) -> io.digiservices.clients.portefeuille.DossierCompteSafDto.builder()
+                                .codAgencia(str(rs, "COD_AGENCIA")).numCredito(rs.getLong("NUM_CREDITO"))
+                                .codCliente(str(rs, "COD_CLIENTE")).nomCliente(str(rs, "NOM_CLIENTE"))
+                                .monCredito(rs.getBigDecimal("MON_CREDITO"))
+                                .monSaldo(rs.getBigDecimal("MON_SALDO"))
+                                .indEstado(str(rs, "IND_ESTADO"))
+                                .fecApertura(dt(rs, "FEC_APERTURA"))
+                                .fecVencimiento(dt(rs, "FEC_VENCIMIENTO"))
+                                .idCuenta(str(rs, "ID_CUENTA"))
+                                .codUsuario(str(rs, "COD_USUARIO")).codOficial(str(rs, "COD_OFICIAL"))
+                                .build());
+                if (credits.isEmpty()) {
+                    return java.util.Optional.empty();
+                }
+                var dossier = credits.get(0);
+                if (dossier.getIdCuenta() != null && !dossier.getIdCuenta().isBlank()) {
+                    var saisis = primary.query(SQL_COMPTE_PAR_NUMERO,
+                            new MapSqlParameterSource("numCuenta", dossier.getIdCuenta().trim()),
+                            PortefeuilleRepository::versCompteSaf);
+                    if (!saisis.isEmpty()) {
+                        dossier.setCompteSaisi(saisis.get(0));
+                    }
+                }
+                if (dossier.getCodCliente() != null && !dossier.getCodCliente().isBlank()) {
+                    var tous = primary.query(SQL_COMPTES_DU_CLIENT.replace("cr_empresa", "'00000'"),
+                            new MapSqlParameterSource("codCliente", dossier.getCodCliente().trim()),
+                            PortefeuilleRepository::versCompteSaf);
+                    String types = listeTypes(typesCompteAutorises);
+                    for (var c : tous) {
+                        boolean typeOk = c.getTypeCompte() != null
+                                && types.contains("'" + c.getTypeCompte() + "'");
+                        if (typeOk && "A".equals(c.getIndEstado())) {
+                            dossier.getComptesEligibles().add(c);
+                        } else {
+                            dossier.getAutresComptes().add(c);
+                        }
+                    }
+                }
+                return java.util.Optional.of(dossier);
+            });
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
+    private static io.digiservices.clients.portefeuille.DossierCompteSafDto.CompteSafDto
+            versCompteSaf(ResultSet rs, int n) throws SQLException {
+        String numero = str(rs, "NUM_CUENTA");
+        return io.digiservices.clients.portefeuille.DossierCompteSafDto.CompteSafDto.builder()
+                .numCuenta(numero)
+                .codProducto(str(rs, "COD_PRODUCTO")).nomProducto(str(rs, "NOM_PRODUCTO"))
+                .codAgencia(str(rs, "COD_AGENCIA")).desAgencia(str(rs, "DES_AGENCIA"))
+                .codCliente(str(rs, "COD_CLIENTE")).nomCliente(str(rs, "NOM_CLIENTE"))
+                .indEstado(str(rs, "IND_ESTADO"))
+                .salDisponible(rs.getBigDecimal("SAL_DISPONIBLE"))
+                .fecApertura(dt(rs, "FEC_APERTURA")).fecUltMovimiento(dt(rs, "FEC_ULT_MOVIMIENTO"))
+                .typeCompte(numero != null && numero.length() >= 6 ? numero.substring(3, 6) : null)
+                .build();
+    }
+
     private static BigDecimal nvl(BigDecimal v) {
         return v != null ? v : BigDecimal.ZERO;
     }

@@ -374,6 +374,86 @@ public class CompteMalAdosseRepository {
                 .query(OffsetDateTime.class).optional().orElse(null);
     }
 
+
+    // ==================== La relance des cas qui trainent (lot 3) ====================
+
+    /** Une anomalie a relancer : de quoi ecrire la ligne du courriel sans la relire ailleurs. */
+    public record ARelancer(Long id, String codAgencia, String desAgencia, Long numCredito,
+                            String nomCliente, String idCuenta, String famille,
+                            BigDecimal monSaldo, String saisiPar, String traitePar,
+                            Long joursDepuis, int nbRelances) {
+    }
+
+    /**
+     * Les anomalies qui trainent, dans les deux cas qui meritent un rappel.
+     *
+     * <p>{@code prisesEnCharge} : prises en charge depuis plus de {@code jours} et toujours
+     * ouvertes — le traitement a commence et s'est arrete. {@code jamaisPrises} : a traiter
+     * depuis plus de {@code jours} et que personne n'a prises — le travail n'a pas commence.</p>
+     *
+     * <p>Une ligne deja relancee il y a moins d'une semaine est ecartee : sans cette borne, le
+     * courriel quotidien repeterait les memes lignes et serait ignore en trois jours.</p>
+     */
+    public List<ARelancer> aRelancer(boolean prisesEnCharge, int jours, int relanceTousLesJours) {
+        return jdbcClient.sql(sqlARelancer(prisesEnCharge))
+                .param("jours", jours).param("intervalle", relanceTousLesJours)
+                .query((rs, n) -> new ARelancer(rs.getLong("id"), rs.getString("cod_agencia"),
+                        rs.getString("des_agencia"), rs.getLong("num_credito"),
+                        rs.getString("nom_cliente"), rs.getString("id_cuenta"),
+                        rs.getString("famille"), rs.getBigDecimal("mon_saldo"),
+                        rs.getString("saisi_par"), rs.getString("traite_par"),
+                        (Long) rs.getObject("jours_depuis"), rs.getInt("nb_relances")))
+                .list();
+    }
+
+    /**
+     * La requete de relance, selon qu'on cherche les prises en charge oubliees ou celles que
+     * personne n'a prises. Constante nommee plutot que chaine construite sur place : un test
+     * verifie ainsi les deux variantes contre le piege du mot-cle colle.
+     */
+    static String sqlARelancer(boolean prisesEnCharge) {
+        String condition = prisesEnCharge
+                ? " AND a.traite_at IS NOT NULL"
+                        + " AND a.traite_at < CURRENT_TIMESTAMP - make_interval(days => :jours) "
+                : " AND a.traite_at IS NULL"
+                        + " AND a.detecte_at < CURRENT_TIMESTAMP - make_interval(days => :jours) ";
+        return "SELECT a.id, a.cod_agencia, a.des_agencia, a.num_credito,"
+                + " a.nom_cliente, a.id_cuenta, a.famille, a.mon_saldo, a.saisi_par,"
+                + " (SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))"
+                + "    FROM users u WHERE u.user_id = a.traite_par_user_id) AS traite_par,"
+                + " EXTRACT(DAY FROM (CURRENT_TIMESTAMP"
+                + "          - COALESCE(a.traite_at, a.detecte_at)))::BIGINT AS jours_depuis,"
+                + " a.nb_relances"
+                + " FROM credit_compte_anomalie a"
+                + " WHERE a.corrige_at IS NULL"
+                + "   AND " + A_TRAITER
+                + condition
+                + "   AND (a.derniere_relance_at IS NULL"
+                + "        OR a.derniere_relance_at < CURRENT_TIMESTAMP"
+                + "           - make_interval(days => :intervalle))"
+                + " ORDER BY a.mon_saldo DESC NULLS LAST";
+    }
+
+    /** Inscrit le rappel : la ligne ne sera pas reprise avant une semaine. */
+    public void marquerRelancees(Collection<Long> ids) {
+        if (ids.isEmpty()) {
+            return;
+        }
+        jdbcClient.sql("UPDATE credit_compte_anomalie"
+                        + " SET derniere_relance_at = CURRENT_TIMESTAMP, nb_relances = nb_relances + 1"
+                        + " WHERE id IN (:ids)")
+                .param("ids", List.copyOf(ids)).update();
+    }
+
+    /** La cle SAF d'une anomalie, pour aller chercher son dossier dans SAF. */
+    public java.util.Optional<String[]> cle(Long id) {
+        return jdbcClient.sql("SELECT cod_agencia, num_credito FROM credit_compte_anomalie WHERE id = :id")
+                .param("id", id)
+                .query((rs, n) -> new String[]{rs.getString("cod_agencia"),
+                        String.valueOf(rs.getLong("num_credito"))})
+                .optional();
+    }
+
     // ==================== Suivi de prise en charge (lot 2) ====================
 
     /**

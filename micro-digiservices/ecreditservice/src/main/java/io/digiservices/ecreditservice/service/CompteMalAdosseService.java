@@ -18,6 +18,7 @@ import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
 import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
 import io.digiservices.ecreditservice.repository.CompteMalAdosseRepository;
+import io.digiservices.ecreditservice.repository.CompteMalAdosseRepository.ARelancer;
 import io.digiservices.ecreditservice.repository.CompteMalAdosseRepository.Ouverte;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -350,6 +351,148 @@ public class CompteMalAdosseService {
             case "", "D", "A" -> "En cours";
             default -> "En cours (" + c + ")";
         };
+    }
+
+
+    // ==================== Le dossier d'un credit en regard de SAF (lot 3) ====================
+
+    /**
+     * Ce que SAF dit a l'instant du credit, du compte saisi et des comptes du client.
+     *
+     * <p>Les comptes eligibles sont la raison d'etre de cet ecran : sans eux il faut rouvrir SAF
+     * pour chercher quel compte rattacher, et la correction attend. Une liste vide est elle aussi
+     * une reponse — le client n'a aucun compte de remboursement utilisable, et il faut lui en
+     * ouvrir un avant de corriger le credit.</p>
+     */
+    public io.digiservices.clients.portefeuille.DossierCompteSafDto dossier(String uuid, Long id) {
+        verifierLecture(uuid);
+        String[] cle = repository.cle(id)
+                .orElseThrow(() -> new ApiException("Anomalie introuvable"));
+        try {
+            var dossier = portefeuilleClient.getDossierCompte(cle[0], Long.parseLong(cle[1]));
+            if (dossier == null) {
+                throw new ApiException("Ce credit n'existe plus dans SAF");
+            }
+            log.info("[COMPTE MAL ADOSSE] Dossier SAF du credit {}/{} consulte par {}",
+                    cle[0], cle[1], uuid);
+            return dossier;
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException("SAF n'a pas repondu : " + e.getMessage());
+        }
+    }
+
+    // ==================== La relance des cas qui trainent (lot 3) ====================
+
+    /** Au-dela, une prise en charge qui n'a rien corrige est un oubli. */
+    @Value("${credit.compte.relance.jours-pris:7}")
+    private int relanceJoursPris;
+    /** Au-dela, une anomalie que personne n'a prise en charge appelle un rappel. */
+    @Value("${credit.compte.relance.jours-non-pris:14}")
+    private int relanceJoursNonPris;
+    /** Une meme ligne n'est rappelee qu'une fois par semaine. */
+    @Value("${credit.compte.relance.intervalle:7}")
+    private int relanceIntervalle;
+    @Value("${credit.compte.relance.actif:true}")
+    private boolean relanceActive;
+
+    /**
+     * Un rappel quotidien, et seulement s'il y a matiere. Detecter ne suffit pas : un dossier
+     * pris en charge puis oublie reste une echeance qui ne se preleve pas, et personne ne s'en
+     * apercoit. Le courriel ne part donc que si au moins une ligne traine.
+     *
+     * <p>A 09 h 10 GMT, apres le passage de detection de 08 h 25 : les anomalies corrigees dans
+     * la nuit sont deja closes et ne seront pas relancees a tort.</p>
+     */
+    @Scheduled(cron = "${credit.compte.relance.cron:0 10 9 * * MON-FRI}", zone = "GMT")
+    public void relancer() {
+        if (!actif || !relanceActive) {
+            return;
+        }
+        long debut = System.currentTimeMillis();
+        try {
+            List<ARelancer> pris = repository.aRelancer(true, relanceJoursPris, relanceIntervalle);
+            List<ARelancer> jamais = repository.aRelancer(false, relanceJoursNonPris, relanceIntervalle);
+            if (pris.isEmpty() && jamais.isEmpty()) {
+                journal.execution("COMPTE_MAL_ADOSSE_RELANCE", "SUCCES", 1, null, 0, null, null, null,
+                        null, System.currentTimeMillis() - debut, "rien a relancer");
+                return;
+            }
+            int envoyes = alerterRelance(pris, jamais);
+            List<Long> ids = new ArrayList<>();
+            pris.forEach(a -> ids.add(a.id()));
+            jamais.forEach(a -> ids.add(a.id()));
+            if (envoyes > 0) {
+                repository.marquerRelancees(ids);
+            }
+            log.info("[COMPTE MAL ADOSSE] Relance : {} prise(s) en charge, {} jamais prise(s), {} courriel(s)",
+                    pris.size(), jamais.size(), envoyes);
+            journal.execution("COMPTE_MAL_ADOSSE_RELANCE", "SUCCES", 1, null, ids.size(), null, null,
+                    null, null, System.currentTimeMillis() - debut,
+                    pris.size() + " en cours de traitement, " + jamais.size() + " non prises");
+        } catch (Exception e) {
+            log.warn("[COMPTE MAL ADOSSE] Relance en echec : {}", e.getMessage());
+            journal.execution("COMPTE_MAL_ADOSSE_RELANCE", "ECHEC", 1, null, null, null, null, null,
+                    null, System.currentTimeMillis() - debut, e.getMessage());
+        }
+    }
+
+    private int alerterRelance(List<ARelancer> pris, List<ARelancer> jamais) {
+        List<Destinataire> dsig = destinatairesHabilites();
+        if (dsig.isEmpty()) {
+            log.warn("[COMPTE MAL ADOSSE] Aucun destinataire habilite : relance non envoyee");
+            return 0;
+        }
+        int total = pris.size() + jamais.size();
+        String sujet = total + " compte(s) de remboursement mal adossé(s) en attente";
+        StringBuilder h = entete(total + " anomalie(s) qui attendent",
+                "Ces comptes empêchent le prélèvement d'une échéance sur un crédit vivant. "
+                        + "Chaque ligne n'est rappelée qu'une fois par semaine.");
+        if (!pris.isEmpty()) {
+            h.append("<h3 style='color:#9A6400;margin:14px 0 4px;font-size:14px'>")
+                    .append(pris.size()).append(" prise(s) en charge depuis plus de ")
+                    .append(relanceJoursPris).append(" jours, toujours ouverte(s)</h3>")
+                    .append(tableauRelance(pris, true));
+        }
+        if (!jamais.isEmpty()) {
+            h.append("<h3 style='color:#B3261E;margin:14px 0 4px;font-size:14px'>")
+                    .append(jamais.size()).append(" que personne n'a prise(s) en charge depuis plus de ")
+                    .append(relanceJoursNonPris).append(" jours</h3>")
+                    .append(tableauRelance(jamais, false));
+        }
+        return envoyer(dsig, sujet, pied(h).toString(), total);
+    }
+
+    private static String tableauRelance(List<ARelancer> lignes, boolean avecPreneur) {
+        StringBuilder h = new StringBuilder("<table style='border-collapse:collapse;font-size:13px'><tr>");
+        for (String e : new String[]{"Point de service", "Crédit", "Client", "Compte saisi",
+                "Nature", "Solde (GNF)", avecPreneur ? "Pris par" : "Saisi par", "Depuis", "Rappels"}) {
+            h.append(th(e));
+        }
+        h.append("</tr>");
+        for (ARelancer a : lignes.size() > MAX_LIGNES_COURRIEL
+                ? lignes.subList(0, MAX_LIGNES_COURRIEL) : lignes) {
+            h.append("<tr>")
+                    .append(cell(nvl(a.desAgencia()) + " (" + nvl(a.codAgencia()) + ")"))
+                    .append(cell(String.valueOf(a.numCredito())))
+                    .append(cell(nvl(a.nomCliente())))
+                    .append(cell(a.idCuenta() == null || a.idCuenta().isBlank()
+                            ? "(aucun)" : a.idCuenta()))
+                    .append(cell(libelleFamille(a.famille())))
+                    .append(cell(montant(a.monSaldo())))
+                    .append(cell(nvl(avecPreneur ? a.traitePar() : a.saisiPar())))
+                    .append(cell(a.joursDepuis() == null ? "" : a.joursDepuis() + " j"))
+                    .append(cell(a.nbRelances() == 0 ? "—" : String.valueOf(a.nbRelances())))
+                    .append("</tr>");
+        }
+        h.append("</table>");
+        if (lignes.size() > MAX_LIGNES_COURRIEL) {
+            h.append("<p style='color:#5C6B60;font-size:12px'>")
+                    .append(lignes.size() - MAX_LIGNES_COURRIEL)
+                    .append(" autre(s) ligne(s) non détaillée(s) ici.</p>");
+        }
+        return h.toString();
     }
 
     // ==================== Courriels ====================

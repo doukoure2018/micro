@@ -242,6 +242,19 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.findComptesMalAdosses());
     }
 
+    /**
+     * Le dossier d'un credit mal adosse : le compte saisi tel qu'il est reellement, et les
+     * comptes du client qui conviendraient. Lecture de la PRODUCTION, forcee dans le depot.
+     */
+    @GetMapping("/credits/{codAgencia}/{numCredito}/dossier-compte")
+    public ResponseEntity<io.digiservices.clients.portefeuille.DossierCompteSafDto> getDossierCompte(
+            @PathVariable("codAgencia") String codAgencia,
+            @PathVariable("numCredito") Long numCredito) {
+        return repository.findDossierCompte(codAgencia, numCredito)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     /** Octrois d'une periode, par point de service : la production de credit de la semaine. */
     @GetMapping("/octrois")
     public ResponseEntity<List<io.digiservices.clients.portefeuille.OctroiSemaineDto>> getOctrois(

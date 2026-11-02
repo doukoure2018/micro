@@ -93,6 +93,21 @@ class CompteMalAdosseSqlTest {
     }
 
     @Test
+    @DisplayName("les deux requetes de relance sont bien formees")
+    void lesRequetesDeRelanceSontBienFormees() {
+        for (boolean prises : new boolean[]{true, false}) {
+            String sql = CompteMalAdosseRepository.sqlARelancer(prises);
+            verifier("relance (prises=" + prises + ")", sql);
+            assertTrue(sql.contains("derniere_relance_at IS NULL"),
+                    "une ligne jamais relancee doit entrer dans le perimetre");
+            assertTrue(sql.contains("make_interval(days => :intervalle)"),
+                    "une ligne relancee recemment doit etre ecartee, sinon le courriel se repete");
+            assertTrue(sql.contains("ind_estado IN ('D', 'J')"),
+                    "on ne relance que les credits vivants");
+        }
+    }
+
+    @Test
     @DisplayName("le filtre par defaut ne retient que les cas a traiter")
     void leFiltreParDefautRetientLesCasATraiter() {
         String defaut = CompteMalAdosseRepository.filtre(

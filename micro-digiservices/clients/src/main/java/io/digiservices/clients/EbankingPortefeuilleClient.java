@@ -76,6 +76,11 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/comptes-mal-adosses")
     List<io.digiservices.clients.portefeuille.CompteMalAdosseDto> getComptesMalAdosses();
 
+    @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/dossier-compte")
+    io.digiservices.clients.portefeuille.DossierCompteSafDto getDossierCompte(
+            @org.springframework.web.bind.annotation.PathVariable("codAgencia") String codAgencia,
+            @org.springframework.web.bind.annotation.PathVariable("numCredito") Long numCredito);
+
     @GetMapping("/ebanking/portefeuille/octrois")
     List<io.digiservices.clients.portefeuille.OctroiSemaineDto> getOctrois(
             @org.springframework.web.bind.annotation.RequestParam("debut") String debut,
