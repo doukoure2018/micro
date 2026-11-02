@@ -137,6 +137,57 @@ public class PortefeuilleRisqueRepository {
 
     // ------------------------------------------------------------------ familles
 
+    /**
+     * Un jour de la serie : l'encours et les quatre tranches, pour un perimetre.
+     *
+     * <p>Le taux n'est pas stocke mais recalcule a l'affichage : un taux figé devient faux des
+     * que l'encours change, et c'est l'encours qui bouge le plus.</p>
+     */
+    public record JourTendance(LocalDate date, int nbCredits, BigDecimal encours,
+                               BigDecimal par30, BigDecimal par60,
+                               BigDecimal par90, BigDecimal par120) {
+    }
+
+    /**
+     * La tendance du portefeuille a risque sur les derniers jours, lue dans les photos.
+     *
+     * <p>Aucune requete SAF : la photo quotidienne porte deja l'encours et les quatre tranches
+     * par point de service, avec quatre-vingt-dix jours de memoire. C'est elle qui rend la
+     * tendance possible sans rien recalculer — et sans dependre de l'ouverture de SAF.</p>
+     *
+     * <p>Les photos anterieures au 29/10/2026 n'existent pas, et celle du 29 porte les tranches
+     * 60 et 120 a ZERO : V192 les a ajoutees apres le passage de 08 h 40 ce jour-la. Mesure du
+     * 02/11 : 29/10 → PAR 60 a 0,00 %, 30/10 → 6,21 %. Comparer a cette premiere photo
+     * annoncerait une hausse de six points qui n'a jamais eu lieu, d'ou
+     * {@link #TRANCHES_COMPLETES_DEPUIS} : toute comparaison des tranches 60 et 120 doit s'y
+     * borner.</p>
+     */
+    /**
+     * Premiere photo portant les QUATRE tranches. Avant cette date, les tranches 60 et 120
+     * valent zero faute d'exister encore (V192, 29/10/2026 en fin de matinee).
+     */
+    public static final LocalDate TRANCHES_COMPLETES_DEPUIS = LocalDate.of(2026, 10, 30);
+
+    public List<JourTendance> tendance(Collection<String> codes, int jours) {
+        if (codes == null || codes.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("SELECT date_photo,"
+                        + " sum(nb_credits) AS nb_credits, sum(encours) AS encours,"
+                        + " sum(encours_par30) AS par30, sum(encours_par60) AS par60,"
+                        + " sum(encours_par90) AS par90, sum(encours_par120) AS par120"
+                        + " FROM portefeuille_risque_photo"
+                        + " WHERE cod_agencia IN (:codes)"
+                        + "   AND date_photo >= CURRENT_DATE - make_interval(days => :jours)"
+                        + " GROUP BY date_photo ORDER BY date_photo")
+                .param("codes", List.copyOf(codes)).param("jours", jours)
+                .query((rs, n) -> new JourTendance(rs.getObject("date_photo", LocalDate.class),
+                        rs.getInt("nb_credits"), rs.getBigDecimal("encours"),
+                        rs.getBigDecimal("par30"), rs.getBigDecimal("par60"),
+                        rs.getBigDecimal("par90"), rs.getBigDecimal("par120")))
+                .list();
+    }
+
     public Map<Long, FamilleProduitDto> familles() {
         Map<Long, FamilleProduitDto> m = new LinkedHashMap<>();
         jdbcClient.sql("""

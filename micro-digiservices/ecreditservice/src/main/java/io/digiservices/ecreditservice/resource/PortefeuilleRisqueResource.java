@@ -89,6 +89,21 @@ public class PortefeuilleRisqueResource {
                 "Portefeuille a risque du perimetre", OK));
     }
 
+    /**
+     * La tendance des quatre tranches sur la periode, lue dans les photos quotidiennes : elle
+     * ne depend d'aucune requete SAF et reste donc disponible pendant une cloture.
+     */
+    @GetMapping("/tendance")
+    public ResponseEntity<Response> tendance(@NotNull Authentication authentication,
+                                             @RequestParam(name = "jours", defaultValue = "30") int jours,
+                                             @RequestParam(name = "agenceId", required = false) Long agenceId,
+                                             @RequestParam(name = "delegationId", required = false) Long delegationId,
+                                             HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("tendance", service.tendance(authentication.getName(), jours, agenceId, delegationId)),
+                "Tendance du portefeuille a risque", OK));
+    }
+
     @GetMapping("/reseau/export")
     public ResponseEntity<byte[]> exporterReseau(@NotNull Authentication authentication,
                                                  @RequestParam(name = "niveau", defaultValue = "auto") String niveau,

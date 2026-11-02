@@ -204,6 +204,31 @@ public class PortefeuilleRisqueService {
                 .build();
     }
 
+    /**
+     * La tendance du portefeuille a risque sur la periode demandee, pour le perimetre du
+     * compte. Lue dans les photos quotidiennes : aucune requete SAF, donc disponible meme
+     * quand la production est fermee.
+     *
+     * <p>Les tranches 60 et 120 n'existent dans les photos qu'a partir du 30/10/2026 (V192) :
+     * la photo du 29 les porte a zero, et {@code tranchesCompletesDepuis} le dit pour que
+     * l'ecran ne trace pas une chute a zero qui n'a jamais eu lieu.</p>
+     */
+    public TendanceDto tendance(String uuid, int jours, Long agenceId, Long delegationId) {
+        habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.AUDIT_PORTEFEUILLE);
+        Perimetre p = perimetreSafService.perimetreDe(uuid);
+        List<String> codes = codesDuScope(p, agenceId, delegationId);
+        int borne = Math.min(Math.max(jours, 7), 120);
+        var serie = repository.tendance(codes, borne);
+        return new TendanceDto(borne, codes.size(),
+                io.digiservices.ecreditservice.repository.PortefeuilleRisqueRepository
+                        .TRANCHES_COMPLETES_DEPUIS,
+                serie);
+    }
+
+    public record TendanceDto(int jours, int nbPointsService, LocalDate tranchesCompletesDepuis,
+                              List<io.digiservices.ecreditservice.repository.PortefeuilleRisqueRepository.JourTendance> serie) {
+    }
+
     public byte[] exporterReseau(String uuid, String niveau, Long agenceId, Long delegationId) {
         RisqueReseauDto dto = reseau(uuid, niveau, agenceId, delegationId);
         try {

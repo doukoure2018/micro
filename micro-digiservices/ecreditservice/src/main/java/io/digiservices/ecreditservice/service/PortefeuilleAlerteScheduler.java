@@ -69,6 +69,8 @@ public class PortefeuilleAlerteScheduler {
     private final AlerteSyntheseService syntheses;
     private final AlerteSyntheseRepository syntheseRepository;
     private final AlerteJournalRepository journal;
+    /** La photo quotidienne du portefeuille a risque : les quatre tranches, et la memoire. */
+    private final io.digiservices.ecreditservice.repository.PortefeuilleRisqueRepository risqueRepository;
     private final CautionDigiRepository cautions;
 
     @Value("${portefeuille.alertes.actives:false}")
@@ -320,6 +322,98 @@ public class PortefeuilleAlerteScheduler {
         }
     }
 
+    /**
+     * Les quatre tranches de portefeuille a risque et leur evolution sur la semaine, lues dans
+     * la photo quotidienne.
+     *
+     * <p>Pourquoi la photo et non SAF : elle porte deja les quatre tranches par point de service
+     * — les indicateurs lus en direct n'en portent que deux — et quatre-vingt-dix jours de
+     * memoire, ce qui donne l'evolution sans rien recalculer. Elle ne depend pas non plus de
+     * l'ouverture de la production, fermee des 13 h le 31/10 pour la cloture de fin de mois.</p>
+     *
+     * <p>Rend une chaine vide si aucune photo ne couvre ce perimetre : le courriel part alors
+     * comme avant, sans ce bloc, plutot que de ne pas partir.</p>
+     */
+    private String tranchesEtTendance(java.util.List<String> codes) {
+        if (codes == null || codes.isEmpty()) {
+            return "";
+        }
+        var serie = risqueRepository.tendance(codes, 8);
+        if (serie.isEmpty()) {
+            return "";
+        }
+        var jour = serie.get(serie.size() - 1);
+        // La reference est la photo la plus ancienne de la serie, soit environ une semaine avant
+        // — MAIS jamais anterieure au jour ou les quatre tranches ont commence a etre
+        // photographiees : la photo du 29/10/2026 porte les tranches 60 et 120 a zero, et la
+        // prendre pour reference annoncerait une hausse de six points qui n'a jamais eu lieu.
+        var comparables = serie.stream()
+                .filter(j -> !j.date().isBefore(io.digiservices.ecreditservice.repository
+                        .PortefeuilleRisqueRepository.TRANCHES_COMPLETES_DEPUIS))
+                .toList();
+        var reference = comparables.size() > 1 ? comparables.get(0) : null;
+        StringBuilder h = new StringBuilder();
+        h.append("<h3 style='color:#1E6B4F;font-size:14px;margin:14px 0 4px'>")
+                .append("Portefeuille à risque par tranche</h3>")
+                .append("<table style='border-collapse:collapse;font-size:13px'><tr>");
+        for (String e : new String[]{"Tranche", "Encours (GNF)", "Taux", "Sur la semaine"}) {
+            h.append("<th style='border:1px solid #D8DED8;padding:4px 8px;background:#EAF2ED;")
+                    .append("text-align:left'>").append(e).append("</th>");
+        }
+        h.append("</tr>");
+        h.append(ligneTranche("30 jours", jour.par30(), jour.encours(),
+                reference == null ? null : reference.par30(),
+                reference == null ? null : reference.encours()));
+        h.append(ligneTranche("60 jours", jour.par60(), jour.encours(),
+                reference == null ? null : reference.par60(),
+                reference == null ? null : reference.encours()));
+        h.append(ligneTranche("90 jours", jour.par90(), jour.encours(),
+                reference == null ? null : reference.par90(),
+                reference == null ? null : reference.encours()));
+        h.append(ligneTranche("120 jours", jour.par120(), jour.encours(),
+                reference == null ? null : reference.par120(),
+                reference == null ? null : reference.encours()));
+        h.append("</table>")
+                .append("<p style='color:#5C6B60;font-size:11px;margin:4px 0 0'>Portefeuille au ")
+                .append(jour.date().format(FMT));
+        if (reference != null) {
+            h.append(", comparé au ").append(reference.date().format(FMT));
+        }
+        h.append(".</p>");
+        return h.toString();
+    }
+
+    private static String ligneTranche(String libelle, BigDecimal tranche, BigDecimal encours,
+                                       BigDecimal trancheAvant, BigDecimal encoursAvant) {
+        String taux = pourcent(tranche, encours);
+        String evolution = "—";
+        String couleur = "#5C6B60";
+        if (trancheAvant != null && encoursAvant != null
+                && encoursAvant.compareTo(BigDecimal.ZERO) > 0
+                && encours != null && encours.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal maintenant = tranche == null ? BigDecimal.ZERO : tranche;
+            BigDecimal avant = trancheAvant;
+            BigDecimal tauxMaintenant = maintenant.multiply(BigDecimal.valueOf(100))
+                    .divide(encours, 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal tauxAvant = avant.multiply(BigDecimal.valueOf(100))
+                    .divide(encoursAvant, 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal ecart = tauxMaintenant.subtract(tauxAvant);
+            if (ecart.compareTo(BigDecimal.ZERO) == 0) {
+                evolution = "inchangé";
+            } else {
+                boolean hausse = ecart.compareTo(BigDecimal.ZERO) > 0;
+                // Un portefeuille a risque qui monte est une mauvaise nouvelle, quel que soit le signe.
+                couleur = hausse ? "#B3261E" : "#1E6B4F";
+                evolution = (hausse ? "+" : "") + ecart.toPlainString() + " pt";
+            }
+        }
+        return "<tr><td style='border:1px solid #D8DED8;padding:4px 8px'>" + libelle + "</td>"
+                + "<td style='border:1px solid #D8DED8;padding:4px 8px'>" + montant(tranche) + "</td>"
+                + "<td style='border:1px solid #D8DED8;padding:4px 8px;font-weight:bold'>" + taux + "</td>"
+                + "<td style='border:1px solid #D8DED8;padding:4px 8px;color:" + couleur + "'>"
+                + evolution + "</td></tr>";
+    }
+
     private boolean envoyerSynthese(Destinataire d, String perimetre, List<IndicateursAgenceDto> reseau) {
         List<IndicateursAgenceDto> lignes = reseau.stream()
                 .filter(a -> d.codesSaf().contains(a.getCodAgencia())).toList();
@@ -346,8 +440,9 @@ public class PortefeuilleAlerteScheduler {
                         pourcent(a.getEncoursPar30(), a.getEncoursTotal()),
                         pourcent(a.getEncoursPar90(), a.getEncoursTotal())}).toList(),
                 lignes.size());
+        html.append(tranchesEtTendance(d.codesSaf()));
         html.append("<p style='color:#5C6B60;font-size:12px'>Seuils d'attention usuels : PAR 30 &gt; 5 %, PAR 90 &gt; 3 %."
-                + " Détail sur la page Portefeuille crédits SAF.</p></div>");
+                + " Détail sur les pages Portefeuille crédits SAF et Portefeuille à risque.</p></div>");
 
         publier(d.email(), "Synthèse PAR hebdomadaire — " + LocalDate.now().format(FMT), html.toString());
         return true;
