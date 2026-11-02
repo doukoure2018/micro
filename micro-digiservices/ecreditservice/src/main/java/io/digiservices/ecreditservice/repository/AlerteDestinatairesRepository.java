@@ -172,6 +172,51 @@ public class AlerteDestinatairesRepository {
                 .list();
     }
 
+    /**
+     * Porteurs d'une rubrique par ROLE ou par DEPARTEMENT, c'est-a-dire la regle que la
+     * plateforme applique partout ailleurs : les droits sont l'union des deux sources.
+     *
+     * <p>{@link #porteursDeRubrique} ne regarde, lui, que les departements et le drapeau
+     * « tout voir ». Cela suffit aux alertes techniques de la DSIG, dont les destinataires
+     * vivent tous dans un departement de la matrice. Cela ne suffit PAS a une synthese de
+     * direction : au 02/11/2026, le Directeur General et les sept comptes de la Direction de
+     * l'Exploitation n'ont AUCUN departement — la matrice ne couvre que les services DSIG et
+     * Audit — et une resolution par departement seul ne les atteindrait jamais.</p>
+     *
+     * <p>Cette methode est donc volontairement distincte plutot qu'un elargissement de l'autre :
+     * changer la premiere deplacerait sans preavis les destinataires des alertes deja en
+     * service.</p>
+     */
+    public List<Destinataire> porteursParRoleOuDepartement(String rubrique) {
+        return jdbcClient.sql("""
+                        SELECT DISTINCT u.user_id, u.email,
+                               TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom
+                          FROM users u
+                          LEFT JOIN user_roles ur ON ur.user_id = u.user_id
+                          LEFT JOIN roles r ON r.role_id = ur.role_id
+                          LEFT JOIN habilitation_departement d
+                                 ON d.id = u.habilitation_departement_id AND d.actif
+                         WHERE COALESCE(u.enabled, FALSE)
+                           AND u.email IS NOT NULL AND u.email <> ''
+                           AND (
+                                 EXISTS (SELECT 1 FROM habilitation_role_rubrique rr
+                                          WHERE rr.rubrique_code = :rubrique
+                                            AND rr.role = r.name
+                                            AND (rr.service = '*'
+                                                 OR UPPER(rr.service) = UPPER(COALESCE(u.service, ''))))
+                              OR EXISTS (SELECT 1 FROM habilitation_departement_rubrique dr
+                                          WHERE dr.departement_id = d.id
+                                            AND dr.rubrique_code = :rubrique)
+                              OR COALESCE(d.tout_voir, FALSE)
+                           )
+                         ORDER BY nom
+                        """)
+                .param("rubrique", rubrique)
+                .query((rs, n) -> new Destinataire(rs.getString("email"), rs.getString("nom"),
+                        List.of(), rs.getLong("user_id"), null))
+                .list();
+    }
+
     /** DA avec e-mail : chacun porte les codes SAF des points de service de son agence. */
     public List<Destinataire> das() {
         return jdbcClient.sql("""
