@@ -249,7 +249,7 @@ public class DirectionSyntheseRepository {
     public java.util.List<Object[]> demandesParDelegation(LocalDate debut, LocalDate finExclue) {
         return jdbcClient.sql(SQL_DEMANDES_DELEGATION)
                 .param("debut", debut).param("fin", finExclue)
-                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                .query((rs, n) -> new Object[]{versLong(rs.getObject("delegation_id")),
                         rs.getString("delegation"), rs.getInt("instruction"), rs.getInt("accordes")})
                 .list();
     }
@@ -282,7 +282,7 @@ public class DirectionSyntheseRepository {
     public java.util.List<Object[]> portefeuilleParDelegation(LocalDate datePhoto) {
         return jdbcClient.sql(SQL_PORTEFEUILLE_DELEGATION)
                 .param("photo", datePhoto)
-                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                .query((rs, n) -> new Object[]{versLong(rs.getObject("delegation_id")),
                         rs.getString("delegation"), rs.getInt("credits"),
                         rs.getBigDecimal("encours"), rs.getBigDecimal("impaye"),
                         rs.getBigDecimal("par30"), rs.getBigDecimal("par90")})
@@ -308,7 +308,7 @@ public class DirectionSyntheseRepository {
     public java.util.List<Object[]> assainissementParDelegation(LocalDate debut, LocalDate finExclue) {
         return jdbcClient.sql(SQL_ASSAINISSEMENT_DELEGATION)
                 .param("debut", debut).param("fin", finExclue)
-                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                .query((rs, n) -> new Object[]{versLong(rs.getObject("delegation_id")),
                         rs.getString("delegation"), rs.getInt("en_attente"), rs.getInt("valide_semaine")})
                 .list();
     }
@@ -331,7 +331,7 @@ public class DirectionSyntheseRepository {
     public java.util.List<Object[]> arretesParDelegation(LocalDate dateLimite) {
         return jdbcClient.sql(SQL_ARRETES_DELEGATION)
                 .param("limite", dateLimite)
-                .query((rs, n) -> new Object[]{(Long) rs.getObject("delegation_id"),
+                .query((rs, n) -> new Object[]{versLong(rs.getObject("delegation_id")),
                         rs.getString("delegation"), rs.getInt("en_retard"), rs.getInt("jamais")})
                 .list();
     }
@@ -404,7 +404,7 @@ public class DirectionSyntheseRepository {
                         + " WHERE semaine_du = :semaine"
                         + " ORDER BY pf_encours DESC NULLS LAST, delegation")
                 .param("semaine", semaineDu)
-                .query((rs, n) -> new DelegationDto((Long) rs.getObject("delegation_id"),
+                .query((rs, n) -> new DelegationDto(versLong(rs.getObject("delegation_id")),
                         rs.getString("delegation"),
                         (Integer) rs.getObject("dem_instruction"),
                         (Integer) rs.getObject("dem_accordes_semaine"),
@@ -527,6 +527,21 @@ public class DirectionSyntheseRepository {
                 .param("octIndisponible", s.octIndisponible())
                 .param("nbDestinataires", s.nbDestinataires()).param("essai", essai)
                 .update();
+    }
+
+    /**
+     * Un identifiant de delegation, quel que soit le type que Postgres rend.
+     *
+     * <p>{@code delegation.id} et {@code pointvente.delegation_id} sont des {@code bigint}, mais
+     * {@code demandeindividuel.delegation} est un {@code integer} : le MEME identifiant logique
+     * arrive donc en {@code Long} ou en {@code Integer} selon la table lue. Un transtypage
+     * direct echoue a l'execution et seulement la — c'est ce qui a fait tomber le premier envoi
+     * du 02/11/2026 a 08 h 50, par « class java.lang.Integer cannot be cast to class
+     * java.lang.Long ». Passer par {@code Number} est la regle du depot ; elle valait deja pour
+     * les colonnes numeriques de SAF.</p>
+     */
+    private static Long versLong(Object valeur) {
+        return valeur == null ? null : ((Number) valeur).longValue();
     }
 
     private static SemaineDto versSemaine(java.sql.ResultSet rs, int n) throws java.sql.SQLException {

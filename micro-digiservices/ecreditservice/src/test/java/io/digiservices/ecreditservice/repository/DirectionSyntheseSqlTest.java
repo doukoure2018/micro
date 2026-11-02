@@ -3,10 +3,12 @@ package io.digiservices.ecreditservice.repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -44,6 +46,21 @@ class DirectionSyntheseSqlTest {
                                 Math.min(sql.length(), m.end() + 10)) + " »");
             }
         }
+    }
+
+    @Test
+    @DisplayName("un identifiant de delegation est lu quel que soit le type rendu par Postgres")
+    void unIdentifiantDeDelegationEstLuQuelQueSoitSonType() throws Exception {
+        // Le MEME identifiant logique arrive en Long ou en Integer selon la table : delegation.id
+        // et pointvente.delegation_id sont des bigint, demandeindividuel.delegation un integer.
+        // Un transtypage direct echoue a l'execution et seulement la — c'est ce qui a fait tomber
+        // le premier envoi du 02/11/2026 a 08 h 50, apres que tout eut compile et passe les tests.
+        Method m = DirectionSyntheseRepository.class.getDeclaredMethod("versLong", Object.class);
+        m.setAccessible(true);
+        assertEquals(5L, m.invoke(null, 5));                        // integer
+        assertEquals(5L, m.invoke(null, 5L));                       // bigint
+        assertEquals(5L, m.invoke(null, new java.math.BigDecimal("5")));  // numeric
+        assertEquals(null, m.invoke(null, new Object[]{null}));     // delegation non renseignee
     }
 
     @Test
