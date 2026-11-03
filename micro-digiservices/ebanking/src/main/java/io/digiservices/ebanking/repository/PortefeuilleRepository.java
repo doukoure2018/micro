@@ -853,11 +853,28 @@ public class PortefeuilleRepository {
              ORDER BY FEC_MOVIMIENTO, NUM_ASIENTO, NUM_LINEA
             """;
 
+    /**
+     * Le dossier se lit dans la SAUVEGARDE, et non dans la production (DSIG, 03/11/2026).
+     *
+     * <p>C'est la seule lecture de cet ecran a y faire exception. Les autres — la detection
+     * horaire, la confrontation d'un credit pris en charge — restent sur la production : elles
+     * visent une ligne par sa cle, en quelques millisecondes, et doivent voir l'imputation du
+     * matin.</p>
+     *
+     * <p>Le dossier, lui, cherche le numero du credit dans du TEXTE LIBRE sur tout le reseau,
+     * sans index, pour les mouvements de compte et les ecritures comptables. Sur un credit
+     * ouvert il y a dix ans, cela represente dix ans de mouvements du reseau a parcourir. Cette
+     * charge n'a rien a faire sur la base ou travaillent les agences : le dossier sert a
+     * comprendre l'historique d'un credit, pas a constater l'etat du jour, et la copie de la
+     * veille y suffit.</p>
+     *
+     * <p>Consequence a dire a l'ecran : ce qui a ete passe ce matin n'y figure pas encore.</p>
+     */
     public io.digiservices.clients.portefeuille.DossierCreditDto dossierCredit(String codAgencia, Long numCredito, int max) {
         io.digiservices.ebanking.config.SafRoutage.Cible avant =
                 io.digiservices.ebanking.config.SafRoutage.courante();
         io.digiservices.ebanking.config.SafRoutage.forcer(
-                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+                io.digiservices.ebanking.config.SafRoutage.Cible.SAUVEGARDE);
         try {
             java.util.Map<String, Long> millis = new java.util.LinkedHashMap<>();
             MapSqlParameterSource cle = new MapSqlParameterSource()
