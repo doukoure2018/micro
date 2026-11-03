@@ -604,8 +604,10 @@ public class CompteMalAdosseService {
     // ==================== Courriels ====================
 
     private List<Destinataire> destinatairesHabilites() {
-        return destinataires.porteursDeRubrique(HabilitationService.CREDITS_NEGATIFS,
-                habilitations.parDepartementActif());
+        // Par ROLE ou par departement : la DE, la DF et l'inspection n'ont aucun departement
+        // dans la matrice, et une resolution par departement seul ne les atteindrait jamais
+        // (V204, 03/11/2026).
+        return destinataires.porteursParRoleOuDepartement(HabilitationService.CREDITS_NEGATIFS);
     }
 
     /**
