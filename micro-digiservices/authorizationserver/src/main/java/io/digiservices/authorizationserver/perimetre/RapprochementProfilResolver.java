@@ -12,7 +12,7 @@ import io.digiservices.authorizationserver.model.PerimetreNiveau;
  *
  * <ul>
  *   <li>AGENT_CREDIT : son point de service ;</li>
- *   <li>RA (responsable d'agence) : son agence ;</li>
+ *   <li>RA (responsable d'agence) et DA (directeur d'agence) : leur agence ;</li>
  *   <li>AGENT_DELEGATION : sa delegation, sans les droits de validation du DR ;</li>
  *   <li>DR : sa delegation ;</li>
  *   <li>DE (MANAGER + service DE), INSPECTION (MANAGER + service DI), DIRECTION (DG)
@@ -28,6 +28,7 @@ public final class RapprochementProfilResolver {
     // Roles de connexion lus dans digi
     public static final String ROLE_AGENT_CREDIT = "AGENT_CREDIT";
     public static final String ROLE_RA = "RA";
+    public static final String ROLE_DA = "DA";
     public static final String ROLE_AGENT_DELEGATION = "AGENT_DELEGATION";
     public static final String ROLE_DR = "DR";
     public static final String ROLE_DG = "DG";
@@ -42,6 +43,7 @@ public final class RapprochementProfilResolver {
     // Profils exposes a l'outil
     public static final String PROFIL_AGENT_CREDIT = "AGENT_CREDIT";
     public static final String PROFIL_RA = "RA";
+    public static final String PROFIL_DA = "DA";
     public static final String PROFIL_DELEGATION = "DELEGATION";
     public static final String PROFIL_DR = "DR";
     public static final String PROFIL_DE = "DE";
@@ -62,6 +64,11 @@ public final class RapprochementProfilResolver {
         return switch (r) {
             case ROLE_AGENT_CREDIT -> PROFIL_AGENT_CREDIT;
             case ROLE_RA -> PROFIL_RA;
+            // Le directeur d'agence rapproche son agence, comme le responsable d'agence. Il en
+            // etait exclu jusqu'au 03/11/2026 : l'outil affichait bien « Directeur d'agence »
+            // dans ses libelles, mais /userinfo ne renvoyait jamais ce profil, et la connexion
+            // echouait sur « votre compte digi n'ouvre pas le rapprochement des encours ».
+            case ROLE_DA -> PROFIL_DA;
             case ROLE_AGENT_DELEGATION -> PROFIL_DELEGATION;
             case ROLE_DR -> PROFIL_DR;
             case ROLE_DG -> PROFIL_DIRECTION;
@@ -72,7 +79,7 @@ public final class RapprochementProfilResolver {
                 case SERVICE_DSIG -> PROFIL_DSIG;
                 default -> null;     // DRH, DF, Audit, Societariat : hors outil
             };
-            default -> null;         // DA, CAISSE, AGENT_ACCUEIL, AGENT_CORRECTEUR, USER...
+            default -> null;         // CAISSE, AGENT_ACCUEIL, AGENT_CORRECTEUR, USER...
         };
     }
 
@@ -83,7 +90,7 @@ public final class RapprochementProfilResolver {
         }
         return switch (profil) {
             case PROFIL_AGENT_CREDIT -> PerimetreNiveau.POINT_DE_SERVICE;
-            case PROFIL_RA -> PerimetreNiveau.AGENCE;
+            case PROFIL_RA, PROFIL_DA -> PerimetreNiveau.AGENCE;
             case PROFIL_DELEGATION, PROFIL_DR -> PerimetreNiveau.DELEGATION;
             case PROFIL_DE, PROFIL_INSPECTION, PROFIL_DIRECTION, PROFIL_DSIG -> PerimetreNiveau.NATIONAL;
             default -> null;

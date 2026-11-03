@@ -68,8 +68,20 @@ class RapprochementProfilResolverTest {
     }
 
     @Test
+    void leDirecteurDAgenceRapprocheSonAgence() {
+        // Ajoute le 03/11/2026 : le DA en etait exclu, alors que l'outil affichait deja
+        // « Directeur d'agence » dans ses libelles. La connexion echouait sur « votre compte
+        // digi n'ouvre pas le rapprochement des encours », sans que rien n'explique pourquoi.
+        assertEquals("DA", RapprochementProfilResolver.profil("DA", null));
+        assertEquals("DA", RapprochementProfilResolver.profil("DA", "DE"));
+        assertEquals(PerimetreNiveau.AGENCE, RapprochementProfilResolver.niveau("DA"));
+        // Comme le responsable d'agence : meme niveau, et pas de recalcul du reseau.
+        assertEquals(RapprochementProfilResolver.niveau("RA"), RapprochementProfilResolver.niveau("DA"));
+        assertFalse(RapprochementProfilResolver.peutRecalculerLeReseau("DA"));
+    }
+
+    @Test
     void rolesNonHabilites() {
-        assertNull(RapprochementProfilResolver.profil("DA", "DE"));
         assertNull(RapprochementProfilResolver.profil("CAISSE", null));
         assertNull(RapprochementProfilResolver.profil("AGENT_ACCUEIL", null));
         assertNull(RapprochementProfilResolver.profil("USER", "Personnel"));
