@@ -120,8 +120,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/discoveryserver:0.0.1-SNAPSHOT doukoure93/discoveryserver:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/discoveryserver:0.0.1-SNAPSHOT doukoure93/discoveryserver:latest
-          docker push doukoure93/discoveryserver:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/discoveryserver:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/discoveryserver:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/discoveryserver:latest
 
       - name: Build and push Gateway
         working-directory: ./micro-digiservices/gateway
@@ -129,8 +129,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/gateway:0.0.1-SNAPSHOT doukoure93/gateway:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/gateway:0.0.1-SNAPSHOT doukoure93/gateway:latest
-          docker push doukoure93/gateway:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/gateway:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/gateway:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/gateway:latest
 
       - name: Build and push Authorization Server
         working-directory: ./micro-digiservices/authorizationserver
@@ -138,8 +138,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/authorizationserver:0.0.1-SNAPSHOT doukoure93/authorizationserver:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/authorizationserver:0.0.1-SNAPSHOT doukoure93/authorizationserver:latest
-          docker push doukoure93/authorizationserver:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/authorizationserver:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/authorizationserver:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/authorizationserver:latest
 
       - name: Build and push User Service
         working-directory: ./micro-digiservices/userservice
@@ -147,8 +147,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/userservice:0.0.1-SNAPSHOT doukoure93/userservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/userservice:0.0.1-SNAPSHOT doukoure93/userservice:latest
-          docker push doukoure93/userservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/userservice:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/userservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/userservice:latest
 
       - name: Build and push E-Credit Service
         working-directory: ./micro-digiservices
@@ -158,8 +158,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/ecreditservice:0.0.1-SNAPSHOT doukoure93/ecreditservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/ecreditservice:0.0.1-SNAPSHOT doukoure93/ecreditservice:latest
-          docker push doukoure93/ecreditservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/ecreditservice:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/ecreditservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/ecreditservice:latest
 
       - name: Build and push E-Banking Service
         working-directory: ./micro-digiservices/ebanking
@@ -167,8 +167,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/ebanking:0.0.1-SNAPSHOT doukoure93/ebanking:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/ebanking:0.0.1-SNAPSHOT doukoure93/ebanking:latest
-          docker push doukoure93/ebanking:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/ebanking:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/ebanking:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/ebanking:latest
 
       - name: Build and push Notification Service
         working-directory: ./micro-digiservices/notificationservice
@@ -176,8 +176,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/notificationservice:0.0.1-SNAPSHOT doukoure93/notificationservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/notificationservice:0.0.1-SNAPSHOT doukoure93/notificationservice:latest
-          docker push doukoure93/notificationservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/notificationservice:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/notificationservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/notificationservice:latest
 
       - name: Build and push Agriculteur Service
         working-directory: ./micro-digiservices/agriculteurservice
@@ -185,8 +185,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/agriculteurservice:0.0.1-SNAPSHOT doukoure93/agriculteurservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/agriculteurservice:0.0.1-SNAPSHOT doukoure93/agriculteurservice:latest
-          docker push doukoure93/agriculteurservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/agriculteurservice:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/agriculteurservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/agriculteurservice:latest
 
       - name: Build and push BCRG Service
         working-directory: ./micro-digiservices/bcrgservice
@@ -194,8 +194,8 @@ jobs:
           mvn -ntp -B verify -DskipTests jib:dockerBuild
           docker tag doukoure93/bcrgservice:0.0.1-SNAPSHOT doukoure93/bcrgservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
           docker tag doukoure93/bcrgservice:0.0.1-SNAPSHOT doukoure93/bcrgservice:latest
-          docker push doukoure93/bcrgservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
-          docker push doukoure93/bcrgservice:latest
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/bcrgservice:${{ steps.build-number.outputs.BUILD_NUMBER }}
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/bcrgservice:latest
 
 
       - name: Notify images pushed
