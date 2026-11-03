@@ -57,14 +57,32 @@ public class RotationTransfertService {
         if (agent == null || vers == null) {
             throw new ApiException("Agent introuvable");
         }
-        Long agenceId = nombre(agent.get("agence_id"));
-        if ("DA".equals(appelant.getRole()) && (appelant.getAgenceId() == null || !appelant.getAgenceId().equals(agenceId))) {
-            throw new ApiException("Cet agent n'est pas rattache a votre agence");
+        // Tout se decide sur le point de service OU LA CHARGE SE TROUVE, et non sur celui
+        // inscrit sur le compte : des que l'agent a ete rattache a son nouveau point de service
+        // avant d'avoir remis ses dossiers, les deux divergent. Un dossier de Forecariah se
+        // confie a un agent de Forecariah, et c'est le directeur d'agence de Forecariah qui en
+        // est averti (DSIG, 03/11/2026).
+        Long psAgent = charge.ancreDeLaCharge(agentId, nombre(agent.get("pointvente_id")));
+        Long psVers = nombre(vers.get("pointvente_id"));
+        boolean memePs = psAgent != null && psAgent.equals(psVers);
+        Long agenceId = charge.agenceDuPointDeService(psAgent);
+        String libellePs = charge.libellePointDeService(psAgent);
+        // Le controle du directeur d'agence vient APRES l'ancre, et porte sur les deux agences :
+        // celle du compte, et celle ou la charge est restee. Apres un changement d'agence elles
+        // different, et c'est le directeur de l'agence d'ORIGINE qui doit pouvoir remettre les
+        // dossiers — sans cela il ne pourrait rien faire des dossiers de son propre point de
+        // service (DSIG, 03/11/2026).
+        if ("DA".equals(appelant.getRole())) {
+            Long sienne = appelant.getAgenceId();
+            if (sienne == null || (!sienne.equals(nombre(agent.get("agence_id"))) && !sienne.equals(agenceId))) {
+                throw new ApiException("Cet agent n'est rattache ni a votre agence, ni a un point de service de votre agence");
+            }
         }
-        Long psAgent = nombre(agent.get("pointvente_id"));
-        if (psAgent == null || !psAgent.equals(nombre(vers.get("pointvente_id")))) {
-            throw new ApiException("La charge se transfere a un agent du meme point de service (" + agent.get("point_vente") + ")");
-        }
+        verifierDestinataire(memePs,
+                !memePs && charge.autreAgentCreditSurLePs(psAgent, agentId),
+                agenceId != null && agenceId.equals(charge.agenceDuPointDeService(psVers)),
+                libellePs == null ? String.valueOf(agent.get("point_vente")) : libellePs,
+                String.valueOf(agent.get("agence")));
         if (!Boolean.TRUE.equals(vers.get("actif"))) {
             throw new ApiException("Le compte de l'agent destinataire est desactive");
         }
@@ -83,7 +101,8 @@ public class RotationTransfertService {
         log.info("[ROTATION] transfert {} : agent {} -> {} par {} : {} dossiers credit, {} accueil, {} portefeuille, {} designations",
                 id, agentId, versId, appelant.getUserId(), nbCredit, nbAccueil, nbPortefeuille, nbDesignations);
 
-        avertirDa(agenceId, agent, vers, acteur, motifNet, nbCredit, nbAccueil, nbPortefeuille, nbDesignations, id);
+        avertirDa(agenceId, agent, vers, acteur, motifNet, nbCredit, nbAccueil, nbPortefeuille, nbDesignations, id,
+                memePs, libellePs);
 
         Map<String, Object> resultat = new LinkedHashMap<>();
         resultat.put("id", id);
@@ -92,17 +111,49 @@ public class RotationTransfertService {
         resultat.put("nbPortefeuille", nbPortefeuille);
         resultat.put("nbDesignations", nbDesignations);
         resultat.put("dossiers", ids);
+        resultat.put("memePointDeService", memePs);
+        resultat.put("pointVenteDestinataire", vers.get("point_vente"));
         return resultat;
     }
 
+    /**
+     * A qui la charge peut aller, isole ici pour etre eprouve sans base ni double de test.
+     *
+     * <p>Elle reste sur son point de service tant que quelqu'un y sert. Sinon — un point de
+     * service tenu par un seul agent de credit, il y en a dans le reseau — elle s'elargit a
+     * l'agence : refuser serait un cul-de-sac, l'agent etant deja parti et le directeur
+     * d'agence butant sur la meme absence de destinataire (DSIG, 03/11/2026). Elle ne sort
+     * jamais de l'agence : au-dela, plus personne ne peut reattribuer ces dossiers.</p>
+     */
+    static void verifierDestinataire(boolean memePointDeService, boolean resteUnAgentSurLePs,
+                                     boolean memeAgence, String pointVente, String agence) {
+        if (memePointDeService) {
+            return;
+        }
+        if (resteUnAgentSurLePs) {
+            throw new ApiException("La charge se transfere a un agent du meme point de service ("
+                    + pointVente + ") : il en reste au moins un.");
+        }
+        if (!memeAgence) {
+            throw new ApiException("Aucun agent de credit ne sert " + pointVente
+                    + " : le destinataire doit alors appartenir a la meme agence (" + agence + ").");
+        }
+    }
+
     private void avertirDa(Long agenceId, Map<String, Object> agent, Map<String, Object> vers, String acteur, String motif,
-                           int nbCredit, int nbAccueil, int nbPortefeuille, int nbDesignations, Long id) {
+                           int nbCredit, int nbAccueil, int nbPortefeuille, int nbDesignations, Long id,
+                           boolean memePs, String libellePs) {
         if (agenceId == null) return;
         String lien = uiUrl + "/dashboards/resp-agent";
         String corps = "<div style='font-family:Arial,sans-serif;color:#1F2921'>"
                 + "<h2 style='color:#1E3A8A'>Rotation : charge transf&eacute;r&eacute;e &mdash; " + LocalDateTime.now().format(FMT) + "</h2>"
-                + "<p><b>" + agent.get("nom") + "</b> (" + agent.get("point_vente") + ") change de point de service. Sa charge a &eacute;t&eacute; transf&eacute;r&eacute;e par "
-                + acteur + " &agrave; <b>" + vers.get("nom") + "</b> (m&ecirc;me point de service) : "
+                + "<p><b>" + agent.get("nom") + "</b> change de point de service. Sa charge, rest&eacute;e &agrave; <b>"
+                + libellePs + "</b>, a &eacute;t&eacute; transf&eacute;r&eacute;e par "
+                + acteur + " &agrave; <b>" + vers.get("nom") + "</b> ("
+                + (memePs ? "m&ecirc;me point de service"
+                          : "<span style='color:#B3261E'>autre point de service : " + vers.get("point_vente")
+                            + ", faute d'agent de cr&eacute;dit &agrave; " + libellePs + "</span>")
+                + ") : "
                 + nbCredit + " dossier(s) de cr&eacute;dit en cours, " + nbAccueil + " saisie(s) d'accueil, "
                 + nbPortefeuille + " cr&eacute;dit(s) SAF affect&eacute;(s), " + nbDesignations + " d&eacute;signation(s) de rapport.</p>"
                 + "<p>Motif : " + motif + "</p>"

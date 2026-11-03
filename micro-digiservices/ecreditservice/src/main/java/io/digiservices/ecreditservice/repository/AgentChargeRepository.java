@@ -37,6 +37,153 @@ public class AgentChargeRepository {
                 """).param("id", userId).query().listOfRows().stream().findFirst().orElse(null);
     }
 
+    /**
+     * Ou la charge de l'agent se trouve REELLEMENT : les points de service de ses dossiers en
+     * cours, et non celui inscrit sur son compte.
+     *
+     * <p>Les deux coincident tant que l'agent n'a pas bouge. Ils divergent des qu'il a ete
+     * rattache a son nouveau point de service, et c'est l'ancien qui compte : un dossier de
+     * For&eacute;cariah se confie a un agent de For&eacute;cariah, jamais a un agent de Kindia.</p>
+     *
+     * <p>Cette divergence est la NORMALE et non une anomalie : quand un agent change d'agence,
+     * le changement de compte doit venir en premier — sans lui, l'ecran de rotation ne propose
+     * ni l'agent du cote de l'agence d'accueil, ni le point de service d'accueil du cote de
+     * l'agence de depart. La charge reste donc forcement derriere, et c'est a elle de dire ou
+     * elle se trouve (DSIG, 03/11/2026).</p>
+     */
+    public List<Long> pointsDeServiceDeLaCharge(Long userId) {
+        return jdbcClient.sql("SELECT DISTINCT d.pos FROM demandeindividuel d WHERE " + EN_COURS
+                        + " AND d.pos IS NOT NULL AND (d.agent_credit_affecte = :id"
+                        + " OR (d.saisie_par = :id AND d.validation_state = 'CORRECTION_ACCUEIL')) ORDER BY 1")
+                .param("id", userId).query(Long.class).list();
+    }
+
+    /**
+     * Le point de service sur lequel chercher un repreneur : celui de la charge quand elle tient
+     * sur un seul, celui du compte sinon. Une charge etalee sur plusieurs points de service se
+     * reattribue dossier par dossier, pas en bloc.
+     */
+    public Long ancreDeLaCharge(Long userId, Long pointventeDuCompte) {
+        List<Long> ps = pointsDeServiceDeLaCharge(userId);
+        if (ps.size() == 1) {
+            return ps.get(0);
+        }
+        if (pointventeDuCompte != null && ps.contains(pointventeDuCompte)) {
+            return pointventeDuCompte;
+        }
+        return ps.isEmpty() ? pointventeDuCompte : ps.get(0);
+    }
+
+    /**
+     * Les points de service ou une rotation peut mener.
+     *
+     * <p>{@code agenceId} nul ouvre le reseau entier ; sinon la seule agence donnee. C'est
+     * l'appelant qui decide, selon son role : le responsable d'agence deplace dans son agence,
+     * le directeur d'agence et au-dessus vers n'importe quel point de service du reseau
+     * (DSIG, 03/11/2026). L'agence et la delegation voyagent avec le point de service : depuis
+     * V201, l'activation les recopie sur le compte, et les trois rattachements ne peuvent plus
+     * se contredire.</p>
+     */
+    public List<Map<String, Object>> pointsDeServiceDestination(Long agenceId) {
+        String filtre = agenceId == null ? "" : " WHERE pv.agence_id = :agence ";
+        var spec = jdbcClient.sql("""
+                SELECT pv.id, pv.libele, pv.code, pv.agence_id, pv.delegation_id,
+                       a.libele AS agence, d.libele AS delegation
+                FROM pointvente pv
+                LEFT JOIN agence a ON a.id = pv.agence_id
+                LEFT JOIN delegation d ON d.id = pv.delegation_id
+                """ + filtre + """
+                ORDER BY a.libele, pv.libele
+                """);
+        if (agenceId != null) {
+            spec = spec.param("agence", agenceId);
+        }
+        return spec.query().listOfRows();
+    }
+
+    /** Le libelle d'un point de service, pour que l'ecran et les courriels le nomment. */
+    public String libellePointDeService(Long pointventeId) {
+        if (pointventeId == null) {
+            return null;
+        }
+        return jdbcClient.sql("SELECT libele || ' (' || COALESCE(code, '') || ')' FROM pointvente WHERE id = :ps")
+                .param("ps", pointventeId).query(String.class).optional().orElse(null);
+    }
+
+    /**
+     * L'agence a laquelle appartient un point de service.
+     *
+     * <p>C'est elle qui compte pour une charge, et non l'agence inscrite sur le compte de
+     * l'agent : quand un agent a deja ete rattache a sa nouvelle agence alors que ses dossiers
+     * sont restes dans l'ancienne, les deux ne designent pas le meme endroit. Les dossiers
+     * suivent leur point de service (DSIG, 03/11/2026).</p>
+     */
+    public Long agenceDuPointDeService(Long pointventeId) {
+        if (pointventeId == null) {
+            return null;
+        }
+        return jdbcClient.sql("SELECT agence_id FROM pointvente WHERE id = :ps")
+                .param("ps", pointventeId).query(Long.class).optional().orElse(null);
+    }
+
+    /**
+     * A qui la charge d'un agent peut etre reprise : les agents de credit actifs de SON point de
+     * service ; s'il n'y en a aucun, ceux de l'agence a laquelle ce point de service appartient.
+     *
+     * <p>Un point de service tenu par un seul agent de credit — il y en a dans le reseau — n'a
+     * personne a qui confier la charge : la regle « meme point de service » devient un
+     * cul-de-sac, et c'est ce qui a bloque la rotation de For&eacute;cariah le 03/11/2026. Elle ne
+     * s'elargit jamais au-dela de l'agence du point de service : hors de la, plus aucun
+     * directeur d'agence ne peut reattribuer ces dossiers.</p>
+     *
+     * <p>Chaque ligne porte {@code meme_ps}, pour que l'ecran dise clairement au responsable
+     * qu'il confie des dossiers a quelqu'un d'un autre point de service.</p>
+     */
+    public List<Map<String, Object>> candidatsReprise(Long pointventeId, Long saufUserId) {
+        if (pointventeId == null) {
+            return List.of();
+        }
+        List<Map<String, Object>> tous = jdbcClient.sql("""
+                SELECT DISTINCT u.user_id,
+                       TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) AS nom,
+                       u.pointvente_id, pv.libele AS point_vente, pv.code AS cod_agencia,
+                       (u.pointvente_id = :ps) AS meme_ps
+                FROM users u
+                JOIN user_roles ur ON ur.user_id = u.user_id
+                JOIN roles r ON r.role_id = ur.role_id
+                LEFT JOIN pointvente pv ON pv.id = u.pointvente_id
+                WHERE r.name = 'AGENT_CREDIT'
+                  AND u.enabled
+                  AND u.user_id <> :sauf
+                  AND u.pointvente_id IN (
+                        SELECT id FROM pointvente
+                         WHERE id = :ps
+                            OR agence_id = (SELECT agence_id FROM pointvente WHERE id = :ps))
+                ORDER BY meme_ps DESC, nom
+                """).param("ps", pointventeId).param("sauf", saufUserId).query().listOfRows();
+        List<Map<String, Object>> surLePs = tous.stream()
+                .filter(m -> Boolean.TRUE.equals(m.get("meme_ps"))).toList();
+        return surLePs.isEmpty() ? tous : surLePs;
+    }
+
+    /** Reste-t-il, sur ce point de service, un autre agent de credit actif que celui qui part ? */
+    public boolean autreAgentCreditSurLePs(Long pointventeId, Long saufUserId) {
+        if (pointventeId == null) {
+            return false;
+        }
+        return Boolean.TRUE.equals(jdbcClient.sql("""
+                SELECT EXISTS (
+                    SELECT 1 FROM users u
+                    JOIN user_roles ur ON ur.user_id = u.user_id
+                    JOIN roles r ON r.role_id = ur.role_id
+                     WHERE r.name = 'AGENT_CREDIT'
+                       AND u.enabled
+                       AND u.pointvente_id = :ps
+                       AND u.user_id <> :sauf
+                )
+                """).param("ps", pointventeId).param("sauf", saufUserId).query(Boolean.class).single());
+    }
+
     /** Dossiers en cours ou l'agent est l'agent de credit affecte, par etat. */
     public List<Map<String, Object>> dossiersCredit(Long userId) {
         return parEtat("agent_credit_affecte", userId);

@@ -59,6 +59,67 @@ public class AgentChargeResource {
                 liste.size() + " dossier(s) a reattribuer", OK));
     }
 
+    /**
+     * A qui la charge de cet agent peut etre reprise. Resolu par le SERVEUR et non filtre par
+     * l'ecran : la fenetre de rotation ne connait que les agents de l'agence du responsable
+     * connecte, et quand l'agent a deja ete rattache a sa nouvelle agence, ses anciens collegues
+     * n'y figurent plus. La reponse porte {@code memePs} a faux quand la liste a du s'elargir a
+     * l'agence du point de service, faute d'agent sur place.
+     */
+    @GetMapping("/{userId}/candidats-reprise")
+    public ResponseEntity<Response> candidatsReprise(@NotNull Authentication authentication,
+                                                     @PathVariable("userId") Long userId,
+                                                     HttpServletRequest request) {
+        User appelant = userClient.getUserByUuid(authentication.getName());
+        boolean de = "MANAGER".equals(appelant.getRole()) && "DE".equalsIgnoreCase(appelant.getService());
+        if (appelant.getRole() == null || (!ROLES.contains(appelant.getRole()) && !de)) {
+            throw new ApiException("Acces reserve aux responsables d'agence, directeurs et administrateurs");
+        }
+        Map<String, Object> agent = repository.agent(userId);
+        if (agent == null) {
+            throw new ApiException("Agent introuvable");
+        }
+        Long psCompte = agent.get("pointvente_id") == null ? null : ((Number) agent.get("pointvente_id")).longValue();
+        Long ps = repository.ancreDeLaCharge(userId, psCompte);
+        List<Map<String, Object>> candidats = repository.candidatsReprise(ps, userId);
+        boolean memePs = !candidats.isEmpty() && Boolean.TRUE.equals(candidats.get(0).get("meme_ps"));
+        Map<String, Object> corps = new LinkedHashMap<>();
+        corps.put("candidats", candidats);
+        corps.put("memePs", memePs);
+        // Le point de service de la CHARGE, qui n'est plus celui du compte quand l'agent a deja
+        // ete deplace : c'est lui que l'ecran doit nommer.
+        corps.put("pointVente", repository.libellePointDeService(ps));
+        corps.put("deplaceDeja", psCompte != null && !psCompte.equals(ps));
+        return ResponseEntity.ok(getResponse(request, Map.of("reprise", corps),
+                candidats.size() + " destinataire(s) possible(s)", OK));
+    }
+
+    /**
+     * Les points de service ou l'appelant peut envoyer un agent.
+     *
+     * <p>Le responsable d'agence deplace dans SON agence ; le directeur d'agence et au-dessus
+     * vers n'importe quel point de service du reseau (DSIG, 03/11/2026). L'autorite est du cote
+     * qui PERD l'agent : c'est lui qui doit remettre les dossiers, et il ne peut pas se les voir
+     * retirer sans l'avoir decide.</p>
+     */
+    @GetMapping("/points-de-service-destination")
+    public ResponseEntity<Response> destinations(@NotNull Authentication authentication, HttpServletRequest request) {
+        User u = userClient.getUserByUuid(authentication.getName());
+        boolean de = "MANAGER".equals(u.getRole()) && "DE".equalsIgnoreCase(u.getService());
+        boolean toutLeReseau = de || Set.of("DA", "DR", "DG", "SUPER_ADMIN").contains(String.valueOf(u.getRole()));
+        if (!toutLeReseau && !"RA".equals(u.getRole())) {
+            throw new ApiException("Acces reserve aux responsables d'agence, directeurs et administrateurs");
+        }
+        if (!toutLeReseau && u.getAgenceId() == null) {
+            throw new ApiException("Compte non rattache a une agence");
+        }
+        List<Map<String, Object>> liste =
+                repository.pointsDeServiceDestination(toutLeReseau ? null : u.getAgenceId());
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("pointVentes", liste, "toutLeReseau", toutLeReseau),
+                liste.size() + " point(s) de service", OK));
+    }
+
     @GetMapping("/{userId}/charge")
     public ResponseEntity<Response> charge(@NotNull Authentication authentication, @PathVariable("userId") Long userId,
                                            HttpServletRequest request) {
