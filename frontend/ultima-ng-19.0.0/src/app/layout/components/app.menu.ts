@@ -377,6 +377,12 @@ export class AppMenu {
                     routerLink: ['/dashboards/dossiers-a-reattribuer']
                 },
                 {
+                    // Le directeur d'agence mute ses agents, y compris vers une autre agence.
+                    label: 'Rotation des agents',
+                    icon: 'pi pi-fw pi-sync',
+                    routerLink: ['/dashboards/rotation-agents']
+                },
+                {
                     label: 'Suivi crédits de mon agence',
                     icon: 'pi pi-fw pi-chart-line',
                     routerLink: ['/dashboards/suivi-credits-reseau']
@@ -395,6 +401,9 @@ export class AppMenu {
                     icon: 'pi pi-fw pi-user-edit',
                     routerLink: ['/dashboards/dossiers-a-reattribuer']
                 }
+                // Pas de « Rotation des agents » ici : l'écran liste les agents d'UNE agence, et
+                // le compte d'un directeur régional n'en porte pas. Il lui faudrait une liste par
+                // délégation — chantier à part.
             );
         }
         if (this.estManager('DE')) {

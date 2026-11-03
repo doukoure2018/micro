@@ -606,6 +606,14 @@ export default [
         loadComponent: () => import('./admin/da/dossiers-a-reattribuer/dossiers-a-reattribuer.component').then((c) => c.DossiersAReattribuerComponent)
     },
     {
+        // L'écran de rotation n'était atteignable que par l'accueil du responsable d'agence.
+        // Depuis que le directeur d'agence peut muter un agent vers une autre agence, il lui
+        // faut une page à lui (DSIG, 03/11/2026).
+        path: 'rotation-agents',
+        data: { breadcrumb: 'Rotation des agents' },
+        loadComponent: () => import('./agent-credit/rotation-agent/rotation-agent.component').then((c) => c.RotationAgentComponent)
+    },
+    {
         path: 'da/gestion-agents',
         data: { breadcrumb: 'Gestion des agents' },
         loadComponent: () => import('./admin/da/gestion-agents/gestion-agents.component').then((c) => c.GestionAgentsComponent)
