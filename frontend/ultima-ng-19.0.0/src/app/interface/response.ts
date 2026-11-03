@@ -314,5 +314,9 @@ export interface IResponse {
         transferts?: any;
         peutReattribuer?: boolean;
         transfert?: any;
+        /** Rotation : destinataires possibles pour la charge d'un agent qui part. */
+        reprise?: { candidats: any[]; memePs: boolean; pointVente: string | null };
+        /** Rotation : vrai quand les destinations couvrent tout le reseau et non la seule agence. */
+        toutLeReseau?: boolean;
     };
 }

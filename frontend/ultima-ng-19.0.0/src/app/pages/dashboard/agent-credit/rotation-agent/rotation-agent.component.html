@@ -6,7 +6,10 @@
     [style]="{ width: '640px', maxWidth: '96vw' }">
     @if(transfertAgent && transfertCharge) {
     <div class="mb-3 p-3 border-round" style="background:#eff6ff;border:1px solid #bfdbfe">
-        <div class="font-semibold">{{ transfertAgent.fullName }} porte encore, à {{ transfertAgent.pointVenteDisplay }} :</div>
+        <div class="font-semibold">{{ transfertAgent.fullName }} porte encore, à {{ psDeLaCharge || transfertAgent.pointVenteDisplay }} :</div>
+        @if(deplaceDeja) {
+        <div class="text-sm mt-1 text-gray-700">Son compte est déjà rattaché à {{ transfertAgent.pointVenteDisplay }} — c'est l'ordre normal quand un agent change d'agence. Ses dossiers, eux, restent à {{ psDeLaCharge }} : c'est là qu'il faut les confier.</div>
+        }
         <ul class="mt-2 mb-0 pl-4 text-sm">
             <li><strong>{{ transfertCharge.nbDossiersCredit }}</strong> dossier(s) de crédit en cours
                 @if(transfertCharge.nbDossiersCredit) { <span class="text-gray-600">({{ etatsCharge(transfertCharge.dossiersCredit) }})</span> }</li>
@@ -14,13 +17,15 @@
             <li><strong>{{ transfertCharge.nbPortefeuille }}</strong> crédit(s) SAF affecté(s) dans le portefeuille</li>
             <li><strong>{{ transfertCharge.designations?.length || 0 }}</strong> désignation(s) pour la saisie des rapports</li>
         </ul>
-        <div class="text-sm mt-2 text-gray-700">La rotation est refusée tant que cette charge n'est pas transférée à un agent de crédit du <strong>même point de service</strong>. Le directeur d'agence en sera averti par courriel et sur son tableau de bord, et pourra réattribuer dossier par dossier.</div>
+        <div class="text-sm mt-2 text-gray-700">La rotation est refusée tant que cette charge n'est pas transférée à un agent de crédit du <strong>même point de service</strong>. Si ce point de service n'en compte aucun autre, la liste s'ouvre aux agents de l'agence. Le directeur d'agence en sera averti par courriel et sur son tableau de bord, et pourra réattribuer dossier par dossier.</div>
     </div>
     <label class="block text-sm font-semibold mb-1">Transférer à</label>
-    <p-dropdown [(ngModel)]="transfertVers" [options]="candidatsTransfert()" optionLabel="label" optionValue="value"
-        placeholder="-- Agent de crédit du même point de service --" [style]="{'width': '100%'}" appendTo="body" [disabled]="transfertEnCours"></p-dropdown>
-    @if(!candidatsTransfert().length) {
-    <small class="text-orange-600 block mt-2"><i class="pi pi-exclamation-triangle mr-1"></i>Aucun autre agent de crédit sur ce point de service : la rotation ne peut pas être activée. Demandez au directeur d'agence de réattribuer les dossiers, ou affectez d'abord un agent à ce point de service.</small>
+    <p-dropdown [(ngModel)]="transfertVers" [options]="candidatsTransfert" optionLabel="label" optionValue="value"
+        [placeholder]="elargiALAgence ? '-- Agent de crédit de l\'agence --' : '-- Agent de crédit du même point de service --'" [style]="{'width': '100%'}" appendTo="body" [disabled]="transfertEnCours"></p-dropdown>
+    @if(!candidatsTransfert.length) {
+    <small class="text-orange-600 block mt-2"><i class="pi pi-exclamation-triangle mr-1"></i>Aucun agent de crédit disponible dans l'agence de {{ psDeLaCharge }} : la rotation ne peut pas être activée. Affectez d'abord un agent de crédit à l'agence, ou demandez au directeur d'agence de réattribuer les dossiers.</small>
+    } @else if(elargiALAgence) {
+    <small class="text-orange-600 block mt-2"><i class="pi pi-exclamation-triangle mr-1"></i>Aucun agent de crédit ne sert {{ psDeLaCharge }} : la liste s'ouvre aux agents de l'agence. Le destinataire tiendra donc des dossiers d'un autre point de service, et le directeur d'agence en sera averti pour les réattribuer.</small>
     }
     <label class="block text-sm font-semibold mb-1 mt-3">Motif</label>
     <input pInputText type="text" [(ngModel)]="transfertMotif" class="w-full" maxlength="500" [disabled]="transfertEnCours" />
@@ -42,6 +47,13 @@
             <p class="text-surface-600 dark:text-surface-400">
                 Agence: <strong>{{ state().user?.agenceId }}</strong> |
                 Responsable: <strong>{{ state().user?.firstName }} {{ state().user?.lastName }}</strong>
+                <span class="block text-sm mt-1">
+                    @if(destinationsReseau) {
+                    Vous pouvez transférer un de vos agents vers <strong>n'importe quel point de service du réseau</strong>. Sa charge restera à son point de service actuel : la fenêtre vous demandera à qui la remettre.
+                    } @else {
+                    Vous déplacez vos agents <strong>à l'intérieur de votre agence</strong>. Un transfert vers une autre agence relève du directeur d'agence.
+                    }
+                </span>
             </p>
             }
         </div>
@@ -126,13 +138,13 @@
                     @if(!agent.isActive) {
                     <p-dropdown [(ngModel)]="agent.selectedPointVenteId" [options]="state().pointsVente"
                         optionLabel="libele" optionValue="id" placeholder="Sélectionner un point de vente"
-                        [showClear]="false" [filter]="true" filterBy="libele,code" [style]="{'width': '100%'}"
+                        [showClear]="false" [filter]="true" filterBy="libele,code,agence" [style]="{'width': '100%'}"
                         appendTo="body">
                         <ng-template pTemplate="selectedItem" let-ps>
                             @if(ps) {
                             <div class="flex items-center gap-2">
                                 <i class="pi pi-map-marker text-blue-500"></i>
-                                <span>{{ ps.libele }} ({{ ps.code }})</span>
+                                <span>{{ ps.libele }} ({{ ps.code }})<span *ngIf="destinationsReseau && ps.agence" class="text-xs text-gray-500"> · {{ ps.agence }}</span></span>
                             </div>
                             }
                         </ng-template>
@@ -141,7 +153,7 @@
                                 <i class="pi pi-map-marker text-orange-500"></i>
                                 <div>
                                     <div class="font-semibold">{{ ps.libele }}</div>
-                                    <div class="text-sm text-gray-600">Code: {{ ps.code }}</div>
+                                    <div class="text-sm text-gray-600">Code: {{ ps.code }}<span *ngIf="destinationsReseau && ps.agence"> · agence {{ ps.agence }}</span></div>
                                 </div>
                             </div>
                         </ng-template>

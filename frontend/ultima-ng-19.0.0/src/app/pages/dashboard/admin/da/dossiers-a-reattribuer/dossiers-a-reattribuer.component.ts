@@ -69,12 +69,35 @@ import { TooltipModule } from 'primeng/tooltip';
                         <td class="text-sm text-gray-500">{{ d.createdat | date: 'dd/MM/yyyy' }}</td>
                         <td class="text-right">
                             <button *ngIf="peutReattribuer()" pButton icon="pi pi-user-edit" label="Réattribuer" class="p-button-sm p-button-outlined" (click)="ouvrir(d)"></button>
+                            <button *ngIf="peutReattribuer() && d.agent_credit_affecte" pButton icon="pi pi-users" label="Toute sa charge" class="p-button-sm p-button-text ml-1" pTooltip="Remettre d'un coup tout ce que cet agent porte encore, y compris les dossiers qu'une réattribution dossier par dossier ne peut pas déplacer" (click)="ouvrirCharge(d)"></button>
                         </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage"><tr><td colspan="10" class="text-gray-500 p-4">Aucun dossier orphelin : tous les dossiers en cours sont portés par un agent présent à son point de service.</td></tr></ng-template>
             </p-table>
         </div>
+
+        <p-dialog header="Remettre toute la charge de l'agent" [(visible)]="showCharge" [modal]="true" [style]="{ width: '38rem' }">
+            <ng-container *ngIf="agentCharge() as a">
+                <div class="mb-3 p-3 bg-indigo-50 rounded text-sm">
+                    <div class="font-semibold">{{ a.agent }} — charge restée à {{ psCharge() || a.point_vente }}</div>
+                    <div class="text-gray-600 mt-1">
+                        Tout ce que cet agent porte encore passe d'un coup au destinataire choisi : dossiers de crédit en cours, saisies d'accueil,
+                        crédits SAF affectés et désignations de rapport. C'est la seule façon de déplacer un dossier déjà validé, qu'une réattribution
+                        dossier par dossier laisse en place. Vous pourrez ensuite affiner dossier par dossier.
+                    </div>
+                </div>
+                <label class="block text-sm font-semibold mb-1">Remettre à</label>
+                <p-select [options]="candidatsCharge()" [ngModel]="versCharge()" (ngModelChange)="versCharge.set($event)" optionLabel="label" optionValue="value" placeholder="-- Choisir --" [filter]="true" filterBy="label" styleClass="w-full mb-2" appendTo="body"></p-select>
+                <small *ngIf="!candidatsCharge().length" class="text-orange-600 block mb-2"><i class="pi pi-exclamation-triangle mr-1"></i>Aucun agent de crédit disponible : affectez d'abord un agent à ce point de service ou à son agence.</small>
+                <label class="block text-sm font-semibold mb-1 mt-2">Motif</label>
+                <input pInputText type="text" [ngModel]="motifCharge()" (ngModelChange)="motifCharge.set($event)" class="w-full" maxlength="500" placeholder="Ex : agent muté à Kindia le 03/11" />
+            </ng-container>
+            <ng-template pTemplate="footer">
+                <button pButton label="Annuler" class="p-button-text" (click)="showCharge = false"></button>
+                <button pButton label="Remettre la charge" icon="pi pi-users" [disabled]="!versCharge() || motifCharge().trim().length < 5" [loading]="enCoursCharge()" (click)="confirmerCharge()"></button>
+            </ng-template>
+        </p-dialog>
 
         <p-dialog [header]="'Réattribuer le dossier ' + (dossier()?.id || '')" [(visible)]="showDialog" [modal]="true" [style]="{ width: '34rem' }">
             <ng-container *ngIf="dossier() as d">
@@ -112,6 +135,15 @@ export class DossiersAReattribuerComponent implements OnInit {
     motif = signal('');
     enCours = signal(false);
     showDialog = false;
+
+    // Remise de charge (03/11/2026) : le seul mecanisme qui deplace un dossier deja valide.
+    agentCharge = signal<any | null>(null);
+    candidatsCharge = signal<{ label: string; value: number }[]>([]);
+    psCharge = signal<string | null>(null);
+    versCharge = signal<number | null>(null);
+    motifCharge = signal('');
+    enCoursCharge = signal(false);
+    showCharge = false;
 
     filtres = computed(() => {
         const q = this.recherche().trim().toLowerCase();
@@ -164,6 +196,61 @@ export class DossiersAReattribuerComponent implements OnInit {
         this.versAgent.set(null);
         this.motif.set(d.raison || '');
         this.showDialog = true;
+    }
+
+    /** Ouvre la remise de charge pour l'agent qui porte ce dossier. */
+    ouvrirCharge(d: any): void {
+        this.agentCharge.set(d);
+        this.versCharge.set(null);
+        this.motifCharge.set(d.raison || '');
+        this.candidatsCharge.set([]);
+        this.psCharge.set(null);
+        this.showCharge = true;
+        this.userService
+            .getCandidatsRepriseCharge$(d.agent_credit_affecte)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    const reprise: any = r.data?.reprise;
+                    this.psCharge.set(reprise?.pointVente || null);
+                    const horsPs = (reprise?.candidats || []).length > 0 && !reprise?.memePs;
+                    this.candidatsCharge.set(
+                        (reprise?.candidats || []).map((c: any) => ({
+                            label: `${c.nom} — ${c.point_vente || ''}${horsPs ? '  [autre point de service]' : ''}`,
+                            value: c.user_id
+                        }))
+                    );
+                },
+                error: (err) =>
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Destinataires indisponibles',
+                        detail: typeof err === 'string' ? err : (err as any)?.message || '',
+                        life: 6000
+                    })
+            });
+    }
+
+    confirmerCharge(): void {
+        const a = this.agentCharge();
+        const vers = this.versCharge();
+        if (!a || !vers) return;
+        this.enCoursCharge.set(true);
+        this.userService
+            .transfererChargeAgent$(a.agent_credit_affecte, vers, this.motifCharge().trim(), null)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.enCoursCharge.set(false);
+                    this.showCharge = false;
+                    this.messageService.add({ severity: 'success', summary: 'Charge remise', detail: r.message || '', life: 7000 });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.enCoursCharge.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Remise refusée', detail: typeof err === 'string' ? err : (err as any)?.message || '', life: 8000 });
+                }
+            });
     }
 
     confirmer(): void {

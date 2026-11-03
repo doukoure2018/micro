@@ -61,13 +61,62 @@ export class RotationAgentComponent implements OnInit {
     transfertMotif = '';
     transfertEnCours = false;
 
-    /** Agents de crédit du même point de service que celui qui part (destinataires possibles). */
-    candidatsTransfert(): { label: string; value: number }[] {
-        const a = this.transfertAgent;
-        if (!a) return [];
-        return this.state()
-            .agents.filter((x) => x.userId !== a.userId && x.pointventeId === a.pointventeId)
-            .map((x) => ({ label: `${x.fullName} — ${x.pointVenteDisplay || ''}`, value: x.userId! }));
+    /**
+     * Destinataires possibles, calculés UNE FOIS à l'ouverture de la fenêtre et non à chaque
+     * cycle de détection : une méthode qui construit un tableau dans un `[options]` en rend un
+     * nouveau à chaque passe, et Angular, qui compare les références, repart en boucle.
+     *
+     * La règle : les agents de crédit du même point de service que celui qui part. Quand ce
+     * point de service n'en compte aucun autre — il y en a dans le réseau qui n'ont qu'un
+     * agent — la liste s'ouvre aux agents de l'agence. Refuser serait un cul-de-sac : l'agent
+     * est déjà parti, et le directeur d'agence bute sur la même absence de destinataire
+     * (DSIG, 03/11/2026). Le serveur applique exactement la même règle.
+     */
+    candidatsTransfert: { label: string; value: number }[] = [];
+
+    /** Vrai quand la liste a dû s'élargir à l'agence, faute d'agent sur le point de service. */
+    elargiALAgence = false;
+
+    /** Vrai quand les destinations couvrent tout le réseau (directeur d'agence et au-dessus). */
+    destinationsReseau = false;
+
+    /** Le point de service où la charge se trouve : plus celui du compte si l'agent a été déplacé. */
+    psDeLaCharge: string | null = null;
+    deplaceDeja = false;
+
+    /**
+     * Les destinataires viennent du SERVEUR, qui part du point de service où la charge se
+     * trouve. Les filtrer ici serait faux : cet écran ne charge que les agents de l'agence du
+     * responsable connecté, et quand l'agent a déjà été rattaché à sa nouvelle agence, ses
+     * anciens collègues — les seuls légitimes — n'y figurent plus.
+     */
+    private chargerCandidats(agent: AgentWithStatus): void {
+        this.candidatsTransfert = [];
+        this.elargiALAgence = false;
+        this.userService
+            .getCandidatsRepriseCharge$(agent.userId!)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    const reprise = r.data?.reprise;
+                    const liste = reprise?.candidats || [];
+                    this.elargiALAgence = liste.length > 0 && !reprise?.memePs;
+                    this.psDeLaCharge = reprise?.pointVente || null;
+                    this.deplaceDeja = !!(reprise as any)?.deplaceDeja;
+                    this.candidatsTransfert = liste.map((c: any) => ({
+                        label: `${c.nom} — ${c.point_vente || ''}${this.elargiALAgence ? '  [autre point de service]' : ''}`,
+                        value: c.user_id
+                    }));
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Destinataires indisponibles',
+                        detail: "Impossible de lire les agents à qui confier cette charge ; réessayez.",
+                        life: 6000
+                    });
+                }
+            });
     }
 
     etatsCharge(liste: any[]): string {
@@ -91,6 +140,7 @@ export class RotationAgentComponent implements OnInit {
                     const ps = this.state().pointsVente.find((pv) => pv.id === agent.selectedPointVenteId);
                     this.transfertAgent = agent;
                     this.transfertCharge = charge;
+                    this.chargerCandidats(agent);
                     this.transfertVers = null;
                     this.transfertMotif = `Rotation vers ${ps?.libele || 'un autre point de service'}`;
                     this.showTransfert = true;
@@ -175,14 +225,19 @@ export class RotationAgentComponent implements OnInit {
      * Charger les données de l'agence (points de vente + agents)
      */
     private loadAgenceData(agenceId: number): void {
+        // Les destinations viennent d'un point d'entree qui decide de l'etendue selon le role :
+        // son agence pour un RA, tout le reseau pour un DA et au-dessus. Les AGENTS, eux, restent
+        // ceux de l'agence du connecte : l'autorite est du cote qui PERD l'agent, et personne ne
+        // peut se voir retirer un agent sans l'avoir decide (DSIG, 03/11/2026).
         forkJoin({
-            pointsVente: this.userService.getAllPointVenteByAgenceId$(agenceId),
+            pointsVente: this.userService.getPointsDeServiceDestination$(),
             agents: this.userService.getListAgentCredit$(agenceId)
         })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (results) => {
                     const pointsVente = results.pointsVente.data?.pointVentes || [];
+                    this.destinationsReseau = !!results.pointsVente.data?.toutLeReseau;
                     const agents = results.agents.data?.agentCreditDTO || [];
 
                     console.log('🏢 Points de vente chargés:', pointsVente.length);

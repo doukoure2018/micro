@@ -1660,6 +1660,21 @@ export class UserService {
 
     getChargeAgent$ = (userId: number) => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/${userId}/charge`).pipe(catchError(this.handleError));
 
+    /**
+     * Rotation : a qui la charge de cet agent peut etre reprise. Resolu par le serveur, qui part
+     * du point de service ou la charge se trouve ; l'ecran ne connait que les agents de l'agence
+     * du responsable connecte et ne peut donc pas faire ce calcul lui-meme.
+     */
+    /**
+     * Rotation : les points de service ou l'on peut envoyer un agent. Le serveur decide de
+     * l'etendue selon le role — son agence pour un RA, tout le reseau pour un DA et au-dessus.
+     */
+    getPointsDeServiceDestination$ = () =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/points-de-service-destination`).pipe(catchError(this.handleError));
+
+    getCandidatsRepriseCharge$ = (userId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/${userId}/candidats-reprise`).pipe(catchError(this.handleError));
+
     demanderAnnulationDossier$ = (demandeId: number, motifCode: string, motif: string) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/demander-annulation`, { motifCode, motif }).pipe(catchError(this.handleError));
 
