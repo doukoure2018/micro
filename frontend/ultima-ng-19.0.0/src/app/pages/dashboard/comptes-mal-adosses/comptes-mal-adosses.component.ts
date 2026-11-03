@@ -60,6 +60,9 @@ import { TooltipModule } from 'primeng/tooltip';
                 <h2 class="text-xl font-bold m-0">Comptes de remboursement mal adossés</h2>
                 <div class="flex items-center gap-2">
                     <button pButton icon="pi pi-refresh" class="p-button-text" (click)="charger()" [loading]="loading()"></button>
+                    <button pButton icon="pi pi-refresh" label="Vérifier les prises en charge" class="p-button-outlined" [loading]="verifieToutEnCours()"
+                        pTooltip="Confronte à la base de production toutes les anomalies prises en charge : celles qui ont été corrigées dans SAF quittent la liste"
+                        (click)="verifierPrisesEnCharge()"></button>
                     <button pButton icon="pi pi-file-excel" label="Exporter" class="p-button-success p-button-outlined" [loading]="exportEnCours()" (click)="exporter()"></button>
                 </div>
             </div>
@@ -214,9 +217,15 @@ import { TooltipModule } from 'primeng/tooltip';
                                 <span class="text-xs" [class.text-red-600]="(l.joursDepuisPriseEnCharge || 0) >= 7">depuis {{ l.joursDepuisPriseEnCharge }} j</span>
                             </span>
                             <span *ngIf="!l.traiteAt" class="text-gray-400">—</span>
+                            <div *ngIf="l.verifieSafAt" class="text-xs mt-1"
+                                 [class.text-green-700]="l.verificationConclusion === 'CORRIGE'"
+                                 [class.text-gray-500]="l.verificationConclusion !== 'CORRIGE'">
+                                {{ l.verificationLibelle }} · vérifié le {{ l.verifieSafAt | date: 'dd/MM HH:mm' }}
+                            </div>
                         </td>
                         <td>
                             <button pButton icon="pi pi-search" class="p-button-text p-button-sm" pTooltip="Ce que SAF dit maintenant" (click)="ouvrirDossier(l)"></button>
+                            <button pButton icon="pi pi-refresh" class="p-button-text p-button-sm" pTooltip="Vérifier dans la base de production : si le compte a été corrigé, la ligne quitte la liste" [loading]="verifieEnCours() === l.id" (click)="verifier(l)"></button>
                             <button *ngIf="!l.traiteAt" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" pTooltip="Prendre en charge" (click)="ouvrirSuivi(l)"></button>
                             <button *ngIf="l.traiteAt" pButton icon="pi pi-undo" class="p-button-text p-button-sm" pTooltip="Rendre à traiter" (click)="rendreATraiter(l)"></button>
                         </td>
@@ -318,6 +327,9 @@ export class ComptesMalAdossesComponent implements OnInit {
     readonly d = signal<SituationComptesMalAdosses | null>(null);
     readonly loading = signal(false);
     readonly exportEnCours = signal(false);
+    /** L'identifiant de la ligne en cours de vérification, pour n'animer que son bouton. */
+    readonly verifieEnCours = signal<number | null>(null);
+    readonly verifieToutEnCours = signal(false);
     readonly envoiSuivi = signal(false);
     readonly choisie = signal<LigneCompteMalAdosse | null>(null);
 
@@ -383,6 +395,71 @@ export class ComptesMalAdossesComponent implements OnInit {
     }
 
     /** Ce que SAF dit maintenant du crédit, du compte saisi et des comptes du client. */
+    /**
+     * Confronte une anomalie à la base de production. Si le compte a été corrigé dans SAF, la
+     * ligne se referme et quitte la liste des anomalies ouvertes ; sinon l'écran dit ce que SAF
+     * répond maintenant — la nature de l'anomalie a pu changer entre-temps.
+     */
+    verifier(l: LigneCompteMalAdosse): void {
+        this.verifieEnCours.set(l.id);
+        this.userService
+            .verifierCompteMalAdosse$(l.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.verifieEnCours.set(null);
+                    const v = r.data?.verification;
+                    this.messageService.add({
+                        severity: v?.ferme ? 'success' : 'warn',
+                        summary: v?.ferme ? 'Anomalie refermée' : 'Anomalie toujours là',
+                        detail: v?.explication || r.message || '',
+                        life: 8000
+                    });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.verifieEnCours.set(null);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Vérification impossible',
+                        detail: typeof err === 'string' ? err : (err as any)?.message || '',
+                        life: 8000
+                    });
+                }
+            });
+    }
+
+    /** Les anomalies prises en charge et encore ouvertes, confrontées d'un coup. */
+    verifierPrisesEnCharge(): void {
+        this.verifieToutEnCours.set(true);
+        this.userService
+            .verifierPrisesEnChargeMalAdosses$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.verifieToutEnCours.set(false);
+                    const liste = r.data?.verifications || [];
+                    const fermees = liste.filter((v) => v.ferme).length;
+                    this.messageService.add({
+                        severity: liste.length === 0 ? 'info' : fermees ? 'success' : 'warn',
+                        summary: 'Vérification terminée',
+                        detail: r.message || '',
+                        life: 9000
+                    });
+                    this.charger();
+                },
+                error: (err) => {
+                    this.verifieToutEnCours.set(false);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Vérification impossible',
+                        detail: typeof err === 'string' ? err : (err as any)?.message || '',
+                        life: 8000
+                    });
+                }
+            });
+    }
+
     ouvrirDossier(ligne: LigneCompteMalAdosse): void {
         this.dossier.set(null);
         this.dialogueDossier = true;

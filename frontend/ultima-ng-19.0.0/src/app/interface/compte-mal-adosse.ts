@@ -36,6 +36,11 @@ export interface LigneCompteMalAdosse {
     dateSaisie: string | null;
     agentCredit: string | null;
     nomAgentCredit: string | null;
+    /** Dernière confrontation à SAF demandée depuis l'écran, et ce qu'elle a conclu. */
+    verifieSafAt: string | null;
+    verificationConclusion: string | null;
+    verificationLibelle: string | null;
+    fermetureMotif: string | null;
     detecteAt: string | null;
     dernierVuAt: string | null;
     familleChangeeAt: string | null;

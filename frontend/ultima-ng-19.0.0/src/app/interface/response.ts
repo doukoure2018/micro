@@ -318,5 +318,8 @@ export interface IResponse {
         reprise?: { candidats: any[]; memePs: boolean; pointVente: string | null };
         /** Rotation : vrai quand les destinations couvrent tout le reseau et non la seule agence. */
         toutLeReseau?: boolean;
+        /** Comptes mal adossés : ce qu'une confrontation à SAF a constaté (V203). */
+        verification?: { id: number; conclusion: string; ferme: boolean; famille: string; explication: string };
+        verifications?: { id: number; conclusion: string; ferme: boolean; famille: string; explication: string }[];
     };
 }

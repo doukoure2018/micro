@@ -2031,6 +2031,16 @@ export class UserService {
         <Observable<IResponse>>this.http
             .post<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/${id}/suivi`, {}, { params: commentaire ? { traite, commentaire } : { traite } })
             .pipe(catchError(this.handleError));
+    /**
+     * Confronte une anomalie a la production, tout de suite. La surveillance horaire referme
+     * deja les anomalies corrigees, mais une fois par heure : l'agence qui vient de corriger
+     * un compte verrait sa ligne rester « a traiter » jusqu'au passage suivant.
+     */
+    verifierCompteMalAdosse$ = (id: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/${id}/verifier`, {}).pipe(catchError(this.handleError));
+    /** Les anomalies prises en charge et encore ouvertes, confrontees d'un coup. */
+    verifierPrisesEnChargeMalAdosses$ = () =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/verifier-prises-en-charge`, {}).pipe(catchError(this.handleError));
     getDossierCompteMalAdosse$ = (id: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-mal-adosses/${id}/dossier`).pipe(catchError(this.handleError));
     exportComptesMalAdosses$ = (f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
