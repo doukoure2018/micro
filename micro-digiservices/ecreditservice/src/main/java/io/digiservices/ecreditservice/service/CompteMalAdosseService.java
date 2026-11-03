@@ -304,6 +304,107 @@ public class CompteMalAdosseService {
         return traite ? "Anomalie prise en charge" : "Prise en charge annulée";
     }
 
+    // ==================== Verification a la demande (V203) ====================
+
+    /**
+     * Ce qu'une verification a constate, pour l'ecran.
+     *
+     * @param id          la ligne verifiee
+     * @param conclusion  CORRIGE, HORS_PERIMETRE ou TOUJOURS_MAL_ADOSSE
+     * @param ferme       la ligne a-t-elle quitte la liste des anomalies ouvertes
+     * @param famille     la famille constatee maintenant, vide si le compte est conforme
+     * @param explication une phrase lisible, telle quelle a l'ecran
+     */
+    public record Verification(Long id, String conclusion, boolean ferme, String famille,
+                               String explication) {
+    }
+
+    /**
+     * Confronte UNE anomalie a la production, immediatement.
+     *
+     * <p>La surveillance horaire fait deja ce travail sur tout le portefeuille, mais une fois
+     * par heure : l'agence qui vient de corriger un compte voit sa ligne rester « a traiter »
+     * jusqu'au passage suivant, la refait, ou appelle la DSIG. Ce bouton repond tout de suite.</p>
+     *
+     * <p>Digi n'ecrit rien dans SAF : il lit, il constate, et il referme sa propre ligne.</p>
+     */
+    public Verification verifier(String uuid, Long id) {
+        verifierEcriture(uuid);
+        String[] cle = repository.cle(id)
+                .orElseThrow(() -> new ApiException("Anomalie introuvable ou deja close"));
+        return confronter(id, cle, uuid);
+    }
+
+    /**
+     * Confronte a la production toutes les anomalies PRISES EN CHARGE et encore ouvertes.
+     *
+     * <p>Celles-la seulement : ce sont les seules ou quelqu'un a travaille, donc les seules ou
+     * une correction a pu intervenir depuis la detection. Les relire toutes reviendrait a
+     * refaire la surveillance horaire, credit par credit, sur des milliers de lignes.</p>
+     */
+    public List<Verification> verifierPrisesEnCharge(String uuid) {
+        verifierEcriture(uuid);
+        List<Verification> resultats = new ArrayList<>();
+        for (Long id : repository.prisesEnChargeOuvertes()) {
+            repository.cle(id).ifPresent(cle -> resultats.add(confronter(id, cle, uuid)));
+        }
+        log.info("[COMPTE MAL ADOSSE] {} prise(s) en charge confrontee(s) a SAF par {} : {} fermee(s)",
+                resultats.size(), uuid, resultats.stream().filter(Verification::ferme).count());
+        return resultats;
+    }
+
+    private Verification confronter(Long id, String[] cle, String uuid) {
+        io.digiservices.clients.portefeuille.DossierCompteSafDto dossier;
+        try {
+            dossier = portefeuilleClient.getDossierCompte(cle[0], Long.parseLong(cle[1]));
+        } catch (feign.FeignException.NotFound e) {
+            dossier = null;      // le credit a disparu de SAF : c'est une reponse, pas une panne
+        } catch (Exception e) {
+            throw new ApiException("SAF n'a pas repondu : la verification n'a rien change. "
+                    + e.getMessage());
+        }
+        var verdict = CompteMalAdosseVerdict.verdict(dossier,
+                liste(etatsSurveilles, "I,J,D"), liste(typesCompteAutorises, "014,011"));
+        if (verdict.ferme()) {
+            String motif = CompteMalAdosseVerdict.CORRIGE.equals(verdict.conclusion())
+                    ? "CORRIGE" : "HORS_PERIMETRE";
+            repository.cloreApresVerification(id, verdict.conclusion(), motif, verdict.compteActuel());
+        } else {
+            repository.marquerVerifiee(id, verdict.conclusion(), verdict.famille(),
+                    verdict.compteActuel());
+        }
+        log.info("[COMPTE MAL ADOSSE] Verification du credit {}/{} par {} : {}",
+                cle[0], cle[1], uuid, verdict.conclusion());
+        return new Verification(id, verdict.conclusion(), verdict.ferme(),
+                verdict.famille() == null ? "" : libelleFamille(verdict.famille()),
+                verdict.explication());
+    }
+
+    /**
+     * Les etats de credit que la detection retient. Memes valeurs que le {@code WHERE
+     * cr.IND_ESTADO IN (...)} de la requete SAF : si les deux divergent, un compte paraitra
+     * corrige a l'unite et fautif au passage horaire.
+     */
+    @Value("${saf.compte-remboursement.etats:I,J,D}")
+    private String etatsSurveilles;
+
+    /** Les types de compte admis comme compte de remboursement, comme cote SAF. */
+    @Value("${saf.compte-remboursement.types:014,011}")
+    private String typesCompteAutorises;
+
+    /** Ce qu'une conclusion de verification veut dire, en clair pour l'ecran. */
+    static String libelleVerification(String conclusion) {
+        if (conclusion == null) {
+            return "";
+        }
+        return switch (conclusion) {
+            case CompteMalAdosseVerdict.CORRIGE -> "Corrigé dans SAF";
+            case CompteMalAdosseVerdict.HORS_PERIMETRE -> "Hors périmètre";
+            case CompteMalAdosseVerdict.TOUJOURS_MAL_ADOSSE -> "Toujours mal adossé";
+            default -> conclusion;
+        };
+    }
+
     private static List<CompteurDto> groupes(List<Groupe> groupes, boolean familles) {
         return groupes.stream().map(g -> CompteurDto.builder()
                         .cle(g.cle())
@@ -328,6 +429,9 @@ public class CompteMalAdosseService {
                 .compteEtat(l.compteEtat()).compteSolde(l.compteSolde())
                 .saisiPar(l.saisiPar()).dateSaisie(l.dateSaisie()).agentCredit(l.agentCredit())
                 .nomSaisiPar(l.nomSaisiPar()).nomAgentCredit(l.nomAgentCredit())
+                .verifieSafAt(l.verifieSafAt()).verificationConclusion(l.verificationConclusion())
+                .verificationLibelle(libelleVerification(l.verificationConclusion()))
+                .fermetureMotif(l.fermetureMotif())
                 .detecteAt(l.detecteAt()).dernierVuAt(l.dernierVuAt())
                 .familleChangeeAt(l.familleChangeeAt()).signaleAt(l.signaleAt())
                 .corrigeAt(l.corrigeAt()).compteALaCorrection(l.compteALaCorrection())

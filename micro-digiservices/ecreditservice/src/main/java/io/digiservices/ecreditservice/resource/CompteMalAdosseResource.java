@@ -72,6 +72,36 @@ public class CompteMalAdosseResource {
     }
 
     /**
+     * Confronte UNE anomalie a la production, tout de suite.
+     *
+     * <p>La surveillance horaire referme deja les anomalies corrigees, mais une fois par heure :
+     * l'agence qui vient de corriger un compte voit sa ligne rester « a traiter » jusqu'au
+     * passage suivant, la refait, ou appelle la DSIG.</p>
+     */
+    @PostMapping("/{id}/verifier")
+    public ResponseEntity<Response> verifier(@NotNull Authentication authentication,
+                                             @PathVariable("id") Long id,
+                                             HttpServletRequest request) {
+        var v = service.verifier(authentication.getName(), id);
+        return ResponseEntity.ok(getResponse(request, Map.of("verification", v), v.explication(), OK));
+    }
+
+    /**
+     * Confronte a la production toutes les anomalies prises en charge et encore ouvertes : les
+     * seules ou quelqu'un a travaille, donc les seules ou une correction a pu intervenir.
+     */
+    @PostMapping("/verifier-prises-en-charge")
+    public ResponseEntity<Response> verifierPrisesEnCharge(@NotNull Authentication authentication,
+                                                           HttpServletRequest request) {
+        var resultats = service.verifierPrisesEnCharge(authentication.getName());
+        long fermees = resultats.stream().filter(v -> v.ferme()).count();
+        String message = resultats.isEmpty()
+                ? "Aucune anomalie prise en charge à vérifier"
+                : resultats.size() + " anomalie(s) confrontée(s) à SAF, " + fermees + " corrigée(s)";
+        return ResponseEntity.ok(getResponse(request, Map.of("verifications", resultats), message, OK));
+    }
+
+    /**
      * Le dossier d'une anomalie en regard de SAF : le compte saisi tel qu'il est reellement, et
      * les comptes du client qui conviendraient. C'est cette derniere liste qui permet de
      * corriger sans rouvrir SAF pour chercher.

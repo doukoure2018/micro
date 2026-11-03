@@ -65,6 +65,12 @@ public final class CompteMalAdosseDtos {
         private String agentCredit;
         /** Le nom derriere agentCredit. */
         private String nomAgentCredit;
+        /** Derniere confrontation a SAF demandee depuis l'ecran (V203), et ce qu'elle a conclu. */
+        private OffsetDateTime verifieSafAt;
+        private String verificationConclusion;
+        private String verificationLibelle;
+        /** CORRIGE ou HORS_PERIMETRE, quand la ligne est close. */
+        private String fermetureMotif;
 
         private OffsetDateTime detecteAt;
         private OffsetDateTime dernierVuAt;

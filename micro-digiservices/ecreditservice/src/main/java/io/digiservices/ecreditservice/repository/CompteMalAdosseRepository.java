@@ -130,6 +130,61 @@ public class CompteMalAdosseRepository {
         return spec.update();
     }
 
+    /**
+     * Referme une ligne apres une verification demandee a l'ecran : le compte est devenu
+     * conforme, ou le credit a quitte le perimetre.
+     *
+     * <p>{@code compte_a_la_correction} et {@code famille_a_la_correction} gardent l'etat
+     * CONSTATE au moment ou la ligne s'est refermee. On ne les ecrase pas si la surveillance
+     * horaire les a deja posees : le premier constat est le bon.</p>
+     */
+    public int cloreApresVerification(Long id, String conclusion, String motif, String compteActuel) {
+        return jdbcClient.sql("""
+                UPDATE credit_compte_anomalie
+                   SET corrige_at = COALESCE(corrige_at, CURRENT_TIMESTAMP),
+                       fermeture_motif = :motif,
+                       verifie_saf_at = CURRENT_TIMESTAMP,
+                       verification_conclusion = :conclusion,
+                       compte_a_la_correction = COALESCE(compte_a_la_correction, :compte),
+                       famille_a_la_correction = COALESCE(famille_a_la_correction, famille)
+                 WHERE id = :id
+                """)
+                .param("id", id).param("conclusion", conclusion).param("motif", motif)
+                .param("compte", compteActuel)
+                .update();
+    }
+
+    /**
+     * L'anomalie tient : on garde la trace de la verification et on rafraichit ce que SAF dit
+     * maintenant. La famille peut avoir change — un compte ferme depuis la detection, par
+     * exemple — et le dire evite qu'on cherche le mauvais probleme.
+     */
+    public int marquerVerifiee(Long id, String conclusion, String famille, String compteActuel) {
+        return jdbcClient.sql("""
+                UPDATE credit_compte_anomalie
+                   SET verifie_saf_at = CURRENT_TIMESTAMP,
+                       verification_conclusion = :conclusion,
+                       id_cuenta = :compte,
+                       famille_changee_at = CASE WHEN famille <> :famille
+                                                 THEN CURRENT_TIMESTAMP ELSE famille_changee_at END,
+                       famille = :famille,
+                       dernier_vu_at = CURRENT_TIMESTAMP
+                 WHERE id = :id AND corrige_at IS NULL
+                """)
+                .param("id", id).param("conclusion", conclusion).param("famille", famille)
+                .param("compte", compteActuel)
+                .update();
+    }
+
+    /** Les anomalies ouvertes deja prises en charge : celles qu'une verification groupee vise. */
+    public List<Long> prisesEnChargeOuvertes() {
+        return jdbcClient.sql("""
+                SELECT id FROM credit_compte_anomalie
+                 WHERE corrige_at IS NULL AND traite_at IS NOT NULL
+                 ORDER BY traite_at
+                """).query(Long.class).list();
+    }
+
     /** Marque les lignes comme signalees : elles ne declencheront plus de courriel. */
     public void marquerSignalees(Collection<Long> ids) {
         if (ids.isEmpty()) {
@@ -187,7 +242,9 @@ public class CompteMalAdosseRepository {
                         String agentCredit, String nomSaisiPar, String nomAgentCredit,
                         OffsetDateTime detecteAt, OffsetDateTime dernierVuAt,
                         OffsetDateTime familleChangeeAt, OffsetDateTime signaleAt,
-                        OffsetDateTime corrigeAt, String compteALaCorrection,
+                        OffsetDateTime corrigeAt, OffsetDateTime verifieSafAt,
+                        String verificationConclusion, String fermetureMotif,
+                        String compteALaCorrection,
                         String familleALaCorrection, String traitePar, OffsetDateTime traiteAt,
                         String commentaire, boolean aTraiter) {
     }
@@ -305,6 +362,8 @@ public class CompteMalAdosseRepository {
                         rs.getObject("famille_changee_at", OffsetDateTime.class),
                         rs.getObject("signale_at", OffsetDateTime.class),
                         rs.getObject("corrige_at", OffsetDateTime.class),
+                        rs.getObject("verifie_saf_at", OffsetDateTime.class),
+                        rs.getString("verification_conclusion"), rs.getString("fermeture_motif"),
                         rs.getString("compte_a_la_correction"), rs.getString("famille_a_la_correction"),
                         rs.getString("traite_par"),
                         rs.getObject("traite_at", OffsetDateTime.class),
@@ -318,6 +377,7 @@ public class CompteMalAdosseRepository {
             + " compte_client, compte_agencia, compte_etat, compte_solde,"
             + " saisi_par, date_saisie, agent_credit, nom_saisi_par, nom_agent_credit,"
             + " detecte_at, dernier_vu_at, famille_changee_at, signale_at, corrige_at,"
+            + " verifie_saf_at, verification_conclusion, fermeture_motif,"
             + " compte_a_la_correction, famille_a_la_correction,"
             + " (SELECT TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,''))"
             + "    FROM users u WHERE u.user_id = traite_par_user_id) AS traite_par,"
