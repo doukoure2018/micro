@@ -14,8 +14,9 @@ package io.digiservices.userservice.perimetre;
  *   <li>RA (responsable d'agence) et DA (directeur d'agence) : leur agence ;</li>
  *   <li>AGENT_DELEGATION : sa delegation, sans les droits de validation du DR ;</li>
  *   <li>DR : sa delegation ;</li>
- *   <li>DE (MANAGER + service DE), INSPECTION (MANAGER + service DI), DIRECTION (DG)
- *       et DSIG (SUPER_ADMIN, ou MANAGER + service DSIG) : tout le reseau ;</li>
+ *   <li>DE (MANAGER + service DE), INSPECTION (MANAGER + service DI), DF (MANAGER + service
+ *       DF), DIRECTION (DG) et DSIG (SUPER_ADMIN, ou MANAGER + service DSIG) : tout le
+ *       reseau ;</li>
  *   <li>tout autre role ou service : hors perimetre, l'outil ne s'ouvre pas.</li>
  * </ul>
  *
@@ -37,6 +38,7 @@ public final class RapprochementProfilResolver {
     // Services (users.service) qui qualifient un MANAGER
     public static final String SERVICE_DE = "DE";
     public static final String SERVICE_DI = "DI";
+    public static final String SERVICE_DF = "DF";
     public static final String SERVICE_DSIG = "DSIG";
 
     // Profils exposes a l'outil
@@ -47,6 +49,7 @@ public final class RapprochementProfilResolver {
     public static final String PROFIL_DR = "DR";
     public static final String PROFIL_DE = "DE";
     public static final String PROFIL_INSPECTION = "INSPECTION";
+    public static final String PROFIL_DF = "DF";
     public static final String PROFIL_DIRECTION = "DIRECTION";
     public static final String PROFIL_DSIG = "DSIG";
 
@@ -75,8 +78,12 @@ public final class RapprochementProfilResolver {
             case ROLE_MANAGER -> switch (s) {
                 case SERVICE_DE -> PROFIL_DE;
                 case SERVICE_DI -> PROFIL_INSPECTION;
+                // La Direction financiere controle des chiffres comptables sans les produire :
+                // elle voit tout le reseau et ne relance pas le calcul consolide (DSIG,
+                // 03/11/2026, revenant sur l'exclusion du 18/10).
+                case SERVICE_DF -> PROFIL_DF;
                 case SERVICE_DSIG -> PROFIL_DSIG;
-                default -> null;     // DRH, DF, Audit, Societariat : hors outil
+                default -> null;     // DRH, Audit, Societariat : hors outil
             };
             default -> null;         // CAISSE, AGENT_ACCUEIL, AGENT_CORRECTEUR, USER...
         };
@@ -91,7 +98,8 @@ public final class RapprochementProfilResolver {
             case PROFIL_AGENT_CREDIT -> PerimetreNiveau.POINT_DE_SERVICE;
             case PROFIL_RA, PROFIL_DA -> PerimetreNiveau.AGENCE;
             case PROFIL_DELEGATION, PROFIL_DR -> PerimetreNiveau.DELEGATION;
-            case PROFIL_DE, PROFIL_INSPECTION, PROFIL_DIRECTION, PROFIL_DSIG -> PerimetreNiveau.NATIONAL;
+            case PROFIL_DE, PROFIL_INSPECTION, PROFIL_DF, PROFIL_DIRECTION, PROFIL_DSIG ->
+                    PerimetreNiveau.NATIONAL;
             default -> null;
         };
     }

@@ -83,6 +83,17 @@ class RapprochementProfilResolverTest {
     }
 
     @Test
+    void laDirectionFinanciereVoitLeReseauSansLeRecalculer() {
+        // Ouverte le 03/11/2026, revenant sur l'exclusion du 18/10 : elle controle des chiffres
+        // comptables sans les produire. Le recalcul consolide lit CG_SALDOS_X_AGENCIA en entier
+        // et reste a la DE et a la DSIG.
+        assertEquals("DF", RapprochementProfilResolver.profil("MANAGER", "DF"));
+        assertEquals("DF", RapprochementProfilResolver.profil("manager", " df "));
+        assertEquals(PerimetreNiveau.NATIONAL, RapprochementProfilResolver.niveau("DF"));
+        assertFalse(RapprochementProfilResolver.peutRecalculerLeReseau("DF"));
+    }
+
+    @Test
     void rolesNonHabilites() {
         assertNull(RapprochementProfilResolver.profil("CAISSE", null));
         assertNull(RapprochementProfilResolver.profil("AGENT_ACCUEIL", null));
