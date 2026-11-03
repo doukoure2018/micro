@@ -281,7 +281,10 @@ import { TooltipModule } from 'primeng/tooltip';
             <p class="text-gray-500 py-4"><i class="pi pi-exclamation-triangle mr-2"></i>Ce crédit n'existe pas (ou plus) dans SAF aujourd'hui.</p>
             } @else {
             <div class="flex flex-wrap items-center gap-3 mb-3 text-sm">
-                <span class="text-gray-500">Lu dans SAF (production) le {{ d.dateLecture | date: 'dd/MM/yyyy' }}</span>
+                <span class="text-gray-500">
+                    Lu dans la <strong>sauvegarde SAF</strong> le {{ d.dateLecture | date: 'dd/MM/yyyy' }} — elle décrit la veille, restaurée vers 07 h 15.
+                    Une imputation passée ce matin n'y figure pas encore : pour l'état du jour, utilisez « Vérifier dans SAF ».
+                </span>
                 <span class="text-gray-400" *ngIf="totalMillis() !== null">· {{ totalMillis() }} ms</span>
                 <button pButton icon="pi pi-file-excel" label="Exporter le dossier" class="p-button-success p-button-outlined p-button-sm ml-auto" [loading]="exportDossierEnCours()" (click)="exporterDossier()"></button>
             </div>
