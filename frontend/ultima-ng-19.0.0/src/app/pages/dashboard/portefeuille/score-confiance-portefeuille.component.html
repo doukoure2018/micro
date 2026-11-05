@@ -38,7 +38,12 @@
     </div>
     }
 
-    @if (!state().chargement && !state().mois) {
+    <!--
+      Pas d'etat vide quand la lecture a echoue : « aucune photo mensuelle disponible » donnerait
+      une explication fausse a un refus d'acces ou a une panne, et enverrait chercher du cote des
+      donnees un probleme qui est ailleurs (05/11/2026).
+    -->
+    @if (!state().chargement && !state().mois && !state().erreur) {
     <div class="col-12">
         <p-message severity="info" styleClass="w-full"
                    [text]="state().message ?? 'Aucune photo mensuelle disponible : la première est prise le 1er du mois.'"></p-message>
