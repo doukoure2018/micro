@@ -14,6 +14,7 @@ import io.digiservices.ebanking.paylaod.ReqCreditoPKId;
 import io.digiservices.ebanking.repository.CreditosRepository;
 import io.digiservices.ebanking.repository.ReqCreditoRepository;
 import io.digiservices.ebanking.service.CreditosService;
+import io.digiservices.ebanking.service.score.ScoreConfiance;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -382,7 +383,7 @@ public class CreditosServiceImpl implements CreditosService {
                         .creditos(List.of())
                         .planPagos(List.of())
                         .resumenes(List.of())
-                        .evaluationRisque(null)
+                        .evaluationRisque(ScoreConfiance.nouveauMembre())
                         .mensaje("Aucun crédit n’a été trouvé pour le client: " + codCliente)
                         .build();
             }
@@ -434,7 +435,6 @@ public class CreditosServiceImpl implements CreditosService {
      */
     private EvaluationRisqueDTO calcularEvaluacionRiesgoDesdeCreditos(List<CreditoDTO> creditos) {
         LocalDateTime maintenant = LocalDateTime.now();
-        LocalDateTime seuilRecent = maintenant.minusMonths(24);
 
         double sommePoints = 0.0, sommePoids = 0.0;
         int analyses = 0, respectees = 0, enRetard = 0, nbAvecRetard = 0;
@@ -452,54 +452,32 @@ public class CreditosServiceImpl implements CreditosService {
                     && c.getMonSaldo() != null && c.getMonSaldo().signum() > 0) {
                 joursRetard = ChronoUnit.DAYS.between(c.getFecVencimiento(), maintenant); // en cours, echu, impaye
             } else {
-                joursRetard = 0; // en cours non echu : pas d'element negatif
+                joursRetard = 0; // en cours non echu : aucun element negatif
             }
 
             analyses++;
-            double points;
-            if (joursRetard <= 15) points = 100.0;
-            else if (joursRetard <= 60) points = 70.0;
-            else if (joursRetard <= 180) points = 40.0;
-            else points = solde ? 10.0 : 0.0;
+            double points = ScoreConfiance.points(joursRetard, solde);
+            if (ScoreConfiance.respectee(points)) {
+                respectees++;
+            } else {
+                enRetard++;
+                totalJoursRetard += joursRetard;
+                nbAvecRetard++;
+            }
 
-            if (points >= 100.0) respectees++;
-            else { enRetard++; totalJoursRetard += joursRetard; nbAvecRetard++; }
-
-            double poids = c.getFecApertura().isAfter(seuilRecent) ? 2.0 : 1.0;
+            double poids = ScoreConfiance.poids(c.getFecApertura(), maintenant);
             sommePoints += points * poids;
-            sommePoids += 100.0 * poids;
+            sommePoids += ScoreConfiance.POINTS_MAX * poids;
         }
 
         if (analyses == 0) {
-            return EvaluationRisqueDTO.builder()
-                    .niveauRisque("INDÉTERMINÉ").pourcentageRisque(new BigDecimal("100"))
-                    .scoreConfiance(BigDecimal.ZERO).creditsAnalyses(0).echeancesAnalysees(0)
-                    .echeancesRespectees(0).echeancesEnRetard(0).retardMoyenJours(0)
-                    .historiqueRemboursement("Aucun historique").build();
+            return ScoreConfiance.nouveauMembre();
         }
 
-        BigDecimal scoreConfiance = new BigDecimal(sommePoints * 100.0 / sommePoids).setScale(2, BigDecimal.ROUND_HALF_UP);
-        BigDecimal pourcentageRisque = new BigDecimal("100").subtract(scoreConfiance);
         int retardMoyenJours = nbAvecRetard > 0 ? (int) (totalJoursRetard / nbAvecRetard) : 0;
 
-        String niveauRisque, historiqueRemboursement;
-        if (scoreConfiance.compareTo(new BigDecimal("90")) >= 0) { niveauRisque = "TRÈS FAIBLE"; historiqueRemboursement = "Excellent"; }
-        else if (scoreConfiance.compareTo(new BigDecimal("75")) >= 0) { niveauRisque = "FAIBLE"; historiqueRemboursement = "Bon"; }
-        else if (scoreConfiance.compareTo(new BigDecimal("60")) >= 0) { niveauRisque = "MODÉRÉ"; historiqueRemboursement = "Moyen"; }
-        else if (scoreConfiance.compareTo(new BigDecimal("40")) >= 0) { niveauRisque = "ÉLEVÉ"; historiqueRemboursement = "Faible"; }
-        else { niveauRisque = "TRÈS ÉLEVÉ"; historiqueRemboursement = "Très faible"; }
-
-        return EvaluationRisqueDTO.builder()
-                .niveauRisque(niveauRisque)
-                .pourcentageRisque(pourcentageRisque)
-                .scoreConfiance(scoreConfiance)
-                .creditsAnalyses(analyses)
-                .echeancesAnalysees(analyses)
-                .echeancesRespectees(respectees)
-                .echeancesEnRetard(enRetard)
-                .retardMoyenJours(retardMoyenJours)
-                .historiqueRemboursement(historiqueRemboursement)
-                .build();
+        return ScoreConfiance.evaluation(sommePoints, sommePoids, analyses, analyses,
+                respectees, enRetard, retardMoyenJours, ScoreConfiance.BASE_CREDITS);
     }
 
     @Override
@@ -513,7 +491,7 @@ public class CreditosServiceImpl implements CreditosService {
                         .creditos(List.of())
                         .planPagos(List.of())
                         .resumenes(List.of())
-                        .evaluationRisque(null)
+                        .evaluationRisque(ScoreConfiance.nouveauMembre())
                         .mensaje("Aucun crédit n’a été trouvé pour le client: " + codCliente)
                         .build();
             }
@@ -611,26 +589,14 @@ public class CreditosServiceImpl implements CreditosService {
                 .collect(Collectors.toList());
 
         if (pagosAnalizar.isEmpty()) {
-            return EvaluationRisqueDTO.builder()
-                    .niveauRisque("INDÉTERMINÉ")
-                    .pourcentageRisque(new BigDecimal("100"))
-                    .scoreConfiance(BigDecimal.ZERO)
-                    .creditsAnalyses(0)
-                    .echeancesAnalysees(0)
-                    .echeancesRespectees(0)
-                    .echeancesEnRetard(0)
-                    .retardMoyenJours(0)
-                    .historiqueRemboursement("Aucun historique")
-                    .build();
+            // Aucune echeance echue : aucun comportement a juger. Etat « nouveau membre »,
+            // et surtout PAS un score de zero affiche en rouge devant le DA.
+            log.debug("Client {} : aucune echeance echue, score non applicable", codCliente);
+            return ScoreConfiance.nouveauMembre();
         }
 
-        // Fenetre de recence : echeances dues dans les 18 derniers mois => poids double
-        LocalDateTime seuilRecent = maintenant.minusMonths(18);
-        // Tolerance : un retard <= 5 jours est considere comme respecte
-        final long TOLERANCE_JOURS = 5;
-
         double sommePoints = 0.0; // points ponderes obtenus
-        double sommePoids = 0.0;  // poids maximal atteignable
+        double sommePoids = 0.0;  // points ponderes atteignables
         int echeancesRespectees = 0;
         int echeancesEnRetard = 0;
         long totalJoursRetard = 0;
@@ -648,18 +614,8 @@ public class CreditosServiceImpl implements CreditosService {
                 joursRetard = ChronoUnit.DAYS.between(pago.getFecCuota(), maintenant);
             }
 
-            double points;
-            if (joursRetard <= TOLERANCE_JOURS) {
-                points = 100.0;
-            } else if (joursRetard <= 30) {
-                points = 70.0;
-            } else if (joursRetard <= 90) {
-                points = 40.0;
-            } else {
-                points = payee ? 10.0 : 0.0; // payee tres en retard vs jamais payee
-            }
-
-            if (points >= 100.0) {
+            double points = ScoreConfiance.points(joursRetard, payee);
+            if (ScoreConfiance.respectee(points)) {
                 echeancesRespectees++;
             } else {
                 echeancesEnRetard++;
@@ -667,56 +623,22 @@ public class CreditosServiceImpl implements CreditosService {
                 nbAvecRetard++;
             }
 
-            double poids = pago.getFecCuota().isAfter(seuilRecent) ? 2.0 : 1.0;
+            double poids = ScoreConfiance.poids(pago.getFecCuota(), maintenant);
             sommePoints += points * poids;
-            sommePoids += 100.0 * poids;
+            sommePoids += ScoreConfiance.POINTS_MAX * poids;
         }
 
-        int totalEcheances = pagosAnalizar.size();
         int creditsAnalyses = (int) pagosAnalizar.stream()
                 .map(PlanPagoDTO::getNumCredito)
                 .distinct()
                 .count();
         int retardMoyenJours = nbAvecRetard > 0 ? (int) (totalJoursRetard / nbAvecRetard) : 0;
 
-        BigDecimal scoreConfiance = sommePoids > 0
-                ? new BigDecimal(sommePoints * 100.0 / sommePoids).setScale(2, BigDecimal.ROUND_HALF_UP)
-                : BigDecimal.ZERO;
-
-        BigDecimal pourcentageRisque = new BigDecimal("100").subtract(scoreConfiance);
-
-        String niveauRisque;
-        String historiqueRemboursement;
-
-        if (scoreConfiance.compareTo(new BigDecimal("90")) >= 0) {
-            niveauRisque = "TRÈS FAIBLE";
-            historiqueRemboursement = "Excellent";
-        } else if (scoreConfiance.compareTo(new BigDecimal("75")) >= 0) {
-            niveauRisque = "FAIBLE";
-            historiqueRemboursement = "Bon";
-        } else if (scoreConfiance.compareTo(new BigDecimal("60")) >= 0) {
-            niveauRisque = "MODÉRÉ";
-            historiqueRemboursement = "Moyen";
-        } else if (scoreConfiance.compareTo(new BigDecimal("40")) >= 0) {
-            niveauRisque = "ÉLEVÉ";
-            historiqueRemboursement = "Faible";
-        } else {
-            niveauRisque = "TRÈS ÉLEVÉ";
-            historiqueRemboursement = "Très faible";
-        }
-
-        return EvaluationRisqueDTO.builder()
-                .niveauRisque(niveauRisque)
-                .pourcentageRisque(pourcentageRisque)
-                .scoreConfiance(scoreConfiance)
-                .creditsAnalyses(creditsAnalyses)
-                .echeancesAnalysees(totalEcheances)
-                .echeancesRespectees(echeancesRespectees)
-                .echeancesEnRetard(echeancesEnRetard)
-                .retardMoyenJours(retardMoyenJours)
-                .historiqueRemboursement(historiqueRemboursement)
-                .build();
+        return ScoreConfiance.evaluation(sommePoints, sommePoids, creditsAnalyses,
+                pagosAnalizar.size(), echeancesRespectees, echeancesEnRetard, retardMoyenJours,
+                ScoreConfiance.BASE_ECHEANCES);
     }
+
     private List<CreditoDTO> mapearCreditos(List<Map<String, Object>> creditosData) {
         return creditosData.stream()
                 .map(this::mapearCredito)

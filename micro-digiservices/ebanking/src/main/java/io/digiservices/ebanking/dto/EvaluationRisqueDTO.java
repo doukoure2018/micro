@@ -22,5 +22,11 @@ public class EvaluationRisqueDTO {
     private Integer echeancesEnRetard;
     private Integer retardMoyenJours;
     private String historiqueRemboursement;
+    /** Vrai quand le membre n'a aucun historique exploitable : etat, pas score de zero (lot 0). */
+    private Boolean nouveauMembre;
+    /** Base de calcul utilisee : ECHEANCES (reference) ou CREDITS (lecture sauvegarde SAF). */
+    private String basePourScore;
+    /** Version des regles de score, pour la tracabilite. */
+    private String versionScore;
     //private List<DetailRisqueCreditDTO> detailsParCredit;
 }
