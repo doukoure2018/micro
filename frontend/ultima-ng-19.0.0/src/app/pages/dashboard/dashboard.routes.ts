@@ -140,6 +140,12 @@ export default [
         loadComponent: () => import('./audit/audit-delais.component').then((c) => c.AuditDelaisComponent)
     },
     {
+        path: 'score-confiance',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Classes de confiance', rubriques: ['PORTEFEUILLE_RISQUE', 'AUDIT_PORTEFEUILLE'] },
+        loadComponent: () => import('./portefeuille/score-confiance-portefeuille.component').then((c) => c.ScoreConfiancePortefeuilleComponent)
+    },
+    {
         path: 'portefeuille-risque',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Portefeuille à risque', rubriques: ['PORTEFEUILLE_RISQUE', 'AUDIT_PORTEFEUILLE'] },

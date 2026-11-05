@@ -265,6 +265,7 @@ export class AppMenu {
                 icon: 'pi pi-fw pi-wallet',
                 items: [
                     { label: 'Portefeuille à risque', icon: 'pi pi-fw pi-exclamation-triangle', routerLink: ['/dashboards/portefeuille-risque'] },
+                    { label: 'Classes de confiance', icon: 'pi pi-fw pi-shield', routerLink: ['/dashboards/score-confiance'] },
                     { label: 'Portefeuille crédits SAF', icon: 'pi pi-fw pi-wallet', routerLink: ['/dashboards/portefeuille-saf'] },
                     { label: 'Affectations par agent', icon: 'pi pi-fw pi-users', routerLink: ['/dashboards/portefeuille-affectation'] },
                     { label: 'Appréciation des agents', icon: 'pi pi-fw pi-star', routerLink: ['/dashboards/portefeuille-scores'] },
@@ -462,6 +463,13 @@ export class AppMenu {
                 label: 'Portefeuille à risque',
                 icon: 'pi pi-fw pi-exclamation-triangle',
                 routerLink: ['/dashboards/portefeuille-risque']
+            });
+        }
+        if (this.peut('PORTEFEUILLE_RISQUE')) {
+            items.push({
+                label: 'Classes de confiance',
+                icon: 'pi pi-fw pi-shield',
+                routerLink: ['/dashboards/score-confiance']
             });
         }
         // Affectation des credits SAF aux agents (V159) : le DA affecte, l'agent voit son

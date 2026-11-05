@@ -24,7 +24,26 @@ import { DividerModule } from 'primeng/divider';
 import { InputIconModule } from 'primeng/inputicon';
 import { CreditoDTO } from '@/interface/credito.histo.model';
 import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
-import { MENTION_NOUVEAU_MEMBRE, classeTexteScore, estNouveauMembre, libelleBase, libelleNiveau, valeurScore } from '@/utils/score-confiance';
+import {
+    EtatEcheance,
+    MENTION_NOUVEAU_MEMBRE,
+    PastilleEcheance,
+    analyseRenforcee,
+    classePastille,
+    classeScore,
+    classeTexteScore,
+    composantes,
+    conduiteScore,
+    estNouveauMembre,
+    explicationsScore,
+    fondScore,
+    frise,
+    libelleBase,
+    libelleNiveau,
+    partComposante,
+    severiteScore,
+    valeurScore
+} from '@/utils/score-confiance';
 
 @Component({
     selector: 'app-analyse-credit',
@@ -284,50 +303,76 @@ export class AnalyseCreditComponent implements OnInit {
         return credits.filter((credit) => credit.indEstado === 'C').length;
     }
 
-    // ÉVALUATION DE RISQUE — règles d'affichage partagées (@/utils/score-confiance) :
-    // mêmes seuils et mêmes couleurs que l'écran de détail et la synthèse DE.
-    getRiskAssessment(): { level: string; score: string; factors: string[]; nouveau: boolean } | null {
-        const evaluation = this.state().histoCredits?.evaluationRisque;
+    // ÉVALUATION DE CONFIANCE (score v2) — règles d'affichage partagées
+    // (@/utils/score-confiance), identiques à l'écran de détail et à la synthèse DE.
 
-        if (!evaluation) {
-            return null;
-        }
-
-        const nouveau = estNouveauMembre(evaluation);
-        const factors: string[] = [];
-
-        if (nouveau) {
-            // Pas d'historique : on le dit, au lieu d'afficher un score de zéro.
-            factors.push(MENTION_NOUVEAU_MEMBRE);
-        } else {
-            factors.push(evaluation.historiqueRemboursement);
-
-            if (evaluation.echeancesAnalysees > 0) {
-                const respect = (evaluation.echeancesRespectees / evaluation.echeancesAnalysees) * 100;
-                factors.push(`${respect.toFixed(0)} % des échéances respectées (${evaluation.echeancesRespectees}/${evaluation.echeancesAnalysees})`);
-            }
-
-            if (evaluation.creditsAnalyses > 0) {
-                factors.push(`Analyse portant sur ${evaluation.creditsAnalyses} crédit(s)`);
-            }
-
-            const base = libelleBase(evaluation);
-            if (base) {
-                factors.push(base);
-            }
-        }
-
-        return {
-            level: libelleNiveau(evaluation),
-            score: valeurScore(evaluation),
-            factors: factors,
-            nouveau: nouveau
-        };
+    evaluation() {
+        return this.state().histoCredits?.evaluationRisque ?? null;
     }
 
-    // Couleur du score et du niveau : une seule règle, celle du serveur.
-    getScoreTextClass(): string {
-        return classeTexteScore(this.state().histoCredits?.evaluationRisque);
+    estNouveauMembre(): boolean {
+        return estNouveauMembre(this.evaluation());
+    }
+
+    classe(): string {
+        return classeScore(this.evaluation());
+    }
+
+    libelleClasse(): string {
+        return libelleNiveau(this.evaluation());
+    }
+
+    valeurScore(): string {
+        return valeurScore(this.evaluation());
+    }
+
+    conduite(): string {
+        return this.estNouveauMembre() ? MENTION_NOUVEAU_MEMBRE : conduiteScore(this.evaluation());
+    }
+
+    explications(): string[] {
+        return explicationsScore(this.evaluation());
+    }
+
+    composantes() {
+        return composantes(this.evaluation());
+    }
+
+    part(note: number | null, max: number): number {
+        return partComposante(note, max);
+    }
+
+    classeTexte(): string {
+        return classeTexteScore(this.evaluation());
+    }
+
+    fond(): string {
+        return fondScore(this.evaluation());
+    }
+
+    severite() {
+        return severiteScore(this.evaluation());
+    }
+
+    baseLibelle(): string {
+        return libelleBase(this.evaluation());
+    }
+
+    analyseRenforcee(): boolean {
+        return analyseRenforcee(this.evaluation());
+    }
+
+    detailsParCredit() {
+        return this.evaluation()?.detailsParCredit ?? [];
+    }
+
+    /** Une pastille par échéance : la trajectoire du crédit, lisible d'un coup d'œil. */
+    friseDu(numCredito: number): PastilleEcheance[] {
+        return frise(this.getAllPlanPagosByCredit(numCredito));
+    }
+
+    classePastille(etat: EtatEcheance): string {
+        return classePastille(etat);
     }
 
     // EXPORT FUNCTIONALITY

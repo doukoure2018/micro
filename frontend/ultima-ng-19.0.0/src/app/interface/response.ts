@@ -328,5 +328,18 @@ export interface IResponse {
         /** Comptes mal adossés : ce qu'une confrontation à SAF a constaté (V203). */
         verification?: { id: number; conclusion: string; ferme: boolean; famille: string; explication: string };
         verifications?: { id: number; conclusion: string; ferme: boolean; famille: string; explication: string }[];
+        /** Score de confiance : repartition des classes de la derniere photo mensuelle (lot 3). */
+        repartition?: { mois: string | null; niveau?: string; message?: string; lignes: any[] };
+        /** Score de confiance : membres passes dans une classe moins bonne (lot 3). */
+        derive?: { mois: string | null; degradations: any[] };
+        photo?: { mois: string; membres: number; enregistres: number; erreurs: number; message: string };
+        calibrage?: {
+            dateReference: string;
+            membresAnalyses: number;
+            membresSansHistorique: number;
+            membresEnDefaut: number;
+            cohortes: { classe: string; membres: number; defauts: number; tauxDefautPercent: number }[];
+            lecture: string;
+        };
     };
 }

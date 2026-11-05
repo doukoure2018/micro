@@ -1845,6 +1845,38 @@ export class UserService {
         if (tranche) params['tranche'] = tranche;
         return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/portefeuille/risque/credits`, { params }).pipe(catchError(this.handleError));
     };
+    // ---------------------------------------------------------------- score de confiance (lots 1 a 3)
+
+    /** Repartition des classes de confiance, derniere photo mensuelle, bornee au perimetre. */
+    repartitionConfiance$ = (mois?: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/score-confiance/repartition`, { params: mois ? { mois } : {} })
+            .pipe(catchError(this.handleError));
+
+    /** Membres passes dans une classe moins bonne d'un mois sur l'autre. */
+    degradationsConfiance$ = (mois?: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/score-confiance/degradations`, { params: mois ? { mois } : {} })
+            .pipe(catchError(this.handleError));
+
+    /** Historique du score d'un membre : ce qui a ete vu, et quand. */
+    historiqueConfiance$ = (numeroMembre: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/score-confiance/historique/${numeroMembre}`)
+            .pipe(catchError(this.handleError));
+
+    /** Relance la photo mensuelle (habilitation ADMIN_OUTILS exigee cote serveur). */
+    photoConfiance$ = (mois?: string) =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/score-confiance/photo`, {}, { params: mois ? { mois } : {} })
+            .pipe(catchError(this.handleError));
+
+    /** Test retrospectif : le score a une date passee, confronte au defaut constate ensuite. */
+    calibrerConfiance$ = (date: string, limite = 300) =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/score-confiance/calibrer`, {}, { params: { date, limite } })
+            .pipe(catchError(this.handleError));
+
     exportPortefeuilleRisque$ = (codAgencia: string) => this.http.get(`${this.server}/ecredit/portefeuille/risque/export`, { params: { codAgencia }, responseType: 'blob', observe: 'response' });
     // Lot 2 : perimetre (produit en direct, agents par la photo), familles et seuils
     getPortefeuilleRisqueReseau$ = (niveau: string, agenceId: number | null, delegationId: number | null) =>

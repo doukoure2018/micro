@@ -405,41 +405,107 @@
         </div>
         }
 
-        <!-- Risk Assessment Card -->
+        <!-- ÉVALUATION DE CONFIANCE (score v2) -->
         @if(state().histoCredits && state().histoCredits?.evaluationRisque) {
         <div class="col-12">
-            <div class="card border-left-3 border-purple-500">
-                <div class="flex align-items-center mb-3">
-                    <i class="pi pi-shield text-purple-600 text-xl mr-2"></i>
-                    <h4 class="m-0 text-purple-800">Évaluation de Risque</h4>
+            <div class="card border-1 surface-border" [ngClass]="fond()">
+                <div class="flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-shield text-xl" [ngClass]="classeTexte()"></i>
+                        <h4 class="m-0">Score de confiance du membre</h4>
+                    </div>
+                    @if (analyseRenforcee()) {
+                    <p-tag severity="warn" value="Analyse renforcée conseillée"></p-tag>
+                    }
                 </div>
 
-                @if (getRiskAssessment(); as risk) {
                 <div class="grid">
-                    <div class="col-12 md:col-4">
-                        <div class="text-center">
-                            <div class="text-2xl font-bold mb-2" [ngClass]="getScoreTextClass()">
-                                {{ risk.level }}
+                    <!-- Classe et score -->
+                    <div class="col-12 md:col-3">
+                        <div class="text-center p-3">
+                            <div class="text-6xl font-bold" [ngClass]="classeTexte()">
+                                {{ estNouveauMembre() ? 'N' : classe() }}
                             </div>
-                            <div class="text-600">Niveau de risque</div>
+                            <div class="text-2xl font-semibold mt-1" [ngClass]="classeTexte()">
+                                {{ estNouveauMembre() ? 'Sans historique' : valeurScore() + '/100' }}
+                            </div>
+                            <div class="text-600 text-sm mt-1">{{ libelleClasse() }}</div>
                         </div>
                     </div>
-                    <div class="col-12 md:col-4">
-                        <div class="text-center">
-                            <div class="text-2xl font-bold mb-2" [ngClass]="risk.nouveau ? 'text-gray-500' : 'text-900'">
-                                {{ risk.nouveau ? 'Sans historique' : risk.score + '/100' }}
+
+                    <!-- Les quatre composantes -->
+                    <div class="col-12 md:col-5">
+                        @if (estNouveauMembre()) {
+                        <div class="text-700 text-sm p-3">{{ conduite() }}</div>
+                        } @else {
+                        @for (c of composantes(); track c.libelle) {
+                        <div class="mb-3">
+                            <div class="flex justify-content-between text-sm mb-1">
+                                <span class="text-700 font-medium" [pTooltip]="c.aide" tooltipPosition="top">{{ c.libelle }}</span>
+                                <span class="text-900 font-semibold">{{ c.note }}/{{ c.max }}</span>
                             </div>
-                            <div class="text-600">Score de confiance</div>
+                            <p-progressBar [value]="part(c.note, c.max)" [showValue]="false" styleClass="h-0-5rem"></p-progressBar>
                         </div>
+                        }
+                        }
                     </div>
+
+                    <!-- Ce que le décideur doit lire -->
                     <div class="col-12 md:col-4">
-                        <div>
-                            <div class="text-600 text-sm font-semibold mb-2">Facteurs d'évaluation :</div>
-                            @for (factor of risk.factors; track factor) {
-                            <div class="text-700 text-sm mb-1">• {{ factor }}</div>
+                        <div class="text-600 text-sm font-semibold mb-2">Lecture du dossier</div>
+                        @if (!estNouveauMembre()) {
+                        <div class="text-700 text-sm mb-2 font-medium">{{ conduite() }}</div>
+                        }
+                        @for (ligne of explications(); track ligne) {
+                        <div class="text-700 text-sm mb-1">• {{ ligne }}</div>
+                        }
+                        @if (baseLibelle()) {
+                        <div class="text-500 text-xs mt-2 font-italic">{{ baseLibelle() }}</div>
+                        }
+                        <div class="text-500 text-xs mt-1">Le score prépare, vous décidez : il ne bloque rien.</div>
+                    </div>
+                </div>
+
+                <!-- Ce que chaque crédit a pesé, et sa trajectoire -->
+                @if (detailsParCredit().length > 0) {
+                <p-divider></p-divider>
+                <div class="text-600 text-sm font-semibold mb-3">Ce que chaque crédit a pesé</div>
+                @for (d of detailsParCredit(); track d.numCredito) {
+                <div class="mb-4 pb-3 border-bottom-1 surface-border">
+                    <div class="flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                        <div class="font-medium text-900">
+                            Crédit {{ d.numCredito }}
+                            <span class="text-600 text-sm ml-2">{{ getCreditTypeLabel(d.tipCredito!) }}</span>
+                            @if (d.restructuration) {
+                            <p-tag severity="danger" value="Restructuration" styleClass="ml-2"></p-tag>
+                            } @else if (d.solde) {
+                            <p-tag severity="success" value="Soldé" styleClass="ml-2"></p-tag>
+                            }
+                        </div>
+                        <div class="text-sm text-700">
+                            @if (d.echeancesEnRetard) {
+                            <span class="text-orange-600 font-medium">{{ d.echeancesEnRetard }} en retard</span>
+                            <span class="text-600"> sur {{ d.totalEcheances }}</span>
+                            @if (d.retardMaxJours) { <span class="text-600"> · pire retard {{ d.retardMaxJours }} j</span> }
+                            @if (d.montantEnRetard) { <span class="text-600"> · {{ formatCurrency(d.montantEnRetard) }} en l'air</span> }
+                            } @else {
+                            <span class="text-green-600">{{ d.totalEcheances }} échéance(s), aucune en retard</span>
                             }
                         </div>
                     </div>
+                    <div class="frise">
+                        @for (p of friseDu(d.numCredito); track p.numCuota) {
+                        <span class="frise-pastille" [ngClass]="classePastille(p.etat)" [pTooltip]="p.infobulle" tooltipPosition="top"></span>
+                        }
+                    </div>
+                </div>
+                }
+                <div class="frise-legende text-xs text-600">
+                    <span><i class="frise-pastille frise-ok"></i> À l'heure</span>
+                    <span><i class="frise-pastille frise-leger"></i> 6 à 30 j</span>
+                    <span><i class="frise-pastille frise-serieux"></i> 31 à 90 j</span>
+                    <span><i class="frise-pastille frise-impayee"></i> Impayée</span>
+                    <span><i class="frise-pastille frise-avenir"></i> Non échue</span>
                 </div>
                 }
             </div>

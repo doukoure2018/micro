@@ -1,0 +1,195 @@
+<div class="grid">
+    <!-- En-tête -->
+    <div class="col-12">
+        <div class="card">
+            <div class="flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                    <h4 class="m-0">Classes de confiance du portefeuille</h4>
+                    <p class="text-600 text-sm mt-2 mb-0 line-height-3" style="max-width: 46rem">
+                        Répartition des membres par classe, d'après la photo mensuelle du score. La photo est prise le
+                        1er de chaque mois : la page ne recalcule rien à l'écran, un score du jour pour tout un réseau
+                        coûterait une lecture SAF par membre.
+                    </p>
+                </div>
+                <div class="flex align-items-center gap-2">
+                    @if (state().mois) {
+                    <p-tag severity="secondary" [value]="'Photo du ' + (state().mois | date: 'dd/MM/yyyy')"></p-tag>
+                    }
+                    @if (state().niveau) {
+                    <p-tag severity="info" [value]="state().niveau!"></p-tag>
+                    }
+                    <p-button icon="pi pi-refresh" label="Actualiser" severity="secondary" [outlined]="true" (onClick)="charger()"></p-button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (state().chargement) {
+    <div class="col-12">
+        <div class="card flex justify-content-center py-6">
+            <p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner>
+        </div>
+    </div>
+    }
+
+    @if (state().erreur) {
+    <div class="col-12">
+        <p-message severity="error" [text]="state().erreur!" styleClass="w-full"></p-message>
+    </div>
+    }
+
+    @if (!state().chargement && !state().mois) {
+    <div class="col-12">
+        <p-message severity="info" styleClass="w-full"
+                   [text]="state().message ?? 'Aucune photo mensuelle disponible : la première est prise le 1er du mois.'"></p-message>
+    </div>
+    }
+
+    @if (!state().chargement && state().mois) {
+    <!-- Les six classes -->
+    <div class="col-12">
+        <div class="grid">
+            <div class="col-6 md:col-2">
+                <div class="card text-center mb-0 border-1 border-green-200 bg-green-50">
+                    <div class="text-4xl font-bold text-green-600">{{ total('classeA') }}</div>
+                    <div class="text-700 font-medium mt-1">Classe A</div>
+                    <div class="text-600 text-xs">{{ part(total('classeA')) }} · excellent</div>
+                </div>
+            </div>
+            <div class="col-6 md:col-2">
+                <div class="card text-center mb-0 border-1 border-blue-200 bg-blue-50">
+                    <div class="text-4xl font-bold text-blue-600">{{ total('classeB') }}</div>
+                    <div class="text-700 font-medium mt-1">Classe B</div>
+                    <div class="text-600 text-xs">{{ part(total('classeB')) }} · bon</div>
+                </div>
+            </div>
+            <div class="col-6 md:col-2">
+                <div class="card text-center mb-0 border-1 border-yellow-200 bg-yellow-50">
+                    <div class="text-4xl font-bold text-amber-500">{{ total('classeC') }}</div>
+                    <div class="text-700 font-medium mt-1">Classe C</div>
+                    <div class="text-600 text-xs">{{ part(total('classeC')) }} · à surveiller</div>
+                </div>
+            </div>
+            <div class="col-6 md:col-2">
+                <div class="card text-center mb-0 border-1 border-orange-200 bg-orange-50">
+                    <div class="text-4xl font-bold text-orange-600">{{ total('classeD') }}</div>
+                    <div class="text-700 font-medium mt-1">Classe D</div>
+                    <div class="text-600 text-xs">{{ part(total('classeD')) }} · fragile</div>
+                </div>
+            </div>
+            <div class="col-6 md:col-2">
+                <div class="card text-center mb-0 border-1 border-red-200 bg-red-50">
+                    <div class="text-4xl font-bold text-red-600">{{ total('classeE') }}</div>
+                    <div class="text-700 font-medium mt-1">Classe E</div>
+                    <div class="text-600 text-xs">{{ part(total('classeE')) }} · défaillant</div>
+                </div>
+            </div>
+            <div class="col-6 md:col-2">
+                <div class="card text-center mb-0 border-1 surface-border surface-50">
+                    <div class="text-4xl font-bold text-gray-500">{{ total('classeN') }}</div>
+                    <div class="text-700 font-medium mt-1">Classe N</div>
+                    <div class="text-600 text-xs">{{ part(total('classeN')) }} · premier crédit</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Par point de service et par agent -->
+    <div class="col-12">
+        <div class="card">
+            <div class="flex align-items-center justify-content-between mb-3">
+                <h5 class="m-0">Par point de service et par agent</h5>
+                <span class="text-600 text-sm">{{ total('total') }} membre(s) photographié(s)</span>
+            </div>
+            <p-table [value]="state().lignes" [tableStyle]="{ 'min-width': '56rem' }" [paginator]="state().lignes.length > 20"
+                     [rows]="20" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Point de service</th>
+                        <th>Agent de crédit</th>
+                        <th class="text-center">A</th>
+                        <th class="text-center">B</th>
+                        <th class="text-center">C</th>
+                        <th class="text-center">D</th>
+                        <th class="text-center">E</th>
+                        <th class="text-center">N</th>
+                        <th class="text-center">À surveiller</th>
+                        <th class="text-center">Total</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-ligne>
+                    <tr>
+                        <td class="font-medium">{{ ligne.codAgencia }}</td>
+                        <td>{{ libelleAgent(ligne) }}</td>
+                        <td class="text-center text-green-600">{{ ligne.classeA || '—' }}</td>
+                        <td class="text-center text-blue-600">{{ ligne.classeB || '—' }}</td>
+                        <td class="text-center text-amber-500">{{ ligne.classeC || '—' }}</td>
+                        <td class="text-center text-orange-600">{{ ligne.classeD || '—' }}</td>
+                        <td class="text-center text-red-600 font-semibold">{{ ligne.classeE || '—' }}</td>
+                        <td class="text-center text-gray-500">{{ ligne.classeN || '—' }}</td>
+                        <td class="text-center font-semibold"
+                            [pTooltip]="'Classes C, D et E : analyse renforcée conseillée'" tooltipPosition="left">
+                            {{ aSurveiller(ligne) || '—' }}
+                        </td>
+                        <td class="text-center font-bold">{{ ligne.total }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="10" class="text-center text-600 py-4">Aucun membre photographié sur votre périmètre.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </div>
+    </div>
+
+    <!-- Membres qui ont reculé -->
+    <div class="col-12">
+        <div class="card">
+            <div class="flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h5 class="m-0">Membres qui ont reculé ce mois-ci</h5>
+                    <span class="text-600 text-sm">Comparaison avec la photo du mois précédent. Seules les dégradations sont listées : une amélioration ne demande pas d'action.</span>
+                </div>
+                <p-tag [severity]="state().degradations.length ? 'warn' : 'success'"
+                       [value]="state().degradations.length + ' membre(s)'"></p-tag>
+            </div>
+
+            @if (state().degradations.length === 0) {
+            <div class="text-600 text-sm py-3">Aucune dégradation de classe sur ce périmètre, ou pas encore de photo du mois précédent à comparer.</div>
+            } @else {
+            <p-table [value]="state().degradations" [tableStyle]="{ 'min-width': '40rem' }" [paginator]="state().degradations.length > 15"
+                     [rows]="15" styleClass="p-datatable-sm">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Membre</th>
+                        <th>Point de service</th>
+                        <th class="text-center">Avant</th>
+                        <th class="text-center">Après</th>
+                        <th class="text-right">Score</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-d>
+                    <tr>
+                        <td class="font-medium">{{ d.numeroMembre }}</td>
+                        <td>{{ d.codAgencia }}</td>
+                        <td class="text-center"><p-tag [severity]="severiteClasse(d.classeAvant)" [value]="d.classeAvant"></p-tag></td>
+                        <td class="text-center"><p-tag [severity]="severiteClasse(d.classeApres)" [value]="d.classeApres"></p-tag></td>
+                        <td class="text-right">
+                            <span class="text-600">{{ d.scoreAvant ?? '—' }}</span>
+                            <span class="text-600 mx-1">→</span>
+                            <span class="font-semibold">{{ d.scoreApres ?? '—' }}</span>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+            }
+        </div>
+    </div>
+
+    <div class="col-12">
+        <p-message severity="info" styleClass="w-full"
+                   text="Le score prépare, le décideur décide : aucune classe ne bloque un dossier. Tant que le test rétrospectif n'a pas confirmé que les classes séparent les bons des mauvais payeurs, les seuils restent une hypothèse de travail."></p-message>
+    </div>
+    }
+</div>
