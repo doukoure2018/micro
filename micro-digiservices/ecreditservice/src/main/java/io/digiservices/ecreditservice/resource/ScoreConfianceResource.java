@@ -98,10 +98,22 @@ public class ScoreConfianceResource {
                                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                              @RequestParam(defaultValue = "300") int limite,
                                              HttpServletRequest request) {
-        log.info("[SCORE] Calibrage demande par {} a la date {} sur {} membre(s) au plus",
-                authentication.getName(), date, limite);
         return ResponseEntity.ok(getResponse(request,
-                Map.of("calibrage", service.calibrer(authentication.getName(), date, limite)),
-                "Test rétrospectif du score de confiance", OK));
+                Map.of("calibrage", service.lancerCalibrage(authentication.getName(), date, limite)),
+                "Test rétrospectif lancé", OK));
+    }
+
+    /**
+     * Avancee et resultat du test. Le resultat vient de la table : il survit au rechargement de
+     * la page, et relancer le test a la meme date remplace les lignes au lieu de les doubler.
+     */
+    @GetMapping("/calibrage")
+    public ResponseEntity<Response> calibrage(@NotNull Authentication authentication,
+                                              @RequestParam
+                                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                              HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                service.resultatCalibrage(authentication.getName(), date),
+                "Résultat du test rétrospectif", OK));
     }
 }

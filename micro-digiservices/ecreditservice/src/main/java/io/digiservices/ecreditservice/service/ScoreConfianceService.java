@@ -80,6 +80,20 @@ public class ScoreConfianceService {
 
     private final AtomicBoolean photoEnCours = new AtomicBoolean(false);
 
+    /**
+     * Le calibrage lit SAF membre par membre : plusieurs minutes, bien au-dela du delai du
+     * proxy. Il tourne donc en tache de fond, et l'ecran suit son avancee — un bouton qui
+     * expire alors que le travail continue ne vaut rien.
+     */
+    private final AtomicBoolean calibrageEnCours = new AtomicBoolean(false);
+    private volatile String calibrageEtat = "";
+    private final java.util.concurrent.ExecutorService executeurCalibrage =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "score-calibrage");
+                t.setDaemon(true);
+                return t;
+            });
+
     // ================================================================ lot 1 : consultation
 
     /**
@@ -281,13 +295,79 @@ public class ScoreConfianceService {
      * @param limite nombre maximal de membres analyses : une lecture par membre en production,
      *               on ne lance pas le reseau entier par curiosite
      */
-    public RetrospectifDto calibrer(String uuid, LocalDate dateReference, int limite) {
+    /**
+     * Lance le test en tache de fond et rend la main tout de suite. L'avancee et le resultat se
+     * lisent par {@link #resultatCalibrage}.
+     */
+    public Map<String, Object> lancerCalibrage(String uuid, LocalDate dateReference, int limite) {
         habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.ADMIN_OUTILS);
+        verifierLaDate(dateReference);
+
+        if (!calibrageEnCours.compareAndSet(false, true)) {
+            return Map.of("enCours", true, "etatCalibrage", calibrageEtat,
+                    "message", "Un test est déjà en cours : " + calibrageEtat);
+        }
+        calibrageEtat = "démarrage";
+        log.info("[SCORE] Calibrage lance par {} a la date {} sur {} membre(s) au plus", uuid, dateReference, limite);
+
+        executeurCalibrage.submit(() -> {
+            try {
+                RetrospectifDto resultat = calibrer(dateReference, limite);
+                calibrageEtat = String.format("terminé : %d membre(s) analysé(s)", resultat.membresAnalyses());
+                log.info("[SCORE] Calibrage {} termine : {}", dateReference, resultat.lecture());
+            } catch (Exception e) {
+                calibrageEtat = "échec : " + e.getMessage();
+                log.error("[SCORE] Calibrage {} en echec : {}", dateReference, e.getMessage(), e);
+            } finally {
+                calibrageEnCours.set(false);
+            }
+        });
+        return Map.of("enCours", true, "etatCalibrage", calibrageEtat, "message", "Test lancé, il se poursuit en arrière-plan");
+    }
+
+    /**
+     * Avancee et resultat du test. Les cohortes se lisent dans la table : le resultat survit au
+     * rechargement de la page et a la fin de la session.
+     */
+    public Map<String, Object> resultatCalibrage(String uuid, LocalDate dateReference) {
+        habilitationService.exigerUneDe(uuid, RUBRIQUE, HabilitationService.ADMIN_OUTILS);
+        verifierLaDate(dateReference);
+
+        List<CohorteDto> cohortes = new ArrayList<>();
+        int membres = 0;
+        int defauts = 0;
+        for (Map<String, Object> ligne : repository.cohortes(dateReference)) {
+            int nb = entierSimple(ligne.get("membres"));
+            int nbDefauts = entierSimple(ligne.get("defauts"));
+            membres += nb;
+            defauts += nbDefauts;
+            cohortes.add(new CohorteDto(texte(ligne.get("classe")), nb, nbDefauts, taux(nbDefauts, nb)));
+        }
+        cohortes.sort(Comparator.comparing(CohorteDto::classe));
+
+        int sansHistorique = cohortes.stream()
+                .filter(c -> "N".equals(c.classe()))
+                .mapToInt(CohorteDto::membres)
+                .sum();
+
+        RetrospectifDto resultat = new RetrospectifDto(dateReference, membres, sansHistorique, defauts,
+                cohortes, cohortes.isEmpty() ? "Aucun résultat pour cette date." : lecture(cohortes));
+
+        Map<String, Object> reponse = new java.util.HashMap<>();
+        reponse.put("enCours", calibrageEnCours.get());
+        reponse.put("etatCalibrage", calibrageEtat);
+        reponse.put("calibrage", resultat);
+        return reponse;
+    }
+
+    private void verifierLaDate(LocalDate dateReference) {
         if (dateReference == null || !dateReference.isBefore(LocalDate.now().minusMonths(12))) {
             throw new ApiException("La date de référence doit précéder d'au moins douze mois aujourd'hui : "
                     + "sans douze mois d'observation, il n'y a rien à mesurer");
         }
+    }
 
+    private RetrospectifDto calibrer(LocalDate dateReference, int limite) {
         List<Map<String, Object>> membres = repository.membresAvecCreditAffecte();
         int plafond = Math.min(Math.max(limite, 10), 2000);
         repository.supprimer(ORIGINE_RETROSPECTIF, dateReference);
@@ -314,6 +394,7 @@ public class ScoreConfianceService {
                         null, null, texte(ligne.get("agence")), entier(ligne.get("agent")),
                         retro.getDefaut12Mois());
                 analyses++;
+                calibrageEtat = analyses + " membre(s) analysé(s) sur " + plafond + " au plus";
             } catch (Exception e) {
                 log.warn("[SCORE] Calibrage : membre {} ignore ({})", membre, e.getMessage());
             }
