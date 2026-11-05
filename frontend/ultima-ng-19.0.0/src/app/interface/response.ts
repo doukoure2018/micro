@@ -318,6 +318,13 @@ export interface IResponse {
         reprise?: { candidats: any[]; memePs: boolean; pointVente: string | null };
         /** Rotation : vrai quand les destinations couvrent tout le reseau et non la seule agence. */
         toutLeReseau?: boolean;
+        /** Volet latéral : ce qui attend l'utilisateur, l'état des données, ses agents. */
+        tableau?: {
+            lignes: { code: string; libelle: string; nombre: number; lien: string; severite: string }[];
+            saf: { joignable: boolean; enRestauration: boolean; sauvegardeActive: boolean; mention: string; dateDonnees: string };
+            mesAgents: { nom: string; pointVente: string; derniereConnexion: string | null }[];
+            montreMesAgents: boolean;
+        };
         /** Comptes mal adossés : ce qu'une confrontation à SAF a constaté (V203). */
         verification?: { id: number; conclusion: string; ferme: boolean; famille: string; explication: string };
         verifications?: { id: number; conclusion: string; ferme: boolean; famille: string; explication: string }[];

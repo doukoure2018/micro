@@ -2024,6 +2024,14 @@ export class UserService {
             .post<IResponse>(`${this.server}/ecredit/synthese-direction/envoyer`, {})
             .pipe(catchError(this.handleError));
 
+    /**
+     * Le volet lateral : ce qui attend l'utilisateur connecte, l'etat des donnees, et ses
+     * agents. Aucun parametre — le jeton dit de qui il s'agit, et une ressource qui accepterait
+     * un identifiant permettrait de lire le tableau d'un collegue.
+     */
+    getMonTableau$ = () =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/mon-tableau`).pipe(catchError(this.handleError));
+
     // ==================== Comptes de remboursement mal adosses (V196, lot 2) ====================
     getComptesMalAdosses$ = (f: { famille: string | null; etat: string | null; agence: string | null; saisiPar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-mal-adosses`, { params: this.paramsMalAdosses(f) }).pipe(catchError(this.handleError));
