@@ -197,4 +197,126 @@
                    text="Le score prépare, le décideur décide : aucune classe ne bloque un dossier. Tant que le test rétrospectif n'a pas confirmé que les classes séparent les bons des mauvais payeurs, les seuils restent une hypothèse de travail."></p-message>
     </div>
     }
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         CALIBRAGE — le seul test qui autorise à s'appuyer sur les classes.
+         Réservé à ADMIN_OUTILS, comme côté serveur : un bouton qui répondrait
+         403 n'a rien à faire à l'écran.
+         ══════════════════════════════════════════════════════════════════════ -->
+    @if (peutCalibrer()) {
+    <div class="col-12">
+        <div class="card">
+            <div class="flex align-items-center gap-2 mb-2">
+                <i class="pi pi-sliders-h text-xl text-primary"></i>
+                <h5 class="m-0">Calibrage du score</h5>
+            </div>
+            <p class="text-600 text-sm mt-0 mb-4 line-height-3" style="max-width: 50rem">
+                On recalcule le score tel qu'il aurait été à une date passée, puis on regarde ce qui s'est
+                réellement produit dans les douze mois suivants. La question est simple : les membres mal notés
+                ont-ils fait plus défaut que les bien notés, et de combien ? Si l'écart n'y est pas, ce ne sont
+                pas les membres qu'il faut revoir, c'est le barème. Une lecture SAF par membre : le test prend
+                plusieurs minutes, d'où la limite.
+            </p>
+
+            <div class="flex align-items-end flex-wrap gap-3 mb-3">
+                <div class="flex flex-column gap-2">
+                    <label for="dateCalibrage" class="text-600 text-sm">Date de référence</label>
+                    <p-datepicker inputId="dateCalibrage" [ngModel]="calibrage().date" dateFormat="dd/mm/yy"
+                                  [showIcon]="true" [maxDate]="maxDateCalibrage" appendTo="body"
+                                  (ngModelChange)="majDate($event)"></p-datepicker>
+                </div>
+                <div class="flex flex-column gap-2">
+                    <label for="limiteCalibrage" class="text-600 text-sm">Membres analysés au plus</label>
+                    <p-inputNumber inputId="limiteCalibrage" [ngModel]="calibrage().limite" (ngModelChange)="majLimite($event)"
+                                   [min]="10" [max]="2000" [step]="50" [showButtons]="true" styleClass="w-10rem"></p-inputNumber>
+                </div>
+                <p-button [label]="calibrage().enCours ? 'Test en cours…' : 'Lancer le test rétrospectif'"
+                          icon="pi pi-play" [loading]="calibrage().enCours" (onClick)="calibrer()"></p-button>
+                <p-button label="Relire un résultat" icon="pi pi-history" severity="secondary" [text]="true"
+                          [disabled]="calibrage().enCours" (onClick)="relireLeResultat()"></p-button>
+                <p-button label="Prendre la photo du mois" icon="pi pi-camera" severity="secondary" [outlined]="true"
+                          [loading]="photo().enCours" (onClick)="prendreLaPhoto()"></p-button>
+            </div>
+
+            @if (photo().message) {
+            <p-message severity="info" [text]="photo().message!" styleClass="w-full mb-3"></p-message>
+            }
+
+            @if (calibrage().erreur) {
+            <p-message severity="error" [text]="calibrage().erreur!" styleClass="w-full mb-3"></p-message>
+            }
+
+            @if (calibrage().enCours) {
+            <div class="flex align-items-center gap-3 text-600 text-sm">
+                <p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner>
+                <div>
+                    <div class="font-medium text-900">{{ calibrage().etat }}</div>
+                    <div>
+                        Lecture de l'historique SAF membre par membre. Vous pouvez quitter la page : le test se
+                        poursuit côté serveur et son résultat reste enregistré — « Relire un résultat » le rappelle.
+                    </div>
+                </div>
+            </div>
+            }
+
+            @if (calibrage().resultat; as r) {
+            <p-divider></p-divider>
+
+            <!-- Le verdict, avant le détail -->
+            <p-message [severity]="separationSuffisante() ? 'success' : 'warn'" [text]="r.lecture" styleClass="w-full mb-4"></p-message>
+
+            <div class="grid mb-3">
+                <div class="col-6 md:col-3">
+                    <div class="text-600 text-xs uppercase">Membres analysés</div>
+                    <div class="text-2xl font-bold text-900">{{ r.membresAnalyses }}</div>
+                </div>
+                <div class="col-6 md:col-3">
+                    <div class="text-600 text-xs uppercase">En défaut ensuite</div>
+                    <div class="text-2xl font-bold text-orange-600">{{ r.membresEnDefaut }}</div>
+                </div>
+                <div class="col-6 md:col-3">
+                    <div class="text-600 text-xs uppercase">Défaut en A et B</div>
+                    <div class="text-2xl font-bold text-green-600">{{ tauxGroupe(['A', 'B']) }}</div>
+                </div>
+                <div class="col-6 md:col-3">
+                    <div class="text-600 text-xs uppercase">Défaut en D et E</div>
+                    <div class="text-2xl font-bold text-red-600">{{ tauxGroupe(['D', 'E']) }}</div>
+                </div>
+            </div>
+
+            <p-table [value]="r.cohortes" [tableStyle]="{ 'min-width': '34rem' }" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Classe au {{ r.dateReference | date: 'dd/MM/yyyy' }}</th>
+                        <th class="text-right">Membres</th>
+                        <th class="text-right">Ont fait défaut</th>
+                        <th class="text-right">Taux de défaut</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-c>
+                    <tr>
+                        <td><p-tag [severity]="severiteClasse(c.classe)" [value]="c.classe"></p-tag></td>
+                        <td class="text-right">{{ c.membres }}</td>
+                        <td class="text-right">{{ c.defauts }}</td>
+                        <td class="text-right font-semibold">{{ c.tauxDefautPercent }} %</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr>
+                        <td colspan="4" class="text-center text-600 py-4">
+                            Aucune cohorte : à cette date, aucun membre n'avait d'échéance dans les douze mois suivants.
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+
+            <div class="text-500 text-xs mt-3 line-height-3">
+                Défaut = une échéance laissée au-delà de 90 jours dans les douze mois suivant la date de référence.
+                Les membres sans échéance dans cette fenêtre sont écartés : il n'y avait rien à observer.
+                {{ r.membresSansHistorique }} membre(s) étaient en classe N à cette date.
+            </div>
+            }
+        </div>
+    </div>
+    }
 </div>

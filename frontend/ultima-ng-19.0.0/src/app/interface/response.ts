@@ -333,6 +333,10 @@ export interface IResponse {
         /** Score de confiance : membres passes dans une classe moins bonne (lot 3). */
         derive?: { mois: string | null; degradations: any[] };
         photo?: { mois: string; membres: number; enregistres: number; erreurs: number; message: string };
+        /** Test retrospectif : vrai tant que le travail de fond tourne. */
+        enCours?: boolean;
+        /** Avancee lisible du test de fond (« 127 membre(s) analyse(s) sur 300 au plus »). */
+        etatCalibrage?: string;
         calibrage?: {
             dateReference: string;
             membresAnalyses: number;

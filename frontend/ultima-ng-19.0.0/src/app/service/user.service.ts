@@ -1871,10 +1871,19 @@ export class UserService {
             .post<IResponse>(`${this.server}/ecredit/score-confiance/photo`, {}, { params: mois ? { mois } : {} })
             .pipe(catchError(this.handleError));
 
-    /** Test retrospectif : le score a une date passee, confronte au defaut constate ensuite. */
+    /**
+     * Lance le test retrospectif. Il tourne en tache de fond : la reponse dit seulement qu'il
+     * est parti, le resultat se lit avec resultatCalibrage$.
+     */
     calibrerConfiance$ = (date: string, limite = 300) =>
         <Observable<IResponse>>this.http
             .post<IResponse>(`${this.server}/ecredit/score-confiance/calibrer`, {}, { params: { date, limite } })
+            .pipe(catchError(this.handleError));
+
+    /** Avancee et resultat du test retrospectif a une date donnee. */
+    resultatCalibrage$ = (date: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/score-confiance/calibrage`, { params: { date } })
             .pipe(catchError(this.handleError));
 
     exportPortefeuilleRisque$ = (codAgencia: string) => this.http.get(`${this.server}/ecredit/portefeuille/risque/export`, { params: { codAgencia }, responseType: 'blob', observe: 'response' });
