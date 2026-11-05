@@ -7,6 +7,7 @@ import io.digiservices.ecreditservice.repository.PortefeuillePerimetreRepository
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,6 +76,31 @@ class PerimetreSafLectureSeuleTest {
     @DisplayName("un compte inconnu est refuse, sans se taire")
     void compteInconnu() {
         assertThrows(ApiException.class, () -> service(null).lectureSeule(UUID_TEST));
+    }
+
+    @Test
+    @DisplayName("le directeur de la DSIG voit tout le reseau")
+    void leDirecteurDeLaDsigVoitLeReseau() {
+        // Ajoute le 05/11/2026 : il est MANAGER du service DSIG, pas SUPER_ADMIN, et se voyait
+        // refuser le portefeuille SAF, le portefeuille a risque, les classes de confiance,
+        // l'affectation, le contentieux et les ecrans d'audit — sur le tableau de bord de son
+        // propre service.
+        var p = service(compte("MANAGER", "DSIG")).perimetreDe(UUID_TEST);
+        assertTrue(p.toutReseau(), "le service DSIG exploite la plateforme : il en voit tout");
+        assertEquals("RESEAU", p.niveau());
+        assertFalse(p.lectureSeule(), "la DSIG agit, contrairement au service Audit");
+    }
+
+    @Test
+    @DisplayName("les trois autres directions gardent leur perimetre reseau")
+    void lesAutresDirectionsGardentLeReseau() {
+        for (String[] compte : new String[][]{{"DG", null}, {"SUPER_ADMIN", null},
+                {"MANAGER", "DE"}, {"MANAGER", "Audit"}}) {
+            var p = service(compte(compte[0], compte[1])).perimetreDe(UUID_TEST);
+            assertTrue(p.toutReseau(), compte[0] + "/" + compte[1] + " doit voir le reseau");
+        }
+        // Et l'Audit reste en lecture seule, lui.
+        assertTrue(service(compte("MANAGER", "Audit")).perimetreDe(UUID_TEST).lectureSeule());
     }
 
     @Test

@@ -49,6 +49,8 @@ public class PerimetreSafService {
 
     /** Service dont les comptes ne modifient rien : ils controlent apres coup. */
     public static final String SERVICE_AUDIT = "Audit";
+    /** Le service qui exploite la plateforme : il en voit tout le reseau. */
+    public static final String SERVICE_DSIG = "DSIG";
 
     private static boolean estAudit(User user) {
         return user != null && SERVICE_AUDIT.equalsIgnoreCase(user.getService());
@@ -83,10 +85,19 @@ public class PerimetreSafService {
             throw new ApiException("Utilisateur non identifie");
         }
         String role = user.getRole();
-        // Un audit n'a pas d'agence : il voit le reseau, comme la direction de l'exploitation.
+        String service = user.getService();
+        // Ces comptes n'ont pas d'agence : ils voient le reseau entier.
+        //
+        // Le service DSIG y a ete ajoute le 05/11/2026. Son directeur est un MANAGER du service
+        // DSIG, pas un SUPER_ADMIN : il se voyait donc refuser le portefeuille SAF, le
+        // portefeuille a risque, les classes de confiance, l'affectation, le contentieux et les
+        // ecrans d'audit — sur le tableau de bord de son propre service. Le resolveur de l'outil
+        // de rapprochement, lui, lui accordait deja le reseau : les deux repondaient a la meme
+        // question de deux facons differentes.
         if ("DG".equals(role) || "SUPER_ADMIN".equals(role)
-                || ("MANAGER".equals(role) && "DE".equalsIgnoreCase(user.getService()))
-                || ("MANAGER".equals(role) && SERVICE_AUDIT.equalsIgnoreCase(user.getService()))) {
+                || ("MANAGER".equals(role) && "DE".equalsIgnoreCase(service))
+                || ("MANAGER".equals(role) && SERVICE_AUDIT.equalsIgnoreCase(service))
+                || ("MANAGER".equals(role) && SERVICE_DSIG.equalsIgnoreCase(service))) {
             return new Perimetre(true, Set.of(), "RESEAU", user);
         }
         Set<String> codes;
