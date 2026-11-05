@@ -173,6 +173,20 @@ public class CreditosController {
      * @param codCliente
      * @return
      */
+    /**
+     * Score du membre tel qu'il aurait ete a une date passee, et ce qui s'est produit ensuite.
+     * Sert au test de calibrage du score (lot 2) ; une lecture en production, non destinee aux
+     * ecrans de consultation.
+     */
+    @GetMapping("/creditos/cliente/{codCliente}/retrospectif")
+    public ResponseEntity<io.digiservices.ebanking.dto.EvaluationRetrospectiveDTO> evaluerALaDate(
+            @PathVariable(name = "codCliente") String codCliente,
+            @org.springframework.web.bind.annotation.RequestParam(name = "date")
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate date) {
+        return ResponseEntity.ok(creditosService.evaluerALaDate(codCliente, date));
+    }
+
     @GetMapping("/creditos/cliente/{codCliente}")
     public ResponseEntity<CreditosClienteResponseDTO> obtenerCreditosYPlanPagosPorCliente(
             @PathVariable(name = "codCliente") String codCliente) {

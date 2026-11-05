@@ -90,6 +90,12 @@ public interface EbankingClient {
     CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorCliente(
             @PathVariable(name = "codCliente") String codCliente);
 
+    /** Score du membre a une date passee + defaut constate ensuite (calibrage, lot 2). */
+    @GetMapping(path = "/ebanking/creditos/cliente/{codCliente}/retrospectif")
+    io.digiservices.clients.domain.EvaluationRetrospectiveDTO evaluerScoreALaDate(
+            @PathVariable(name = "codCliente") String codCliente,
+            @RequestParam(name = "date") String date);
+
     @GetMapping("/ebanking/search")
     ClientesDto searchClientes(@RequestParam("query") String query);
 

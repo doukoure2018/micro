@@ -400,7 +400,7 @@ public class CreditosServiceImpl implements CreditosService {
             List<ResumenPlanPagoDTO> resumenes = generarResumenes(planPagos);
 
             // 5. Calcular evaluación de riesgo
-            EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgo(codCliente, planPagos);
+            EvaluationRisqueDTO evaluacionRisque = ScoreConfiance.surEcheances(creditos, planPagos, LocalDateTime.now());
 
             log.info("Informations obtenues avec succès pour le client {}: {} créditos, {} plan de pagos",
                     codCliente, creditos.size(), planPagos.size());
@@ -433,52 +433,6 @@ public class CreditosServiceImpl implements CreditosService {
      * (FEC_VENCIMIENTO). Credit solde a temps = 100 ; retard gradue ; credit en cours
      * echu avec solde restant = penalise. Ponderation par recence (24 derniers mois x2).
      */
-    private EvaluationRisqueDTO calcularEvaluacionRiesgoDesdeCreditos(List<CreditoDTO> creditos) {
-        LocalDateTime maintenant = LocalDateTime.now();
-
-        double sommePoints = 0.0, sommePoids = 0.0;
-        int analyses = 0, respectees = 0, enRetard = 0, nbAvecRetard = 0;
-        long totalJoursRetard = 0;
-
-        for (CreditoDTO c : creditos) {
-            if (c.getFecApertura() == null) continue;
-            boolean solde = "C".equals(c.getIndEstado()) && c.getFecCancelacion() != null;
-
-            long joursRetard;
-            if (solde && c.getFecVencimiento() != null) {
-                joursRetard = ChronoUnit.DAYS.between(c.getFecVencimiento(), c.getFecCancelacion());
-                if (joursRetard < 0) joursRetard = 0; // solde en avance = a temps
-            } else if (!solde && c.getFecVencimiento() != null && c.getFecVencimiento().isBefore(maintenant)
-                    && c.getMonSaldo() != null && c.getMonSaldo().signum() > 0) {
-                joursRetard = ChronoUnit.DAYS.between(c.getFecVencimiento(), maintenant); // en cours, echu, impaye
-            } else {
-                joursRetard = 0; // en cours non echu : aucun element negatif
-            }
-
-            analyses++;
-            double points = ScoreConfiance.points(joursRetard, solde);
-            if (ScoreConfiance.respectee(points)) {
-                respectees++;
-            } else {
-                enRetard++;
-                totalJoursRetard += joursRetard;
-                nbAvecRetard++;
-            }
-
-            double poids = ScoreConfiance.poids(c.getFecApertura(), maintenant);
-            sommePoints += points * poids;
-            sommePoids += ScoreConfiance.POINTS_MAX * poids;
-        }
-
-        if (analyses == 0) {
-            return ScoreConfiance.nouveauMembre();
-        }
-
-        int retardMoyenJours = nbAvecRetard > 0 ? (int) (totalJoursRetard / nbAvecRetard) : 0;
-
-        return ScoreConfiance.evaluation(sommePoints, sommePoids, analyses, analyses,
-                respectees, enRetard, retardMoyenJours, ScoreConfiance.BASE_CREDITS);
-    }
 
     @Override
     public CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorClienteSaf(String codCliente) {
@@ -498,9 +452,9 @@ public class CreditosServiceImpl implements CreditosService {
 
             // Synthese DG : UNE SEULE requete (credits). Le score est calcule au niveau
             // credit (date de cancelacion vs echeance) sans la requete planPagos, lente sur
-            // la base dev. planPagos/resumenes ne sont pas renvoyes (inutiles a l'ecran).
+            // la base dev — memes regles, base annoncee (basePourScore = CREDITS). planPagos/resumenes ne sont pas renvoyes (inutiles a l'ecran).
             List<CreditoDTO> creditos = mapearCreditos(creditosData);
-            EvaluationRisqueDTO evaluacionRisque = calcularEvaluacionRiesgoDesdeCreditos(creditos);
+            EvaluationRisqueDTO evaluacionRisque = ScoreConfiance.surCredits(creditos, LocalDateTime.now());
 
             return CreditosClienteResponseDTO.builder()
                     .codCliente(codCliente)
@@ -521,6 +475,58 @@ public class CreditosServiceImpl implements CreditosService {
                     .mensaje("Erreur lors de l'obtention des informations: " + e.getMessage())
                     .build();
         }
+    }
+
+    @Override
+    public EvaluationRetrospectiveDTO evaluerALaDate(String codCliente, java.time.LocalDate dateReference) {
+        log.info("Score retrospectif du client {} a la date {}", codCliente, dateReference);
+        LocalDateTime reference = dateReference.atStartOfDay();
+        LocalDateTime finFenetre = reference.plusMonths(12);
+        LocalDateTime maintenant = LocalDateTime.now();
+
+        List<CreditoDTO> creditos = mapearCreditos(creditosRepository.obtenerCreditosPorCliente(codCliente));
+        if (creditos.isEmpty()) {
+            return EvaluationRetrospectiveDTO.builder()
+                    .codCliente(codCliente).dateReference(dateReference)
+                    .evaluation(ScoreConfiance.nouveauMembre())
+                    .defaut12Mois(null).echeancesSuivantes(0)
+                    .message("Aucun crédit pour ce membre")
+                    .build();
+        }
+
+        List<PlanPagoDTO> planPagos = mapearPlanPagos(creditosRepository.obtenerPlanPagosPorCliente(codCliente));
+
+        // Le score tel qu'il se serait affiche : l'engin ne regarde que les echeances echues a
+        // la date de reference, il suffit de lui donner cette date pour « maintenant ».
+        EvaluationRisqueDTO evaluation = ScoreConfiance.surEcheances(creditos, planPagos, reference);
+
+        // Ce qui s'est passe ENSUITE : une echeance due dans les douze mois suivants, laissee
+        // au-dela de 90 jours. C'est la definition du defaut retenue pour le calibrage.
+        List<PlanPagoDTO> suivantes = planPagos.stream()
+                .filter(p -> p.getNumCuota() != null && p.getNumCuota() != 0)
+                .filter(p -> p.getFecCuota() != null
+                        && p.getFecCuota().isAfter(reference)
+                        && !p.getFecCuota().isAfter(finFenetre))
+                .collect(Collectors.toList());
+
+        boolean defaut = suivantes.stream().anyMatch(p -> {
+            boolean payee = "C".equals(p.getIndEstado()) && p.getFecCancelacion() != null;
+            long retard = payee
+                    ? ChronoUnit.DAYS.between(p.getFecCuota(), p.getFecCancelacion())
+                    : ChronoUnit.DAYS.between(p.getFecCuota(), maintenant);
+            return retard > 90;
+        });
+
+        return EvaluationRetrospectiveDTO.builder()
+                .codCliente(codCliente)
+                .dateReference(dateReference)
+                .evaluation(evaluation)
+                .defaut12Mois(suivantes.isEmpty() ? null : defaut)
+                .echeancesSuivantes(suivantes.size())
+                .message(suivantes.isEmpty()
+                        ? "Aucune échéance due dans les douze mois suivants : pas d'observation"
+                        : "Observation sur " + suivantes.size() + " échéance(s)")
+                .build();
     }
 
     private List<ResumenPlanPagoDTO> generarResumenes(List<PlanPagoDTO> planPagos) {
@@ -579,66 +585,6 @@ public class CreditosServiceImpl implements CreditosService {
      *  - Analyse ELARGIE a tous les credits du client (et non plus seulement les 3 derniers).
      *  - Metriques de transparence : echeances en retard et retard moyen (jours).
      */
-    private EvaluationRisqueDTO calcularEvaluacionRiesgo(String codCliente, List<PlanPagoDTO> todosLosPagos) {
-        LocalDateTime maintenant = LocalDateTime.now();
-
-        // Toutes les echeances echues (hors ouverture numCuota==0), tous credits confondus
-        List<PlanPagoDTO> pagosAnalizar = todosLosPagos.stream()
-                .filter(p -> p.getNumCuota() != 0)
-                .filter(p -> p.getFecCuota() != null && p.getFecCuota().isBefore(maintenant))
-                .collect(Collectors.toList());
-
-        if (pagosAnalizar.isEmpty()) {
-            // Aucune echeance echue : aucun comportement a juger. Etat « nouveau membre »,
-            // et surtout PAS un score de zero affiche en rouge devant le DA.
-            log.debug("Client {} : aucune echeance echue, score non applicable", codCliente);
-            return ScoreConfiance.nouveauMembre();
-        }
-
-        double sommePoints = 0.0; // points ponderes obtenus
-        double sommePoids = 0.0;  // points ponderes atteignables
-        int echeancesRespectees = 0;
-        int echeancesEnRetard = 0;
-        long totalJoursRetard = 0;
-        int nbAvecRetard = 0;
-
-        for (PlanPagoDTO pago : pagosAnalizar) {
-            boolean payee = "C".equals(pago.getIndEstado()) && pago.getFecCancelacion() != null;
-
-            long joursRetard;
-            if (payee) {
-                joursRetard = ChronoUnit.DAYS.between(pago.getFecCuota(), pago.getFecCancelacion());
-                if (joursRetard < 0) joursRetard = 0; // payee en avance = a temps
-            } else {
-                // Impayee et echue : retard = de l'echeance a aujourd'hui
-                joursRetard = ChronoUnit.DAYS.between(pago.getFecCuota(), maintenant);
-            }
-
-            double points = ScoreConfiance.points(joursRetard, payee);
-            if (ScoreConfiance.respectee(points)) {
-                echeancesRespectees++;
-            } else {
-                echeancesEnRetard++;
-                totalJoursRetard += joursRetard;
-                nbAvecRetard++;
-            }
-
-            double poids = ScoreConfiance.poids(pago.getFecCuota(), maintenant);
-            sommePoints += points * poids;
-            sommePoids += ScoreConfiance.POINTS_MAX * poids;
-        }
-
-        int creditsAnalyses = (int) pagosAnalizar.stream()
-                .map(PlanPagoDTO::getNumCredito)
-                .distinct()
-                .count();
-        int retardMoyenJours = nbAvecRetard > 0 ? (int) (totalJoursRetard / nbAvecRetard) : 0;
-
-        return ScoreConfiance.evaluation(sommePoints, sommePoids, creditsAnalyses,
-                pagosAnalizar.size(), echeancesRespectees, echeancesEnRetard, retardMoyenJours,
-                ScoreConfiance.BASE_ECHEANCES);
-    }
-
     private List<CreditoDTO> mapearCreditos(List<Map<String, Object>> creditosData) {
         return creditosData.stream()
                 .map(this::mapearCredito)

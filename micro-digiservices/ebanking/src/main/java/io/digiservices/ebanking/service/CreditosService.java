@@ -51,6 +51,13 @@ public interface CreditosService {
     CreditosClienteResponseDTO obtenerCreditosYPlanPagosPorClienteSaf(String codCliente);
 
     /**
+     * Score du membre tel qu'il aurait ete a une date passee, et ce qui s'est produit dans les
+     * douze mois suivants. Lecture en production : le test de calibrage se fait une fois, pas
+     * a chaque consultation.
+     */
+    io.digiservices.ebanking.dto.EvaluationRetrospectiveDTO evaluerALaDate(String codCliente, java.time.LocalDate dateReference);
+
+    /**
      * Verifica si un cliente existe y tiene créditos
      * @param codCliente Código del cliente
      * @return true si el cliente tiene créditos, false en caso contrario

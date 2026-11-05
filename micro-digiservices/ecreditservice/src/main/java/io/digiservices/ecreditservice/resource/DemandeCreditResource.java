@@ -36,6 +36,8 @@ import static org.springframework.http.ResponseEntity.ok;
 @Slf4j
 public class DemandeCreditResource {
 
+    private final io.digiservices.ecreditservice.service.ScoreConfianceService scoreConfianceService;
+
     private final DemandeCreditService demandeCreditService;
     private final UserClient userClient;
     private final EbankingClient ebankingClient;
@@ -138,11 +140,20 @@ public class DemandeCreditResource {
     }
 
 
+    /**
+     * Historique de credit d'un membre, avec le score de confiance complet : les trois
+     * composantes tirees de SAF, plus les signaux que digi seul connait. La consultation est
+     * tracee quand un dossier est en cours d'instruction — c'est ce qui permettra de dire,
+     * plus tard, quel score le decideur avait sous les yeux.
+     */
     @GetMapping("/seachCreditos/{codCliente}")
     public ResponseEntity<Response> seachCreditos(@NotNull Authentication authentication,
                                                   @PathVariable(name = "codCliente") String codCliente,
+                                                  @RequestParam(name = "dossier", required = false) Long dossierId,
                                                   HttpServletRequest request) {
-        return ok(getResponse(request, Map.of("histoCredits", ebankingClient.obtenerCreditosYPlanPagosPorCliente(codCliente)), "Historisque des Credits encours", OK));
+        return ok(getResponse(request,
+                Map.of("histoCredits", scoreConfianceService.consulter(authentication.getName(), codCliente, dossierId)),
+                "Historisque des Credits encours", OK));
     }
 
     @GetMapping("/getPlanPagos/{numCredito}")
