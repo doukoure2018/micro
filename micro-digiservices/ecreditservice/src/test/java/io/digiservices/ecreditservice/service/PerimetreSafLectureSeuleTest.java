@@ -92,15 +92,36 @@ class PerimetreSafLectureSeuleTest {
     }
 
     @Test
-    @DisplayName("les trois autres directions gardent leur perimetre reseau")
-    void lesAutresDirectionsGardentLeReseau() {
-        for (String[] compte : new String[][]{{"DG", null}, {"SUPER_ADMIN", null},
-                {"MANAGER", "DE"}, {"MANAGER", "Audit"}}) {
-            var p = service(compte(compte[0], compte[1])).perimetreDe(UUID_TEST);
-            assertTrue(p.toutReseau(), compte[0] + "/" + compte[1] + " doit voir le reseau");
+    @DisplayName("les directions du siege voient toutes le reseau")
+    void lesDirectionsDuSiegeVoientLeReseau() {
+        // La meme liste que l'outil de bureau : DE, Audit, DSIG, inspection (DI) et Direction
+        // financiere (DF), plus le DG et SUPER_ADMIN par leur role. Deux resolveurs repondaient
+        // a la meme question de deux facons differentes jusqu'au 05/11/2026.
+        for (String[] c : new String[][]{{"DG", null}, {"SUPER_ADMIN", null},
+                {"MANAGER", "DE"}, {"MANAGER", "Audit"}, {"MANAGER", "DSIG"},
+                {"MANAGER", "DI"}, {"MANAGER", "DF"}, {"MANAGER", " df "}}) {
+            var p = service(compte(c[0], c[1])).perimetreDe(UUID_TEST);
+            assertTrue(p.toutReseau(), c[0] + "/" + c[1] + " doit voir le reseau");
+            assertEquals("RESEAU", p.niveau());
         }
-        // Et l'Audit reste en lecture seule, lui.
+        // Seul l'Audit reste en lecture seule : il controle apres coup, il n'exploite pas.
         assertTrue(service(compte("MANAGER", "Audit")).perimetreDe(UUID_TEST).lectureSeule());
+        for (String s : new String[]{"DSIG", "DI", "DF", "DE"}) {
+            assertFalse(service(compte("MANAGER", s)).perimetreDe(UUID_TEST).lectureSeule(),
+                    "le service " + s + " agit, contrairement a l'Audit");
+        }
+    }
+
+    @Test
+    @DisplayName("un service du siege hors liste n'ouvre pas le reseau")
+    void serviceDuSiegeHorsListe() {
+        // La DRH et le Societariat n'ont rien a faire dans le portefeuille de credit : ils
+        // tombent sur le refus, comme avant.
+        for (String s : new String[]{"DRH", "Societariat", "Juridique", ""}) {
+            assertThrows(ApiException.class,
+                    () -> service(compte("MANAGER", s)).perimetreDe(UUID_TEST),
+                    "le service " + s + " ne doit pas ouvrir le reseau");
+        }
     }
 
     @Test

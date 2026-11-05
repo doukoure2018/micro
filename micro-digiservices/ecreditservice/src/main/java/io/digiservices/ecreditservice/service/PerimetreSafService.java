@@ -51,6 +51,30 @@ public class PerimetreSafService {
     public static final String SERVICE_AUDIT = "Audit";
     /** Le service qui exploite la plateforme : il en voit tout le reseau. */
     public static final String SERVICE_DSIG = "DSIG";
+    /** L'inspection : elle controle le reseau entier. */
+    public static final String SERVICE_INSPECTION = "DI";
+    /** La Direction financiere : elle controle des chiffres comptables sur tout le reseau. */
+    public static final String SERVICE_DF = "DF";
+
+    /**
+     * Les services dont les comptes voient le reseau entier, quel que soit leur rattachement
+     * geographique — ils n'en ont pas.
+     *
+     * <p>La meme liste que {@code RapprochementProfilResolver} cote outil de bureau, au DG pres
+     * qui s'y exprime par son role. Les deux repondaient a la meme question de deux facons
+     * differentes jusqu'au 05/11/2026, et le directeur de la DSIG se voyait refuser le tableau
+     * de bord de son propre service.</p>
+     */
+    private static final Set<String> SERVICES_RESEAU =
+            Set.of("DE", SERVICE_AUDIT, SERVICE_DSIG, SERVICE_INSPECTION, SERVICE_DF);
+
+    private static boolean serviceReseau(String service) {
+        if (service == null) {
+            return false;
+        }
+        String s = service.trim();
+        return SERVICES_RESEAU.stream().anyMatch(r -> r.equalsIgnoreCase(s));
+    }
 
     private static boolean estAudit(User user) {
         return user != null && SERVICE_AUDIT.equalsIgnoreCase(user.getService());
@@ -88,16 +112,14 @@ public class PerimetreSafService {
         String service = user.getService();
         // Ces comptes n'ont pas d'agence : ils voient le reseau entier.
         //
-        // Le service DSIG y a ete ajoute le 05/11/2026. Son directeur est un MANAGER du service
-        // DSIG, pas un SUPER_ADMIN : il se voyait donc refuser le portefeuille SAF, le
-        // portefeuille a risque, les classes de confiance, l'affectation, le contentieux et les
-        // ecrans d'audit — sur le tableau de bord de son propre service. Le resolveur de l'outil
-        // de rapprochement, lui, lui accordait deja le reseau : les deux repondaient a la meme
-        // question de deux facons differentes.
+        // Jusqu'au 05/11/2026 la liste s'arretait a la DE et a l'Audit. Le directeur de la DSIG
+        // est un MANAGER du service DSIG, pas un SUPER_ADMIN : il se voyait refuser le
+        // portefeuille SAF, le portefeuille a risque, les classes de confiance, l'affectation,
+        // le contentieux et les ecrans d'audit — sur le tableau de bord de son propre service.
+        // L'inspection et la Direction financiere ont ete ajoutees dans la foulee, a la demande
+        // de la DSIG : elles avaient deja le reseau dans l'outil de rapprochement.
         if ("DG".equals(role) || "SUPER_ADMIN".equals(role)
-                || ("MANAGER".equals(role) && "DE".equalsIgnoreCase(service))
-                || ("MANAGER".equals(role) && SERVICE_AUDIT.equalsIgnoreCase(service))
-                || ("MANAGER".equals(role) && SERVICE_DSIG.equalsIgnoreCase(service))) {
+                || ("MANAGER".equals(role) && serviceReseau(service))) {
             return new Perimetre(true, Set.of(), "RESEAU", user);
         }
         Set<String> codes;
