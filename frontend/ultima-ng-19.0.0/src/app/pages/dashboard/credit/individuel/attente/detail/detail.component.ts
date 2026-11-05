@@ -39,6 +39,7 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { MENTION_NOUVEAU_MEMBRE, estNouveauMembre, etiquetteScore, severiteScore } from '@/utils/score-confiance';
 import { switchMap, EMPTY } from 'rxjs';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Avis } from '@/interface/avis';
@@ -2707,6 +2708,27 @@ export class DetailComponent {
      */
     openInNewTab(route: string): void {
         window.open(route, '_blank');
+    }
+
+    // ==================== SCORE DE CONFIANCE (HISTORIQUE SAF) ====================
+    // Règles d'affichage partagées (@/utils/score-confiance) : mêmes seuils que la page
+    // d'analyse de crédit et la synthèse DE. Un membre sans historique n'est plus affiché
+    // en rouge comme un défaillant.
+
+    etiquetteScoreSaf(): string {
+        return etiquetteScore(this.state().histoSaf?.evaluation);
+    }
+
+    severiteScoreSaf(): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+        return severiteScore(this.state().histoSaf?.evaluation);
+    }
+
+    estNouveauMembreSaf(): boolean {
+        return estNouveauMembre(this.state().histoSaf?.evaluation);
+    }
+
+    mentionNouveauMembreSaf(): string {
+        return MENTION_NOUVEAU_MEMBRE;
     }
 
     // ==================== VALIDATION DA ====================

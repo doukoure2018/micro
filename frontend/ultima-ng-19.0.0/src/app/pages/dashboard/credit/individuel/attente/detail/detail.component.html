@@ -381,9 +381,9 @@
                 <span class="ml-auto flex items-center gap-3 text-sm">
                     <span>{{ state().histoSaf!.credits.length }} crédit(s)</span>
                     <p-tag *ngIf="state().histoSaf!.evaluation"
-                        [value]="'Score ' + state().histoSaf!.evaluation.scoreConfiance + '/100 — ' + state().histoSaf!.evaluation.niveauRisque"
-                        [severity]="state().histoSaf!.evaluation.scoreConfiance >= 70 ? 'success' :
-                                    state().histoSaf!.evaluation.scoreConfiance >= 40 ? 'warn' : 'danger'"></p-tag>
+                        [value]="etiquetteScoreSaf()"
+                        [severity]="severiteScoreSaf()"
+                        [pTooltip]="estNouveauMembreSaf() ? mentionNouveauMembreSaf() : ''"></p-tag>
                 </span>
             </div>
             <div class="p-6 overflow-x-auto">

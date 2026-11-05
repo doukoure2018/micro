@@ -24,6 +24,7 @@ import { DividerModule } from 'primeng/divider';
 import { InputIconModule } from 'primeng/inputicon';
 import { CreditoDTO } from '@/interface/credito.histo.model';
 import { CreditosClienteResponseDTO } from '@/interface/CreditosClienteResponseDTO';
+import { MENTION_NOUVEAU_MEMBRE, classeTexteScore, estNouveauMembre, libelleBase, libelleNiveau, valeurScore } from '@/utils/score-confiance';
 
 @Component({
     selector: 'app-analyse-credit',
@@ -283,55 +284,50 @@ export class AnalyseCreditComponent implements OnInit {
         return credits.filter((credit) => credit.indEstado === 'C').length;
     }
 
-    // UPDATED RISK ASSESSMENT - Now uses data from API
-    getRiskAssessment(): { level: string; score: number; factors: string[] } | null {
-        const evaluationRisque = this.state().histoCredits?.evaluationRisque;
+    // ÉVALUATION DE RISQUE — règles d'affichage partagées (@/utils/score-confiance) :
+    // mêmes seuils et mêmes couleurs que l'écran de détail et la synthèse DE.
+    getRiskAssessment(): { level: string; score: string; factors: string[]; nouveau: boolean } | null {
+        const evaluation = this.state().histoCredits?.evaluationRisque;
 
-        if (!evaluationRisque) {
+        if (!evaluation) {
             return null;
         }
 
-        // Convert API risk level to display format
-        let displayLevel = evaluationRisque.niveauRisque;
-
-        // Build factors array based on the evaluation
+        const nouveau = estNouveauMembre(evaluation);
         const factors: string[] = [];
-        factors.push(evaluationRisque.historiqueRemboursement);
 
-        if (evaluationRisque.echeancesAnalysees > 0) {
-            const respectRate = (evaluationRisque.echeancesRespectees / evaluationRisque.echeancesAnalysees) * 100;
-            if (respectRate < 50) {
-                factors.push(`Seulement ${respectRate.toFixed(0)}% des échéances respectées`);
+        if (nouveau) {
+            // Pas d'historique : on le dit, au lieu d'afficher un score de zéro.
+            factors.push(MENTION_NOUVEAU_MEMBRE);
+        } else {
+            factors.push(evaluation.historiqueRemboursement);
+
+            if (evaluation.echeancesAnalysees > 0) {
+                const respect = (evaluation.echeancesRespectees / evaluation.echeancesAnalysees) * 100;
+                factors.push(`${respect.toFixed(0)} % des échéances respectées (${evaluation.echeancesRespectees}/${evaluation.echeancesAnalysees})`);
+            }
+
+            if (evaluation.creditsAnalyses > 0) {
+                factors.push(`Analyse portant sur ${evaluation.creditsAnalyses} crédit(s)`);
+            }
+
+            const base = libelleBase(evaluation);
+            if (base) {
+                factors.push(base);
             }
         }
 
-        if (evaluationRisque.creditsAnalyses > 0) {
-            factors.push(`Analyse basée sur ${evaluationRisque.creditsAnalyses} crédit(s)`);
-        }
-
         return {
-            level: displayLevel,
-            score: evaluationRisque.scoreConfiance,
-            factors: factors
+            level: libelleNiveau(evaluation),
+            score: valeurScore(evaluation),
+            factors: factors,
+            nouveau: nouveau
         };
     }
 
-    // Get risk level color class
-    getRiskLevelColorClass(level: string): string {
-        switch (level) {
-            case 'TRÈS FAIBLE':
-                return 'text-green-600';
-            case 'FAIBLE':
-                return 'text-blue-600';
-            case 'MODÉRÉ':
-                return 'text-orange-600';
-            case 'ÉLEVÉ':
-                return 'text-orange-600';
-            case 'TRÈS ÉLEVÉ':
-                return 'text-red-600';
-            default:
-                return 'text-gray-600';
-        }
+    // Couleur du score et du niveau : une seule règle, celle du serveur.
+    getScoreTextClass(): string {
+        return classeTexteScore(this.state().histoCredits?.evaluationRisque);
     }
 
     // EXPORT FUNCTIONALITY

@@ -22,6 +22,7 @@ import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import { environment } from 'src/environments/environment';
 import { ResumeAnalyseFinanciereComponent } from '../resume-analyse-financiere/resume-analyse-financiere.component';
+import { MENTION_NOUVEAU_MEMBRE, classeTexteScore, estNouveauMembre, etiquetteScore, libelleNiveau, severiteScore, valeurScore } from '@/utils/score-confiance';
 
 /** Statut de chargement d'une donnée SAF (affichage toujours visible + message adapté). */
 type SafStatus = 'loading' | 'ok' | 'empty' | 'error';
@@ -586,12 +587,34 @@ export class SyntheseDeComponent implements OnInit {
         return this.state().histoCredits?.creditos || [];
     }
 
-    getScoreSeverity(): 'success' | 'info' | 'warn' | 'danger' {
-        const score = Number(this.getEvaluationRisque()?.scoreConfiance ?? 0);
-        if (score >= 90) return 'success';
-        if (score >= 75) return 'info';
-        if (score >= 60) return 'warn';
-        return 'danger';
+    // Affichage du score : règles partagées (@/utils/score-confiance), identiques à la
+    // page d'analyse de crédit et à l'écran de détail du dossier.
+    getScoreSeverity(): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+        return severiteScore(this.getEvaluationRisque());
+    }
+
+    getScoreTextClass(): string {
+        return classeTexteScore(this.getEvaluationRisque());
+    }
+
+    getScoreValeur(): string {
+        return valeurScore(this.getEvaluationRisque());
+    }
+
+    getScoreNiveau(): string {
+        return libelleNiveau(this.getEvaluationRisque());
+    }
+
+    getScoreEtiquette(): string {
+        return etiquetteScore(this.getEvaluationRisque());
+    }
+
+    estNouveauMembre(): boolean {
+        return estNouveauMembre(this.getEvaluationRisque());
+    }
+
+    mentionNouveauMembre(): string {
+        return MENTION_NOUVEAU_MEMBRE;
     }
 
     // Comparatif ancien / actuel (B4)

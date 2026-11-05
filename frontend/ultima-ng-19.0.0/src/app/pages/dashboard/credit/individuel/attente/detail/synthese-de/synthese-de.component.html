@@ -316,18 +316,16 @@
             <div class="flex flex-wrap gap-6 items-center mb-6 bg-gray-50 rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-xs text-gray-500 uppercase">Score de confiance</div>
-                    <div class="text-3xl font-extrabold"
-                         [class.text-green-600]="getScoreSeverity() === 'success'"
-                         [class.text-blue-600]="getScoreSeverity() === 'info'"
-                         [class.text-amber-500]="getScoreSeverity() === 'warn'"
-                         [class.text-red-600]="getScoreSeverity() === 'danger'">
-                        {{ risque.scoreConfiance }}%
+                    <div class="text-3xl font-extrabold" [ngClass]="getScoreTextClass()">
+                        {{ estNouveauMembre() ? '—' : getScoreValeur() + '/100' }}
                     </div>
                 </div>
                 <div>
                     <div class="text-xs text-gray-500 uppercase mb-1">Niveau de risque</div>
-                    <p-tag [value]="risque.niveauRisque" [severity]="getScoreSeverity()"></p-tag>
-                    <div class="text-xs text-gray-500 mt-1">Historique : {{ risque.historiqueRemboursement }}</div>
+                    <p-tag [value]="getScoreNiveau()" [severity]="getScoreSeverity()"></p-tag>
+                    <div class="text-xs text-gray-500 mt-1">
+                        @if (estNouveauMembre()) { {{ mentionNouveauMembre() }} } @else { Historique : {{ risque.historiqueRemboursement }} }
+                    </div>
                 </div>
                 <div class="text-sm text-gray-600 border-l border-gray-200 pl-6">
                     <div>Crédits analysés : <strong>{{ risque.creditsAnalyses }}</strong></div>
@@ -433,8 +431,8 @@
                     <tr>
                         <td class="py-2 px-4 text-gray-600 font-medium">Comportement de remboursement</td>
                         <td class="py-2 px-4 text-right">
-                            @if (getEvaluationRisque(); as r) {
-                                {{ r.historiqueRemboursement }} ({{ r.scoreConfiance }}%)
+                            @if (getEvaluationRisque()) {
+                                {{ getScoreEtiquette() }}
                             } @else { — }
                         </td>
                         <td class="py-2 px-4 text-right text-gray-400 italic">Nouvelle demande</td>
