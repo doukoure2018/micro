@@ -62,6 +62,14 @@ public class AgriMapper {
             dto.setDetailsMorale(new AgriculteurMoraleDto(
                     l.getRazonSocial(), l.getNomComercial(), l.getClaseSociedad()));
         }
+        // Toujours une liste, jamais null : un consommateur qui doit distinguer « aucune piece »
+        // de « champ absent » se trompera tot ou tard.
+        dto.setPiecesIdentite(src.getPiecesIdentite() == null ? java.util.List.of()
+                : src.getPiecesIdentite().stream()
+                        .map(pi -> new io.digiservices.agriculteurservice.dto.PieceIdentiteDto(
+                                pi.getCodeType(), pi.getType(), pi.getNumero(),
+                                pi.getDateExpiration(), pi.getExpiree()))
+                        .toList());
         return dto;
     }
 

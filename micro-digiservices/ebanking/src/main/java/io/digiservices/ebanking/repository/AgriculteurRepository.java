@@ -626,10 +626,45 @@ public class AgriculteurRepository {
                 () -> tertiary.query(SQL_FIND_FARMERS, p, FARMER_MAPPER));
     }
 
+    /**
+     * Les pieces d'identite d'un client. Un client peut en avoir plusieurs : carte et
+     * passeport, ou une ancienne carte jamais retiree. Elles sont rendues toutes, les valables
+     * d'abord, puis la plus recente — ainsi le premier element est celui qu'on veut citer, sans
+     * qu'aucune soit cachee.
+     *
+     * <p>{@code FEC_VENCIM} nulle signifie que SAF ne porte pas la date, pas que la piece est
+     * eternelle : ces pieces passent en dernier, et leur verdict reste indetermine.</p>
+     */
+    private static final String SQL_FIND_PIECES_IDENTITE = """
+            SELECT id.COD_TIPO_ID, ti.DES_TIPO_ID, id.NUM_ID, id.FEC_VENCIM
+            FROM CL.CL_ID_CLIENTES id
+            LEFT JOIN CL.CL_TIPOS_ID ti
+                ON id.COD_EMPRESA = ti.COD_EMPRESA AND id.COD_TIPO_ID = ti.COD_TIPO_ID
+            WHERE id.COD_CLIENTE = :codCliente
+            ORDER BY CASE WHEN id.FEC_VENCIM IS NULL THEN 2
+                          WHEN id.FEC_VENCIM >= CAST(GETDATE() AS DATE) THEN 0
+                          ELSE 1 END,
+                     id.FEC_VENCIM DESC
+            """;
+
+    public List<io.digiservices.clients.agri.PieceIdentiteDto> findPiecesIdentite(String codCliente) {
+        MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
+        return execute("findPiecesIdentite", () -> tertiary.query(SQL_FIND_PIECES_IDENTITE, p,
+                (rs, n) -> new io.digiservices.clients.agri.PieceIdentiteDto(
+                        str(rs, "COD_TIPO_ID"), str(rs, "DES_TIPO_ID"),
+                        str(rs, "NUM_ID"), dt(rs, "FEC_VENCIM"))));
+    }
+
     public FarmerDto findFarmerById(String codCliente) {
         MapSqlParameterSource p = new MapSqlParameterSource("codCliente", codCliente);
-        return execute("findFarmerById",
+        FarmerDto farmer = execute("findFarmerById",
                 () -> first(tertiary.query(SQL_FIND_FARMER_BY_ID, p, FARMER_MAPPER)));
+        if (farmer != null) {
+            // Seconde requete plutot qu'une jointure : un client a plusieurs pieces, et les
+            // joindre multiplierait la ligne de l'agriculteur — avec ses agregats de credits.
+            farmer.setPiecesIdentite(findPiecesIdentite(codCliente));
+        }
+        return farmer;
     }
 
     public List<AgriCreditDto> findAgriculturalCreditsByClient(String codCliente) {

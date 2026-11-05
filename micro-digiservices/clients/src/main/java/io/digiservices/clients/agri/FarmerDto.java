@@ -36,4 +36,10 @@ public class FarmerDto {
 
     private FarmerPhysicalDto physicalDetails;
     private FarmerLegalDto legalDetails;
+
+    /**
+     * Les pieces d'identite du client ({@code CL.CL_ID_CLIENTES}), valables d'abord.
+     * Vide quand SAF n'en porte aucune — ce qui est en soi une information.
+     */
+    private java.util.List<PieceIdentiteDto> piecesIdentite;
 }

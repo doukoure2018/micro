@@ -28,4 +28,10 @@ public class AgriculteurDto {
     private BigDecimal montantTotal;
     private AgriculteurPhysiqueDto detailsPhysique;
     private AgriculteurMoraleDto detailsMorale;
+
+    /**
+     * Les pieces d'identite du client, valables d'abord. Liste vide quand SAF n'en porte
+     * aucune — ce qui est en soi une information pour un dossier de connaissance client.
+     */
+    private java.util.List<PieceIdentiteDto> piecesIdentite;
 }
