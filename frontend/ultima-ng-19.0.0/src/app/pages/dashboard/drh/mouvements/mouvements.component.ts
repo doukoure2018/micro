@@ -49,7 +49,12 @@ interface BarreAffluence {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <input type="file" #fichier accept=".csv,text/csv" style="display:none" (change)="importer($event)" />
-                    <button pButton icon="pi pi-upload" label="Importer un journal access-log" *ngIf="!modeDepartement"
+                    @if (lectureSeule()) {
+                    <div class="text-sm p-2 mb-2 border-round w-full" style="background:#FFF4E5;color:#8A5A00">
+                        <i class="pi pi-eye mr-2"></i>Consultation : la saisie des mouvements relève de la DRH.
+                    </div>
+                    }
+                    <button pButton icon="pi pi-upload" label="Importer un journal access-log" *ngIf="!modeDepartement" [disabled]="lectureSeule()"
                             [loading]="importEnCours()" (click)="fichier.click()"></button>
                     <p-calendar [(ngModel)]="du" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Du" (onSelect)="charger()" />
                     <p-calendar [(ngModel)]="au" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Au" (onSelect)="charger()" />
@@ -467,10 +472,10 @@ interface BarreAffluence {
                                     </td>
                                     <td>
                                         <div class="flex gap-1">
-                                            <button pButton icon="pi pi-link" class="p-button-sm" label="Associer"
+                                            <button pButton icon="pi pi-link" class="p-button-sm" label="Associer" [disabled]="lectureSeule()"
                                                     [disabled]="!associations[b.badgeNo]"
                                                     (click)="associer(b.badgeNo)"></button>
-                                            <button pButton icon="pi pi-user-plus" class="p-button-sm p-button-outlined" label="Créer la personne"
+                                            <button pButton icon="pi pi-user-plus" class="p-button-sm p-button-outlined" label="Créer la personne" [disabled]="lectureSeule()"
                                                     pTooltip="Absent du fichier du personnel : créer avec un matricule technique et rattacher ce badge"
                                                     (click)="ouvrirCreationPersonne(b)"></button>
                                         </div>
@@ -486,7 +491,7 @@ interface BarreAffluence {
             <p class="m-0">{{ confirmation.message }}</p>
             <ng-template pTemplate="footer">
                 <button pButton label="Annuler" class="p-button-text" (click)="confirmation.visible = false"></button>
-                <button pButton label="Confirmer et forcer" class="p-button-danger" (click)="confirmerForcage()"></button>
+                <button pButton label="Confirmer et forcer" class="p-button-danger" [disabled]="lectureSeule()" (click)="confirmerForcage()"></button>
             </ng-template>
         </p-dialog>
         <p-dialog header="Créer la personne et rattacher le badge" [(visible)]="creationPersonne.visible" [modal]="true" [style]="{ width: '480px' }">
@@ -507,7 +512,7 @@ interface BarreAffluence {
                         </div>
                         <ng-template pTemplate="footer">
                             <button pButton label="Annuler" class="p-button-text" (click)="creationPersonne.visible = false"></button>
-                            <button pButton label="Créer et rattacher" icon="pi pi-user-plus"
+                            <button pButton label="Créer et rattacher" icon="pi pi-user-plus" [disabled]="lectureSeule()"
                                     [disabled]="!creationPersonne.nom.trim() || !creationPersonne.prenom.trim()"
                                     [loading]="creationPersonne.enCours" (click)="creerPersonne()"></button>
                         </ng-template>
@@ -541,12 +546,12 @@ interface BarreAffluence {
                                     </td>
                                     <td class="whitespace-nowrap">
                                         <ng-container *ngIf="c.coherent === false">
-                                            <button pButton icon="pi pi-user-plus" label="Créer la personne lue" class="p-button-sm p-button-outlined p-button-danger mr-1"
+                                            <button pButton icon="pi pi-user-plus" label="Créer la personne lue" [disabled]="lectureSeule()" class="p-button-sm p-button-outlined p-button-danger mr-1"
                                                     pTooltip="Crée la personne sous le nom lu à la porte (matricule technique) et lui transfère ce badge et tous ses passages"
                                                     (click)="ouvrirCreationPersonne({ badgeNo: c.badgeNo, nomBrut: c.nomBrut })"></button>
                                             <p-dropdown [options]="optionsPersonnel()" [(ngModel)]="associations[c.badgeNo]" placeholder="…ou choisir un salarié" [filter]="true"
                                                         optionLabel="label" optionValue="value" appendTo="body" [style]="{ minWidth: '14rem' }"></p-dropdown>
-                                            <button pButton icon="pi pi-link" label="Réassocier" class="p-button-sm p-button-danger ml-1" [disabled]="!associations[c.badgeNo]"
+                                            <button pButton icon="pi pi-link" label="Réassocier" class="p-button-sm p-button-danger ml-1" [disabled]="lectureSeule() || (!associations[c.badgeNo])"
                                                     pTooltip="Transfère ce badge et tous ses passages au salarié choisi"
                                                     (click)="associer(c.badgeNo)"></button>
                                         </ng-container>
@@ -570,6 +575,8 @@ export class MouvementsComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private activatedRoute = inject(ActivatedRoute);
 
+    /** Vrai quand le compte consulte sans pouvoir saisir : la DSIG (décision du 05/11/2026). */
+    lectureSeule = signal(false);
     mouvements = signal<any[]>([]);
     synthese = signal<any[]>([]);
     /** V158 : seuil de mouvements par jour, donné par le serveur (paramètre MOUVEMENT_SEUIL_MOUVEMENTS_JOUR). */
@@ -603,6 +610,24 @@ export class MouvementsComponent implements OnInit {
 
     /** Mode responsable (route mouvements-departement) : vues limitées, périmètre filtré côté serveur. */
     modeDepartement = false;
+
+    /**
+     * Le contexte DRH dit si ce compte consulte sans pouvoir saisir. Le serveur refuse de toute
+     * facon toute ecriture ; ceci evite seulement de laisser cliquer sur un bouton qui reviendra
+     * avec « Action reservee a la DRH ».
+     */
+    private lireDroits(): void {
+        this.drhService
+            .contexte$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    const c = (r.data as any)?.contexte;
+                    this.lectureSeule.set(!!(c?.fonctionsLecture || []).includes('MOUVEMENTS'));
+                },
+                error: () => {}
+            });
+    }
 
     // Référence STABLE (calculée une fois dans ngOnInit) : un getter renvoyant un nouveau
     // tableau à chaque cycle de détection ferait boucler le p-selectButton.
@@ -655,6 +680,7 @@ export class MouvementsComponent implements OnInit {
         this.personnel().map((p: any) => ({ label: `${p.prenom} ${p.nom} (${p.matricule})`, value: p.matricule })));
 
     ngOnInit(): void {
+        this.lireDroits();
         this.modeDepartement = !!this.activatedRoute.snapshot.data['modeDepartement'];
         const vues = [
             { label: 'Tableau de bord', value: 'tableau-bord' },

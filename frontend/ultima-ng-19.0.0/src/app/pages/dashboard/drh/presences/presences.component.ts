@@ -52,14 +52,19 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                         automatique avec le personnel, les congés et permissions validés.
                     </span>
                 </div>
+                @if (lectureSeule()) {
+                <div class="text-sm p-2 mb-2 border-round" style="background:#FFF4E5;color:#8A5A00">
+                    <i class="pi pi-eye mr-2"></i>Consultation : la correction des pointages relève de la DRH.
+                </div>
+                }
                 <div class="flex flex-wrap items-center gap-2">
                     <input type="file" #fichier accept=".csv,text/csv" style="display:none"
                            (change)="importer($event)" />
                     <button pButton icon="pi pi-upload" label="Importer un fichier badgeuse"
-                            [loading]="importEnCours()" (click)="fichier.click()"></button>
+                            [loading]="importEnCours()" [disabled]="lectureSeule()" (click)="fichier.click()"></button>
                     <button pButton icon="pi pi-refresh" label="Recalculer la période" class="p-button-outlined"
                             pTooltip="Repasse le rapprochement sur la période affichée (personnel badgé uniquement)"
-                            [loading]="recalculEnCours()" (click)="recalculer()"></button>
+                            [loading]="recalculEnCours()" [disabled]="lectureSeule()" (click)="recalculer()"></button>
                     <button pButton icon="pi pi-file-excel" label="Exporter Excel" class="p-button-outlined p-button-success"
                             pTooltip="Synthèse par jour, par semaine et détail par salarié de la période affichée"
                             [loading]="exportEnCours()" (click)="exporterExcel()"></button>
@@ -156,7 +161,7 @@ const STATUTS_PRESENCE: { [k: string]: StatutPresence } = {
                             <td><p-tag [value]="libelleMotif(d.motif)" [severity]="d.motif === 'OUBLI_BADGE' ? 'success' : 'info'" /></td>
                             <td>{{ d.commentaire || '—' }}</td>
                             <td class="text-sm text-color-secondary">{{ d.declareParNom }} · {{ d.createdAt | date: 'dd/MM HH:mm' }}</td>
-                            <td><button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm"
+                            <td><button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm" [disabled]="lectureSeule()"
                                         pTooltip="Retirer la déclaration" (click)="supprimerDeclaration(d)"></button></td>
                         </tr>
                     </ng-template>
@@ -258,6 +263,8 @@ export class PresencesComponent implements OnInit {
     private confirmationService = inject(ConfirmationService);
     private destroyRef = inject(DestroyRef);
 
+    /** Vrai quand le compte consulte sans pouvoir corriger : la DSIG (décision du 05/11/2026). */
+    lectureSeule = signal(false);
     synthese = signal<any[]>([]);
     declarations = signal<any[]>([]);
     exportEnCours = signal(false);
@@ -337,6 +344,25 @@ export class PresencesComponent implements OnInit {
 
     ngOnInit(): void {
         this.charger();
+        this.lireDroits();
+    }
+
+    /**
+     * Le contexte DRH dit si ce compte consulte sans pouvoir corriger. Le serveur refuse de
+     * toute facon toute ecriture ; ceci evite seulement de laisser cliquer sur un bouton qui
+     * reviendra avec « Action reservee a la DRH ».
+     */
+    private lireDroits(): void {
+        this.drhService
+            .contexte$()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r) => {
+                    const c = (r.data as any)?.contexte;
+                    this.lectureSeule.set(!!(c?.fonctionsLecture || []).includes('PRESENCES'));
+                },
+                error: () => {}
+            });
     }
 
     private toIso(d: Date): string {

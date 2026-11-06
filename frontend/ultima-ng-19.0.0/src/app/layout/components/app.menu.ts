@@ -41,6 +41,8 @@ export class AppMenu {
     private estHabiliteDrh = false;
     /** V154 : fonctions déléguées (VALIDATION_CONGES, PRESENCES…) et habilitation DGA. */
     private fonctionsDrh: string[] = [];
+    /** Fonctions consultables sans droit d'écriture : la DSIG sur les présences et mouvements. */
+    private fonctionsLectureDrh: string[] = [];
     private estDgaDrh = false;
     private contexteDrhCharge = false;
 
@@ -127,7 +129,9 @@ export class AppMenu {
             .subscribe({
                 next: (response) => {
                     const contexte = (response.data as any)?.contexte;
-                    if (contexte?.estResponsable || contexte?.estDrh || contexte?.estDelegue || contexte?.estDga) {
+                    this.fonctionsLectureDrh = contexte?.fonctionsLecture || [];
+                    if (contexte?.estResponsable || contexte?.estDrh || contexte?.estDelegue || contexte?.estDga
+                        || this.fonctionsLectureDrh.length) {
                         this.estResponsableDrh = !!contexte?.estResponsable;
                         this.estHabiliteDrh = !!contexte?.estDrh;
                         this.fonctionsDrh = contexte?.fonctions || [];
@@ -776,7 +780,12 @@ export class AppMenu {
         // service DRH) = tout le menu ; un délégué ne voit que les rubriques de ses fonctions ; le DGA
         // voit les validations, présences et mouvements.
         const admin = this.estHabiliteDrh || this.estManager('DRH');
-        const a = (f: string) => admin || this.fonctionsDrh.includes(f) || (this.estDgaDrh && ['VALIDATION_CONGES', 'VALIDATION_PREVISIONS', 'PRESENCES', 'MOUVEMENTS'].includes(f));
+        // `fonctionsLectureDrh` ouvre la rubrique sans ouvrir l'écriture : l'écran s'en charge.
+        const a = (f: string) =>
+            admin ||
+            this.fonctionsDrh.includes(f) ||
+            this.fonctionsLectureDrh.includes(f) ||
+            (this.estDgaDrh && ['VALIDATION_CONGES', 'VALIDATION_PREVISIONS', 'PRESENCES', 'MOUVEMENTS'].includes(f));
         const rubriques: MenuItem[] = [];
         if (this.role === 'SUPER_ADMIN') {
             // Le SUPER_ADMIN ne fait que configurer l'organisation ; l'opérationnel reste à la DRH
@@ -880,6 +889,11 @@ export class AppMenu {
                     label: 'Répertoires SMS',
                     icon: 'pi pi-fw pi-database',
                     routerLink: ['/dashboards/repertoires-sms']
+                },
+                {
+                    label: 'Désinscriptions SMS',
+                    icon: 'pi pi-fw pi-ban',
+                    routerLink: ['/dashboards/desinscriptions-sms']
                 },
                 {
                     label: 'Actualiser décodeur',
