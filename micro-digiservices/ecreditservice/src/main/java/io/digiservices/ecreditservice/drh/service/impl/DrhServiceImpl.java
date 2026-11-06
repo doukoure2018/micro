@@ -60,7 +60,16 @@ public class DrhServiceImpl implements DrhService {
     public ContexteDrhDto contexteDe(User user) {
         var membre = drhRepository.membreActifDeUser(user.getUserId());
         List<String> fonctions = drhRepository.fonctionsDelegueesDe(user.getUserId());
+        // Ce que l'utilisateur peut VOIR sans pouvoir ecrire. L'ecran s'en sert pour afficher la
+        // rubrique et desactiver les actions, plutot que de laisser cliquer sur un bouton qui
+        // reviendra avec « Action reservee a la DRH ».
+        List<String> fonctionsLecture = estDrh(user) ? List.of()
+                : FONCTIONS_LECTURE_DSIG.stream()
+                        .filter(f -> aHabilitationLecture(user, f) && !aHabilitation(user, f))
+                        .sorted()
+                        .toList();
         return ContexteDrhDto.builder()
+                .fonctionsLecture(fonctionsLecture)
                 .estMembre(membre.isPresent())
                 .estResponsable(membre.map(MembreDto::getEstResponsable).orElse(false))
                 .estDrh(estDrh(user))
@@ -373,6 +382,27 @@ public class DrhServiceImpl implements DrhService {
     /** Habilitation DRH : rôle DRH ou SUPER_ADMIN, OU RESPONSABLE du département DRH
      *  (case Responsable cochée dans l'écran Organisation). Il cumule alors les deux
      *  casquettes : responsable de sa direction + validation finale DRH. */
+    /**
+     * Les fonctions DRH que la DSIG peut CONSULTER sans jamais ecrire (decision du 05/11/2026).
+     *
+     * <p>Les pointages et les mouvements du personnel servent aussi a comprendre la plateforme :
+     * qui etait present le jour ou une saisie fautive est partie, quel agent a ete mute pendant
+     * qu'un dossier dormait. La DSIG en a besoin pour instruire ces questions.</p>
+     *
+     * <p>En LECTURE seulement : ce sont des donnees de paie et de carriere, et toute correction
+     * engage la responsabilite de la DRH. {@code aHabilitation}, qui commande l'ecriture, reste
+     * fermee — c'est la meme separation que pour le service Audit sur les ecrans de credit.</p>
+     */
+    private static final Set<String> FONCTIONS_LECTURE_DSIG = Set.of(F_PRESENCES, F_MOUVEMENTS);
+
+    /** Le service qui exploite la plateforme. */
+    private static final String SERVICE_DSIG = "DSIG";
+
+    private boolean estDsig(User user) {
+        return user != null && user.getService() != null
+                && SERVICE_DSIG.equalsIgnoreCase(user.getService().trim());
+    }
+
     private boolean estDrh(User user) {
         return ROLE_DRH.equals(user.getRole()) || ROLE_SUPER_ADMIN.equals(user.getRole())
                 || ("MANAGER".equals(user.getRole()) && "DRH".equalsIgnoreCase(user.getService()))
@@ -396,6 +426,8 @@ public class DrhServiceImpl implements DrhService {
     @Override
     public boolean aHabilitationLecture(User user, String fonction) {
         if (aHabilitation(user, fonction)) return true;
+        // La DSIG consulte les pointages et les mouvements, sans jamais les modifier.
+        if (estDsig(user) && FONCTIONS_LECTURE_DSIG.contains(fonction)) return true;
         List<String> f = drhRepository.fonctionsDelegueesDe(user.getUserId());
         return f.contains(F_VALIDATION_FINALE) && DGA_LECTURE.contains(fonction);
     }

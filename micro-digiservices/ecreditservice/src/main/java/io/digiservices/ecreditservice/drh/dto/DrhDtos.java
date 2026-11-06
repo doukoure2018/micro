@@ -141,6 +141,11 @@ public final class DrhDtos {
         private boolean estDrh;
         /** V154 : fonctions déléguées actives (VALIDATION_CONGES, PRESENCES…) ; VALIDATION_FINALE = DGA. */
         private List<String> fonctions;
+        /**
+         * V203bis : fonctions consultables SANS droit d'ecriture — la DSIG sur les presences et
+         * les mouvements. L'ecran affiche la rubrique et desactive les actions.
+         */
+        private List<String> fonctionsLecture;
         private boolean estDga;
         private boolean estDelegue;
         private Long departementId;
