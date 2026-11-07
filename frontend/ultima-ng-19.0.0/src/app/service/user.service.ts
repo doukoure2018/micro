@@ -25,6 +25,21 @@ import { PersonnePhysique } from '@/interface/personnePhysique';
 import { ArreteCaisse } from '@/interface/arrete-caisse';
 
 /** Filtres de l'etat TT1 (echeances de la periode). */
+/**
+ * Filtres de l'ecran « Credits octroyes ». Les trois identifiants sont ceux de la descente
+ * delegation → agence → point de service ; le serveur les verifie contre le perimetre du
+ * compte, ils ne font donc que RESSERRER ce que l'on a deja le droit de voir.
+ */
+export interface FiltresCreditsOctroyes {
+    niveau?: string;
+    delegationId?: number | null;
+    agenceId?: number | null;
+    posId?: number | null;
+    du?: string | null;
+    au?: string | null;
+    recherche?: string | null;
+}
+
 export interface FiltresTT1 {
     du: string;
     au: string;
@@ -1760,6 +1775,56 @@ export class UserService {
 
     // TT1 (lots 1-2) : echeances de la periode sur le perimetre de l'utilisateur.
     // codAgencia = un point de service precis ; agenceId / delegationId = descente depuis la synthese ; sinon tout le perimetre.
+    // ==================== Credits octroyes (DA / DR / directions) ====================
+
+    private paramsCreditsOctroyes(f: FiltresCreditsOctroyes): { [k: string]: string | number } {
+        const p: { [k: string]: string | number } = {};
+        if (f.niveau) p['niveau'] = f.niveau;
+        if (f.delegationId) p['delegationId'] = f.delegationId;
+        if (f.agenceId) p['agenceId'] = f.agenceId;
+        if (f.posId) p['posId'] = f.posId;
+        if (f.du) p['du'] = f.du;
+        if (f.au) p['au'] = f.au;
+        if (f.recherche) p['recherche'] = f.recherche;
+        return p;
+    }
+
+    getCreditsOctroyesSynthese$ = (f: FiltresCreditsOctroyes) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/credits-octroyes/synthese`, { params: this.paramsCreditsOctroyes(f) })
+                .pipe(catchError(this.handleError))
+        );
+
+    getCreditsOctroyes$ = (f: FiltresCreditsOctroyes, page: number, size: number) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/credits-octroyes`, { params: { ...this.paramsCreditsOctroyes(f), page, size } })
+                .pipe(catchError(this.handleError))
+        );
+
+    /** Le rapprochement avec SAF : seul appel de cet ecran qui lit la base bancaire. */
+    getCreditsOctroyesSituation$ = (f: FiltresCreditsOctroyes) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/credits-octroyes/situation`, { params: this.paramsCreditsOctroyes(f) })
+                .pipe(catchError(this.handleError))
+        );
+
+    getCreditOctroyeSituationFinanciere$ = (demandeIndividuelId: number) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/credits-octroyes/${demandeIndividuelId}/situation-financiere`)
+                .pipe(catchError(this.handleError))
+        );
+
+    getCreditOctroyeMouvements$ = (demandeIndividuelId: number, numCuenta: string, limite = 5) =>
+        <Observable<IResponse>>(
+            this.http
+                .get<IResponse>(`${this.server}/ecredit/credits-octroyes/${demandeIndividuelId}/comptes/${numCuenta}/mouvements`, { params: { limite } })
+                .pipe(catchError(this.handleError))
+        );
+
     private paramsTT1(f: FiltresTT1): { [k: string]: string | number } {
         const p: { [k: string]: string | number } = { du: f.du, au: f.au, etat: f.etat };
         if (f.codAgencia) p['codAgencia'] = f.codAgencia;

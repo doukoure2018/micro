@@ -52,7 +52,7 @@ public class CreditsOctroyesResource {
             HttpServletRequest request) {
         var synthese = service.synthese(authentication.getName(), niveau,
                 delegationId, agenceId, posId, du, au, recherche);
-        return ResponseEntity.ok(getResponse(request, Map.of("synthese", synthese),
+        return ResponseEntity.ok(getResponse(request, Map.of("syntheseOctrois", synthese),
                 "Synthese des credits octroyes", OK));
     }
 

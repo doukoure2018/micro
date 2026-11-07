@@ -452,6 +452,19 @@ export class AppMenu {
                 routerLink: ['/dashboards/inspection-credits']
             });
         }
+        // Credits octroyes (07/11/2026) : la situation d'ensemble de ce qui a ete accorde, par
+        // delegation, agence et point de service. Meme population que le perimetre serveur : le
+        // DA son agence, le DR sa delegation, les directions du siege tout le reseau. Une seule
+        // entree pour les trois, l'ecran s'adaptant au niveau que le profil peut voir.
+        if (['DA', 'RA', 'DR', 'DG', 'SUPER_ADMIN'].includes(this.role || '')
+            || this.estManager('DE') || this.estManager('DSIG') || this.estManager('DI')
+            || this.estManager('DF') || this.estManager('Audit')) {
+            items.push({
+                label: 'Crédits octroyés',
+                icon: 'pi pi-fw pi-verified',
+                routerLink: ['/dashboards/credits-octroyes']
+            });
+        }
         if (['AGENT_CREDIT', 'DA', 'DR', 'DG'].includes(this.role || '') || this.estManager('DE') || this.peut('AUDIT_PORTEFEUILLE')) {
             items.push({
                 label: 'Portefeuille crédits SAF',

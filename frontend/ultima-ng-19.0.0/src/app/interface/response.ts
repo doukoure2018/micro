@@ -333,6 +333,21 @@ export interface IResponse {
         /** Score de confiance : membres passes dans une classe moins bonne (lot 3). */
         derive?: { mois: string | null; degradations: any[] };
         photo?: { mois: string; membres: number; enregistres: number; erreurs: number; message: string };
+        /**
+         * Crédits octroyés : synthèse du niveau affiché. Nom propre à cet écran — « synthese »
+         * est déjà pris par l'état TT1, qui y met un tableau.
+         */
+        syntheseOctrois?: {
+            niveau: string;
+            niveaux: string[];
+            lignes: any[];
+            nombreTotal: number;
+            montantTotal: number;
+        };
+        /** Crédits octroyés : les totaux du rapprochement avec SAF. */
+        totaux?: any;
+        /** Derniers mouvements d'un compte SAF (Production et Middleware côte à côte). */
+        transactions?: any;
         /** Test retrospectif : vrai tant que le travail de fond tourne. */
         enCours?: boolean;
         /** Avancee lisible du test de fond (« 127 membre(s) analyse(s) sur 300 au plus »). */

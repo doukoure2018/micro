@@ -69,6 +69,14 @@ export default [
         loadComponent: () => import('./admin/reseau/suivi-credits-reseau/suivi-credits-reseau.component').then((c) => c.SuiviCreditsReseauComponent)
     },
     {
+        // Les credits deja octroyes : synthese delegation -> agence -> point de service, puis
+        // la situation de chaque dossier dans SAF. Le perimetre est impose par le serveur
+        // depuis le compte connecte, pas par l'ecran.
+        path: 'credits-octroyes',
+        data: { breadcrumb: 'Crédits octroyés' },
+        loadComponent: () => import('./reseau/credits-octroyes/credits-octroyes.component').then((c) => c.CreditsOctroyesComponent)
+    },
+    {
         path: 'credits-a-valider-dg',
         data: { breadcrumb: 'Crédits à valider (DG)' },
         loadComponent: () => import('./admin/dg/credits-a-valider-dg/credits-a-valider-dg.component').then((c) => c.CreditsAValiderDgComponent)
