@@ -34,6 +34,9 @@ public class PortefeuilleController {
 
     private static final int MAX_PAGE_SIZE = 100;
 
+    /** Membres acceptes en un seul appel de /credits-des-membres. */
+    private static final int MEMBRES_MAX = 500;
+
     private final PortefeuilleRepository repository;
     private final io.digiservices.ebanking.service.SafSanteProbe santeProbe;
 
@@ -229,6 +232,26 @@ public class PortefeuilleController {
             @PathVariable("numCredito") Long numCredito,
             @RequestParam(name = "max", defaultValue = "2000") int max) {
         return ResponseEntity.ok(repository.dossierCredit(codAgencia, numCredito, Math.min(Math.max(max, 1), 5000)));
+    }
+
+    /**
+     * Les credits SAF d'une liste de membres : la situation des dossiers que digi a fait
+     * valider. Lu dans la sauvegarde (le depot force la cible), car on rapproche une
+     * delegation entiere et non une operation du matin.
+     *
+     * <p>Le paquet est plafonne : la liste voyage dans l'adresse de la requete, et une adresse
+     * de 24 000 caracteres serait refusee par le serveur sans que l'appelant sache pourquoi.
+     * C'est a ecreditservice de decouper, et ce plafond est la pour qu'il le fasse.</p>
+     */
+    @GetMapping("/credits-des-membres")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.CreditMembreSafDto>> getCreditsDesMembres(
+            @RequestParam(name = "membres") List<String> membres) {
+        if (membres.size() > MEMBRES_MAX) {
+            throw new BlogAPIException(HttpStatus.BAD_REQUEST,
+                    "Trop de membres en un appel (" + membres.size() + ") : decoupez par paquets de "
+                            + MEMBRES_MAX);
+        }
+        return ResponseEntity.ok(repository.findCreditsDesMembres(membres));
     }
 
     @GetMapping("/credits-negatifs")

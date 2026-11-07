@@ -1,6 +1,7 @@
 package io.digiservices.ebanking.repository;
 
 import io.digiservices.clients.portefeuille.AgenceSafDto;
+import io.digiservices.clients.portefeuille.CreditMembreSafDto;
 import io.digiservices.clients.portefeuille.EcheancePeriodeDto;
 import io.digiservices.clients.portefeuille.EcheancesIndicateursDto;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
@@ -23,6 +24,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -971,6 +973,100 @@ public class PortefeuilleRepository {
     private static String texte(Object v) {
         return v == null ? null : String.valueOf(v).trim();
     }
+
+    // ==================== credits octroyes par digi : leur situation dans SAF ====================
+
+    /**
+     * Les credits SAF des membres dont digi a fait valider un dossier.
+     *
+     * <p>Pas de filtre d'agence : un credit mis en place dans un autre point de service — le
+     * membre a demenage, l'agence a ete scindee — resterait introuvable et le dossier passerait
+     * pour « jamais mis en place ». {@code PR_CREDITOS} compte 45 000 lignes pour tout le
+     * reseau : la chercher par membre ne coute rien, et se tromper de reponse coute cher.</p>
+     *
+     * <p>Tous les etats sont rendus, y compris les credits clos : la question est l'issue du
+     * credit accorde, et un credit rembourse est une issue.</p>
+     *
+     * <p>Une seule passe sur le plan de paiement par credit ({@code OUTER APPLY}), contre dix
+     * sous-requetes correlees dans la requete du portefeuille : ici on rapproche des milliers
+     * de credits d'un coup, pas une page de vingt.</p>
+     */
+    private static final String SQL_CREDITS_DES_MEMBRES = """
+            SELECT cr.COD_AGENCIA, ag.DES_AGENCIA, cr.NUM_CREDITO, cr.COD_CLIENTE, cl.NOM_CLIENTE,
+                   cr.TIP_CREDITO, tc.DES_TIP_CREDITO, cr.IND_ESTADO,
+                   cr.MON_CREDITO, cr.MON_SALDO, cr.FEC_APERTURA, cr.FEC_VENCIMIENTO,
+                   imp.DAT_PREM_IMP, imp.MNT_CAP_IMP, imp.MNT_INT_IMP
+            FROM PR.PR_CREDITOS cr
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = cr.COD_EMPRESA AND cl.COD_CLIENTE = cr.COD_CLIENTE
+            LEFT JOIN PR.PR_TIPO_CREDITO tc
+                ON tc.COD_EMPRESA = cr.COD_EMPRESA AND tc.TIP_CREDITO = cr.TIP_CREDITO
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = cr.COD_EMPRESA AND ag.COD_AGENCIA = cr.COD_AGENCIA
+            OUTER APPLY (
+                SELECT MIN(pp.FEC_CUOTA)      AS DAT_PREM_IMP,
+                       SUM(pp.SAL_PRINCIPAL)  AS MNT_CAP_IMP,
+                       SUM(pp.SAL_INT)        AS MNT_INT_IMP
+                FROM PR.PR_PLAN_PAGOS pp
+                WHERE pp.COD_EMPRESA = cr.COD_EMPRESA AND pp.COD_AGENCIA = cr.COD_AGENCIA
+                  AND pp.NUM_CREDITO = cr.NUM_CREDITO AND pp.NUM_CUOTA <> 0
+                  AND pp.FEC_CANCELACION IS NULL AND pp.FEC_CUOTA < :aujourdhui
+            ) imp
+            WHERE cr.COD_EMPRESA = '00000'
+              AND cr.COD_CLIENTE IN (:membres)
+            ORDER BY cr.COD_CLIENTE, cr.FEC_APERTURA, cr.NUM_CREDITO
+            """;
+
+    /**
+     * Taille d'un paquet de membres. SQL Server refuse au-dela de 2 100 parametres dans une
+     * requete : decouper ici evite que le rapprochement d'une grande delegation echoue d'un
+     * coup, avec un message que personne ne rattacherait a sa cause.
+     */
+    private static final int MEMBRES_PAR_PAQUET = 500;
+
+    public List<CreditMembreSafDto> findCreditsDesMembres(List<String> membres) {
+        if (membres == null || membres.isEmpty()) {
+            return List.of();
+        }
+        List<String> propres = membres.stream()
+                .filter(m -> m != null && !m.isBlank())
+                .map(String::trim).distinct().toList();
+        if (propres.isEmpty()) {
+            return List.of();
+        }
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.SAUVEGARDE);
+        try {
+            List<CreditMembreSafDto> tous = new ArrayList<>();
+            for (int i = 0; i < propres.size(); i += MEMBRES_PAR_PAQUET) {
+                List<String> paquet = propres.subList(i, Math.min(i + MEMBRES_PAR_PAQUET, propres.size()));
+                MapSqlParameterSource p = new MapSqlParameterSource()
+                        .addValue("membres", paquet)
+                        .addValue("aujourdhui", java.sql.Date.valueOf(LocalDate.now()));
+                tous.addAll(execute("portefeuille.creditsDesMembres",
+                        () -> primary.query(SQL_CREDITS_DES_MEMBRES, p, CREDIT_MEMBRE_MAPPER)));
+            }
+            return tous;
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
+    private static final RowMapper<CreditMembreSafDto> CREDIT_MEMBRE_MAPPER = (rs, n) ->
+            new CreditMembreSafDto(
+                    str(rs, "COD_AGENCIA"), str(rs, "DES_AGENCIA"),
+                    rs.getLong("NUM_CREDITO"), str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                    entier(rs, "TIP_CREDITO"), str(rs, "DES_TIP_CREDITO"), str(rs, "IND_ESTADO"),
+                    rs.getBigDecimal("MON_CREDITO"), rs.getBigDecimal("MON_SALDO"),
+                    dt(rs, "FEC_APERTURA"), dt(rs, "FEC_VENCIMIENTO"),
+                    dt(rs, "DAT_PREM_IMP"),
+                    rs.getBigDecimal("MNT_CAP_IMP"), rs.getBigDecimal("MNT_INT_IMP"));
 
     private <R> R execute(String op, Supplier<R> action) {
         long start = System.currentTimeMillis();

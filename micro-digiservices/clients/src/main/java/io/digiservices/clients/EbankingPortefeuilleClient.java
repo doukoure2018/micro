@@ -39,6 +39,14 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/credits-complets")
     List<PortefeuilleCreditDto> getTousCredits(@RequestParam(value = "codAgencia") String codAgencia);
 
+    /**
+     * Les credits SAF d'un paquet de membres (au plus 500 par appel : la liste voyage dans
+     * l'adresse). Sert a la situation des credits octroyes par digi.
+     */
+    @GetMapping("/ebanking/portefeuille/credits-des-membres")
+    List<io.digiservices.clients.portefeuille.CreditMembreSafDto> getCreditsDesMembres(
+            @RequestParam(value = "membres") List<String> membres);
+
     /** Tout le reseau par agence SAF et par type de credit, credits en cours (portefeuille a risque, lot 2). */
     @GetMapping("/ebanking/portefeuille/indicateurs-reseau-produit")
     List<io.digiservices.clients.portefeuille.IndicateursProduitAgenceDto> getIndicateursReseauParProduit();
