@@ -268,7 +268,7 @@ interface Totaux {
                     </span>
                 </div>
 
-                <p-selectButton [options]="vueSituationOptions" [(ngModel)]="vueSituation" optionLabel="label" optionValue="value" class="block mb-3"></p-selectButton>
+                <p-selectButton [options]="vueSituationOptions" [ngModel]="vueSituation()" (ngModelChange)="vueSituation.set($event)" optionLabel="label" optionValue="value" class="block mb-3"></p-selectButton>
 
                 <p-table [value]="dossiersAffiches()" styleClass="p-datatable-sm" [paginator]="dossiersAffiches().length > 25" [rows]="25" [globalFilterFields]="['dossier.nom', 'dossier.prenom', 'dossier.numeroMembre']">
                     <ng-template pTemplate="header">
@@ -316,7 +316,7 @@ interface Totaux {
                     <ng-template pTemplate="emptymessage">
                         <tr>
                             <td colspan="10" class="text-center text-gray-500 py-4">
-                                {{ vueSituation === 'exceptions' ? 'Tous les octrois de ce périmètre sont en place dans SAF.' : 'Aucun dossier.' }}
+                                {{ vueSituation() === 'exceptions' ? 'Tous les octrois de ce périmètre sont en place dans SAF.' : 'Aucun dossier.' }}
                             </td>
                         </tr>
                     </ng-template>
@@ -410,7 +410,12 @@ export class CreditsOctroyesComponent implements OnInit {
         totaux: null
     });
 
-    vueSituation: 'exceptions' | 'tous' = 'exceptions';
+    /**
+     * Signal, et non simple champ : « dossiersAffiches » est un computed, et un computed ne
+     * suit que des signaux. En champ ordinaire, basculer « Tous les dossiers » n'aurait rien
+     * rafraichi — le tableau serait reste sur les exceptions sans rien dire.
+     */
+    vueSituation = signal<'exceptions' | 'tous'>('exceptions');
     readonly vueSituationOptions = [
         { label: 'Ce qui cloche', value: 'exceptions' },
         { label: 'Tous les dossiers', value: 'tous' }
@@ -546,7 +551,7 @@ export class CreditsOctroyesComponent implements OnInit {
      */
     dossiersAffiches = computed(() => {
         const tous = this.situation().dossiers;
-        return this.vueSituation === 'tous' ? tous : tous.filter((d) => d.etatCode !== 'EN_PLACE' || d.credit?.enRetard);
+        return this.vueSituation() === 'tous' ? tous : tous.filter((d) => d.etatCode !== 'EN_PLACE' || d.credit?.enRetard);
     });
 
     severiteEtat(s: SituationDossier): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
