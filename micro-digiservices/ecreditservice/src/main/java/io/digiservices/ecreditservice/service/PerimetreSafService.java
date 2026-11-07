@@ -68,7 +68,11 @@ public class PerimetreSafService {
     private static final Set<String> SERVICES_RESEAU =
             Set.of("DE", SERVICE_AUDIT, SERVICE_DSIG, SERVICE_INSPECTION, SERVICE_DF);
 
-    private static boolean serviceReseau(String service) {
+    /**
+     * Rendue publique le 07/11/2026 : la coupure de 10 h du rapprochement de caisse a besoin de
+     * la MEME liste pour savoir qui controle sans produire. Deux listes finissent par diverger.
+     */
+    public static boolean serviceReseau(String service) {
         if (service == null) {
             return false;
         }

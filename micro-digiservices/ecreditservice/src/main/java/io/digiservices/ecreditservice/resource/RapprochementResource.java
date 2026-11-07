@@ -87,7 +87,12 @@ public class RapprochementResource {
             @RequestParam(value = "dateFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin,
             HttpServletRequest request)
     {
-        if (!cutoffService.isSubmissionAllowed()) {
+        // L'heure ferme l'ecran d'audit a tous, SAUF aux services qui controlent le reseau sans
+        // tenir de caisse (DSIG, Audit, inspection, Direction financiere, Direction de
+        // l'exploitation, DG). Le compte n'est resolu que lorsque l'heure est passee : avant
+        // 10 h 15 la question ne se pose pas, et l'appel au userservice est economise.
+        if (!cutoffService.isSubmissionAllowed()
+                && !cutoffService.exempteDeCoupure(userClient.getUserByUuid(authentication.getName()))) {
             return ResponseEntity.status(FORBIDDEN)
                     .body(getResponse(request, Map.of("error", "RAPPROCHEMENT_CLOSED"), cutoffService.getClosedMessage(), FORBIDDEN));
         }
