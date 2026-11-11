@@ -132,6 +132,14 @@ public interface EbankingClient {
     @GetMapping(path = "/ebanking/ecredit/sector")
     List<Map<String, Object>> getSecteursEconomiques();
 
+    /**
+     * Districts d'un canton. La cle d'un district est composite (pays + province + canton +
+     * district) : un code seul ne veut rien dire, il n'est valide qu'a l'interieur de son canton.
+     */
+    @GetMapping(path = "/ebanking/ecredit/{codCanton}/{codProvincia}/getListDistrict")
+    List<Map<String, Object>> getDistrictsParCanton(@PathVariable(name = "codCanton") String codCanton,
+                                                    @PathVariable(name = "codProvincia") String codProvincia);
+
     @GetMapping(path = "/ebanking/fiche-signaletique-solde/{codCliente}")
     ResponseEntity<?> getFicheSignaletiqueWithSolde(@PathVariable(name = "codCliente") String codCliente);
 

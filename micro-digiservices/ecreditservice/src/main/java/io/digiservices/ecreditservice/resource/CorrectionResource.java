@@ -369,6 +369,13 @@ public class CorrectionResource {
                         .body(getResponse(request, Map.of("error", refusSecteur), refusSecteur, BAD_REQUEST));
             }
 
+            String refusDistrict = controlerDistrictContreSaf(updateFicheSignaletiqueDTO, avertissements);
+            if (refusDistrict != null) {
+                log.warn("Correction PP {} refusée avant SAF : {}", updateFicheSignaletiqueDTO.getCodCliente(), refusDistrict);
+                return ResponseEntity.badRequest()
+                        .body(getResponse(request, Map.of("error", refusDistrict), refusDistrict, BAD_REQUEST));
+            }
+
             // Call the ebanking service to update SAF ; si SAF refuse un code de référence (clé étrangère),
             // on reprend la valeur SAF actuelle de ce champ et on rejoue une fois (voir mettreAJourSafAvecReprise).
             Map<String, Object> result = mettreAJourSafAvecReprise(updateFicheSignaletiqueDTO, avertissements);
@@ -527,6 +534,70 @@ public class CorrectionResource {
         }
     }
 
+    /**
+     * LA regle, ecrite une seule fois : un code de reference absent du referentiel SAF bloque la
+     * validation, et il y a deux cas tres differents a distinguer.
+     *
+     * <p>Quatre fois en deux mois le meme defaut est remonte sur un champ different — secteur vide
+     * le 15/09, activite 198 le 20/10, secteur 107 le 11/11, district 398 le 11/11 — et trois fois
+     * il a ete corrige par recopie. Cette methode porte la regle ; les appelants ne fournissent que
+     * le referentiel du champ et son code de remplacement.</p>
+     *
+     * <p>Regle : un code absent du referentiel ET egal a la valeur SAF actuelle est HERITE, l'agent
+     * n'y est pour rien et ne peut rien y faire depuis l'ecran de validation ; il est remplace et
+     * l'agent est averti. Un code absent que l'agent a lui-meme saisi est refuse, avec la liste des
+     * valeurs valides. Referentiel injoignable : on laisse passer, SAF tranchera comme avant.</p>
+     *
+     * @param remplacement code de substitution, ou {@code null} quand il n'y en a pas de legitime :
+     *                     le code herite est alors refuse comme un autre, mais avec la liste utile.
+     * @return le message de refus, ou {@code null} si la fiche peut partir vers SAF.
+     */
+    static String controlerCodeContreSaf(String libelle,
+                                         String code,
+                                         List<Map.Entry<String, String>> valides,
+                                         String cleSaf,
+                                         String remplacement,
+                                         java.util.function.Consumer<String> ecrire,
+                                         Map<String, Object> ficheSaf,
+                                         String codCliente,
+                                         List<String> avertissements) {
+        if (code == null || code.isBlank()) {
+            return null; // deja repris depuis SAF par completerCodesReferenceDepuisSaf
+        }
+        String propre = code.trim();
+        if (valides == null || valides.isEmpty()
+                || valides.stream().anyMatch(v -> v.getKey().equals(propre))) {
+            return null;
+        }
+
+        String liste = valides.stream().map(v -> v.getKey() + " " + v.getValue())
+                .collect(java.util.stream.Collectors.joining(", "));
+
+        Object actuelSaf = ficheSaf == null ? null : ficheSaf.get(cleSaf);
+        boolean herite = actuelSaf != null && String.valueOf(actuelSaf).trim().equals(propre);
+        boolean remplacable = remplacement != null
+                && valides.stream().anyMatch(v -> v.getKey().equals(remplacement));
+
+        if (herite && remplacable) {
+            ecrire.accept(remplacement);
+            String avertissement = libelle + " '" + propre + "' porte par la fiche SAF n'existe pas dans le "
+                    + "referentiel SAF ; il a ete remplace par '" + remplacement + "' pour que la validation "
+                    + "aboutisse. A revoir : rejetez la fiche si la valeur reelle est connue, le formulaire de "
+                    + "correction propose les valeurs valides.";
+            log.warn("Correction PP {} : {}", codCliente, avertissement);
+            avertissements.add(avertissement);
+            return null;
+        }
+        if (herite) {
+            // Herite mais aucun remplacement legitime : le dire, au lieu de laisser croire a une faute de saisie.
+            return "Validation refusee avant SAF : " + libelle + " '" + propre + "' porte par la fiche SAF "
+                    + "n'existe pas dans le referentiel SAF, et aucune valeur de remplacement n'est utilisable "
+                    + "ici. Rejetez la fiche et corrigez ce champ avec une valeur valide : " + liste + ".";
+        }
+        return "Validation refusee avant SAF : " + libelle + " '" + propre + "' n'existe pas dans le referentiel "
+                + "SAF. Choisissez une valeur valide : " + liste + ".";
+    }
+
     /** Code de remplacement, arrêté par la DSIG le 2026-10-20, d'une activité absente du référentiel SAF. */
     private static final String ACTIVITE_DE_REMPLACEMENT = "199";
 
@@ -559,10 +630,6 @@ public class CorrectionResource {
      * @return le message de refus, ou {@code null} si la fiche peut partir vers SAF.
      */
     private String controlerActiviteContreSaf(UpdateFicheSignaletiqueDTO dto, List<String> avertissements) {
-        String code = dto.getCodActividad() == null ? null : dto.getCodActividad().trim();
-        if (code == null || code.isEmpty()) {
-            return null; // déjà repris depuis SAF par completerCodesReferenceDepuisSaf, ou volontairement vide
-        }
         List<Map.Entry<String, String>> valides;
         try {
             valides = activitesSafValides();
@@ -570,25 +637,9 @@ public class CorrectionResource {
             log.warn("Référentiel SAF des activités injoignable, contrôle sauté : {}", e.getMessage());
             return null;
         }
-        if (valides.isEmpty() || valides.stream().anyMatch(a -> a.getKey().equals(code))) {
-            return null;
-        }
-        Map<String, Object> ficheSaf = lireFicheSaf(dto.getCodCliente());
-        Object actuelSaf = ficheSaf == null ? null : ficheSaf.get("codActividad");
-        boolean herite = actuelSaf != null && String.valueOf(actuelSaf).trim().equals(code);
-        if (herite) {
-            dto.setCodActividad(ACTIVITE_DE_REMPLACEMENT);
-            String avertissement = "l'activité économique '" + code + "' portée par la fiche SAF n'existe plus dans "
-                    + "le référentiel SAF ; elle a été remplacée par '" + ACTIVITE_DE_REMPLACEMENT
-                    + "' (décision DSIG du 20/10/2026). À revoir si une activité précise convient mieux.";
-            log.warn("Correction PP {} : {}", dto.getCodCliente(), avertissement);
-            avertissements.add(avertissement);
-            return null;
-        }
-        String liste = valides.stream().map(a -> a.getKey() + " " + a.getValue())
-                .collect(java.util.stream.Collectors.joining(", "));
-        return "Validation refusée avant SAF : l'activité économique '" + code + "' n'existe pas dans le référentiel "
-                + "SAF. Choisissez un code valide : " + liste + ".";
+        return controlerCodeContreSaf("l'activité économique", dto.getCodActividad(), valides,
+                "codActividad", ACTIVITE_DE_REMPLACEMENT, dto::setCodActividad,
+                lireFicheSafSiNecessaire(dto, valides), dto.getCodCliente(), avertissements);
     }
 
     /**
@@ -644,10 +695,6 @@ public class CorrectionResource {
      * @return le message de refus, ou {@code null} si la fiche peut partir vers SAF.
      */
     private String controlerSecteurContreSaf(UpdateFicheSignaletiqueDTO dto, List<String> avertissements) {
-        String code = dto.getCodSector() == null ? null : dto.getCodSector().trim();
-        if (code == null || code.isEmpty()) {
-            return null; // déjà repris depuis SAF par completerCodesReferenceDepuisSaf
-        }
         List<Map.Entry<String, String>> valides;
         try {
             valides = secteursSafValides();
@@ -655,26 +702,86 @@ public class CorrectionResource {
             log.warn("Référentiel SAF des secteurs injoignable, contrôle sauté : {}", e.getMessage());
             return null;
         }
-        if (valides.isEmpty() || valides.stream().anyMatch(sec -> sec.getKey().equals(code))) {
+        return controlerCodeContreSaf("le secteur d'activité", dto.getCodSector(), valides,
+                "codSector", SECTEUR_DE_REMPLACEMENT, dto::setCodSector,
+                lireFicheSafSiNecessaire(dto, valides), dto.getCodCliente(), avertissements);
+    }
+
+    /**
+     * Code de remplacement d'un district inconnu : le « district 399 », present dans 138 couples
+     * province/canton de la base — c'est le fourre-tout de SAF, l'equivalent du 199 des activites
+     * et du 999 des secteurs. Il n'est substitue QUE s'il figure dans le canton du client :
+     * remplacer par un code absent du canton echangerait une violation de cle contre une autre.
+     */
+    private static final String DISTRICT_DE_REMPLACEMENT = "399";
+
+    /**
+     * Les districts du canton du client, sous la forme (code, libelle). La cle d'un district est
+     * composite (pays + province + canton + district) : un code n'est valide qu'a l'interieur de
+     * son canton, d'ou la lecture ciblee plutot qu'un referentiel global.
+     */
+    private List<Map.Entry<String, String>> districtsSafValides(String codCanton, String codProvincia) {
+        List<Map.Entry<String, String>> valides = new ArrayList<>();
+        if (codCanton == null || codCanton.isBlank() || codProvincia == null || codProvincia.isBlank()) {
+            return valides;
+        }
+        List<Map<String, Object>> bruts = ebankingClient.getDistrictsParCanton(codCanton.trim(), codProvincia.trim());
+        return extraireDistricts(bruts);
+    }
+
+    /**
+     * Extrait (code, libelle) des districts rendus par ebanking. Isolee et testee pour la meme
+     * raison que {@link #extraireSecteurs}: un changement de forme du JSON rendrait une liste vide,
+     * le controle se desactiverait en silence et le defaut reviendrait sans aucun signal.
+     */
+    static List<Map.Entry<String, String>> extraireDistricts(List<Map<String, Object>> bruts) {
+        List<Map.Entry<String, String>> valides = new ArrayList<>();
+        for (Map<String, Object> ligne : bruts == null ? List.<Map<String, Object>>of() : bruts) {
+            if (ligne == null) continue;
+            String code = valeurCle(ligne, "codDistrito");
+            if (code == null || code.isBlank()) code = valeurCle(ligne, "COD_DISTRITO");
+            if (code == null || code.isBlank()) continue;
+            String libelle = valeurCle(ligne, "DES_DISTRITO");
+            if (libelle == null || libelle.isBlank()) libelle = valeurCle(ligne, "des_DISTRITO");
+            valides.add(Map.entry(code.trim(), libelle == null || libelle.isBlank() ? code.trim() : libelle.trim()));
+        }
+        return valides;
+    }
+
+    /**
+     * Controle le district contre les districts du canton du client.
+     *
+     * <p>Cas constate le 11/11/2026 (fiche 61400000628) : SAF porte lui-meme
+     * {@code codDistrito = 398} pour le canton 204 de la province 103, et ce district n'existe pas
+     * dans PA.PA_DISTRITOS. 64 fiches portent 398, dont 41 en attente de correction. Le canton ne
+     * figure pas dans le DTO de correction : il est lu dans la fiche SAF.</p>
+     */
+    private String controlerDistrictContreSaf(UpdateFicheSignaletiqueDTO dto, List<String> avertissements) {
+        String code = dto.getDistrict() == null ? null : dto.getDistrict().trim();
+        if (code == null || code.isEmpty()) {
             return null;
         }
         Map<String, Object> ficheSaf = lireFicheSaf(dto.getCodCliente());
-        Object actuelSaf = ficheSaf == null ? null : ficheSaf.get("codSector");
-        boolean herite = actuelSaf != null && String.valueOf(actuelSaf).trim().equals(code);
-        if (herite) {
-            dto.setCodSector(SECTEUR_DE_REMPLACEMENT);
-            String avertissement = "le secteur d'activité '" + code + "' porté par la fiche SAF n'existe pas dans "
-                    + "le référentiel SAF ; il a été remplacé par '" + SECTEUR_DE_REMPLACEMENT
-                    + "' pour que la validation aboutisse. À revoir : rejetez la fiche si le secteur réel est connu, "
-                    + "le formulaire de correction propose les secteurs valides.";
-            log.warn("Correction PP {} : {}", dto.getCodCliente(), avertissement);
-            avertissements.add(avertissement);
+        String canton = ficheSaf == null ? null : valeurCle(ficheSaf, "codCanton");
+        String province = dto.getCodProvincia() != null && !dto.getCodProvincia().isBlank()
+                ? dto.getCodProvincia()
+                : (ficheSaf == null ? null : valeurCle(ficheSaf, "codProvincia"));
+
+        List<Map.Entry<String, String>> valides;
+        try {
+            valides = districtsSafValides(canton, province);
+        } catch (Exception e) {
+            log.warn("Référentiel SAF des districts injoignable, contrôle sauté : {}", e.getMessage());
             return null;
         }
-        String liste = valides.stream().map(sec -> sec.getKey() + " " + sec.getValue())
-                .collect(java.util.stream.Collectors.joining(", "));
-        return "Validation refusée avant SAF : le secteur d'activité '" + code + "' n'existe pas dans le référentiel "
-                + "SAF. Choisissez un code valide : " + liste + ".";
+        return controlerCodeContreSaf("le district", code, valides, "codDistrito",
+                DISTRICT_DE_REMPLACEMENT, dto::setDistrict, ficheSaf, dto.getCodCliente(), avertissements);
+    }
+
+    /** Lit la fiche SAF seulement si un controle en a besoin (referentiel non vide). */
+    private Map<String, Object> lireFicheSafSiNecessaire(UpdateFicheSignaletiqueDTO dto,
+                                                         List<Map.Entry<String, String>> valides) {
+        return (valides == null || valides.isEmpty()) ? null : lireFicheSaf(dto.getCodCliente());
     }
 
     /** Cherche une clé (insensible à la casse) au premier niveau puis dans les sous-objets (clé composite JPA). */
