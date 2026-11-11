@@ -362,6 +362,13 @@ public class CorrectionResource {
                         .body(getResponse(request, Map.of("error", refusActivite), refusActivite, BAD_REQUEST));
             }
 
+            String refusSecteur = controlerSecteurContreSaf(updateFicheSignaletiqueDTO, avertissements);
+            if (refusSecteur != null) {
+                log.warn("Correction PP {} refusée avant SAF : {}", updateFicheSignaletiqueDTO.getCodCliente(), refusSecteur);
+                return ResponseEntity.badRequest()
+                        .body(getResponse(request, Map.of("error", refusSecteur), refusSecteur, BAD_REQUEST));
+            }
+
             // Call the ebanking service to update SAF ; si SAF refuse un code de référence (clé étrangère),
             // on reprend la valeur SAF actuelle de ce champ et on rejoue une fois (voir mettreAJourSafAvecReprise).
             Map<String, Object> result = mettreAJourSafAvecReprise(updateFicheSignaletiqueDTO, avertissements);
@@ -581,6 +588,92 @@ public class CorrectionResource {
         String liste = valides.stream().map(a -> a.getKey() + " " + a.getValue())
                 .collect(java.util.stream.Collectors.joining(", "));
         return "Validation refusée avant SAF : l'activité économique '" + code + "' n'existe pas dans le référentiel "
+                + "SAF. Choisissez un code valide : " + liste + ".";
+    }
+
+    /**
+     * Code de remplacement d'un secteur absent du référentiel SAF : « A NE PAS UTILISER ». Même
+     * principe que {@link #ACTIVITE_DE_REMPLACEMENT} pour l'activité (décision DSIG du 20/10/2026).
+     */
+    private static final String SECTEUR_DE_REMPLACEMENT = "999";
+
+    /** Les secteurs que SAF accepte, sous la forme (code, libellé) ; vide si SAF est injoignable. */
+    private List<Map.Entry<String, String>> secteursSafValides() {
+        return extraireSecteurs(ebankingClient.getSecteursEconomiques());
+    }
+
+    /**
+     * Extrait (code, libellé) de la réponse brute d'ebanking. Le code vit dans la clé composite
+     * ({@code sectorEconomicoPKId.cod_SECTOR}), d'où la recherche en profondeur.
+     *
+     * <p>Isolée et testée parce que son échec est SILENCIEUX et dangereux : si la forme du JSON
+     * change, cette méthode rend une liste vide, le contrôle se désactive de lui-même, et on
+     * revient au défaut d'aujourd'hui sans que rien ne le signale.</p>
+     */
+    static List<Map.Entry<String, String>> extraireSecteurs(List<Map<String, Object>> bruts) {
+        List<Map.Entry<String, String>> valides = new ArrayList<>();
+        for (Map<String, Object> ligne : bruts == null ? List.<Map<String, Object>>of() : bruts) {
+            if (ligne == null) continue;
+            String code = valeurCle(ligne, "cod_SECTOR");
+            if (code == null || code.isBlank()) continue;
+            String libelle = valeurCle(ligne, "des_SECTOR");
+            valides.add(Map.entry(code.trim(), libelle == null || libelle.isBlank() ? code.trim() : libelle.trim()));
+        }
+        return valides;
+    }
+
+    /**
+     * Contrôle le secteur économique contre le référentiel SAF AVANT l'appel de mise à jour.
+     *
+     * <p>Exactement le défaut du 20/10/2026 sur l'activité, déplacé d'un champ. Cas constaté le
+     * 11/11/2026 (fiche 61400000628, agence 614) : la fiche SAF porte elle-même {@code codSector = 107},
+     * absent de CL.CL_SECTOR_ECONOMICO qui ne contient que 101 PRIMAIRE, 102 SECONDAIRE, 103 TERTIAIRE,
+     * 104 QUATERTIAIRE et 999 « A NE PAS UTILISER ». La correction recopie la valeur, SAF refuse sa
+     * propre donnée par clé étrangère, et {@code mettreAJourSafAvecReprise} ne peut rien proposer
+     * puisque la valeur SAF actuelle EST la valeur refusée. L'agent recevait alors « le secteur
+     * d'activité 107 n'existe pas », pour un champ que l'écran de validation ne lui montre pas.</p>
+     *
+     * <p>Au 11/11/2026, 360 fiches portent un secteur hors référentiel — dont 212 en 107 — et 234
+     * d'entre elles attendent une correction : ce n'est pas un cas isolé.</p>
+     *
+     * <p>Règle, identique à celle de l'activité : un code absent du référentiel ET égal à la valeur SAF
+     * actuelle est un code hérité ; il est remplacé par {@link #SECTEUR_DE_REMPLACEMENT} et l'agent en
+     * est averti. Un code absent que l'agent a lui-même saisi est refusé, avec la liste des codes
+     * valides. Si SAF est injoignable, on laisse passer : SAF tranchera, comme avant.</p>
+     *
+     * @return le message de refus, ou {@code null} si la fiche peut partir vers SAF.
+     */
+    private String controlerSecteurContreSaf(UpdateFicheSignaletiqueDTO dto, List<String> avertissements) {
+        String code = dto.getCodSector() == null ? null : dto.getCodSector().trim();
+        if (code == null || code.isEmpty()) {
+            return null; // déjà repris depuis SAF par completerCodesReferenceDepuisSaf
+        }
+        List<Map.Entry<String, String>> valides;
+        try {
+            valides = secteursSafValides();
+        } catch (Exception e) {
+            log.warn("Référentiel SAF des secteurs injoignable, contrôle sauté : {}", e.getMessage());
+            return null;
+        }
+        if (valides.isEmpty() || valides.stream().anyMatch(sec -> sec.getKey().equals(code))) {
+            return null;
+        }
+        Map<String, Object> ficheSaf = lireFicheSaf(dto.getCodCliente());
+        Object actuelSaf = ficheSaf == null ? null : ficheSaf.get("codSector");
+        boolean herite = actuelSaf != null && String.valueOf(actuelSaf).trim().equals(code);
+        if (herite) {
+            dto.setCodSector(SECTEUR_DE_REMPLACEMENT);
+            String avertissement = "le secteur d'activité '" + code + "' porté par la fiche SAF n'existe pas dans "
+                    + "le référentiel SAF ; il a été remplacé par '" + SECTEUR_DE_REMPLACEMENT
+                    + "' pour que la validation aboutisse. À revoir : rejetez la fiche si le secteur réel est connu, "
+                    + "le formulaire de correction propose les secteurs valides.";
+            log.warn("Correction PP {} : {}", dto.getCodCliente(), avertissement);
+            avertissements.add(avertissement);
+            return null;
+        }
+        String liste = valides.stream().map(sec -> sec.getKey() + " " + sec.getValue())
+                .collect(java.util.stream.Collectors.joining(", "));
+        return "Validation refusée avant SAF : le secteur d'activité '" + code + "' n'existe pas dans le référentiel "
                 + "SAF. Choisissez un code valide : " + liste + ".";
     }
 
