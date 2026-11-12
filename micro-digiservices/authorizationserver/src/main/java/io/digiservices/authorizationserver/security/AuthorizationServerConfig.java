@@ -26,21 +26,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.core.AuthorizationGrantType;
-import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
-import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
-import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
-import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -60,7 +54,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -569,44 +562,12 @@ public class AuthorizationServerConfig {
 
     @Bean
     public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
-        JdbcRegisteredClientRepository repository = new JdbcRegisteredClientRepository(jdbcTemplate);
-
-        // Check if mobile client exists, if not create it
-        try {
-            RegisteredClient existingClient = repository.findByClientId("mobile-app-client");
-            if (existingClient == null) {
-                RegisteredClient mobileClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                        .clientId("mobile-app-client")
-                        .clientName("DIGI CRG Mobile App")
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.NONE)
-                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                        .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                        .redirectUri("com.digiservices.digicrg://oauth2redirect")
-                        .postLogoutRedirectUri("com.digiservices.digicrg://oauth2redirect")
-                        .scope(OidcScopes.OPENID)
-                        .scope(OidcScopes.PROFILE)
-                        .scope(OidcScopes.EMAIL)
-                        .clientSettings(ClientSettings.builder()
-                                .requireProofKey(true)
-                                .requireAuthorizationConsent(false)
-                                .build())
-                        .tokenSettings(TokenSettings.builder()
-                                .accessTokenTimeToLive(Duration.ofHours(1))
-                                .refreshTokenTimeToLive(Duration.ofDays(30))
-                                .reuseRefreshTokens(false)
-                                .build())
-                        .build();
-
-                repository.save(mobileClient);
-                log.info("Mobile client registered successfully");
-            } else {
-                log.info("Mobile client already exists");
-            }
-        } catch (Exception e) {
-            log.error("Error checking/creating mobile client: {}", e.getMessage());
-        }
-
-        return repository;
+        // Les clients (SPA digi, KUMY, desktop, mobile) sont enregistres ET MIS A JOUR au demarrage
+        // par le runner de AuthorizationServerApplication. Ne rien creer ici : une creation
+        // « si absent » laisse intacte une ligne deja presente en base, et le code n'a alors plus
+        // aucun effet sur le client (piege rencontre sur le client desktop le 2026-07-06, puis sur
+        // le client mobile, qui n'a jamais recu le scope agent_profile jusqu'au 2026-11-12).
+        return new JdbcRegisteredClientRepository(jdbcTemplate);
     }
 
 
