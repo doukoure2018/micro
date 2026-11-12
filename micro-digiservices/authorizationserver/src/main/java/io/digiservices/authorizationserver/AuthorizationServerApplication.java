@@ -72,6 +72,19 @@ public class AuthorizationServerApplication {
 	@Value("${rapprochement.oidc.redirect-uri:http://127.0.0.1:8766/callback}")
 	private String rapprochementRedirectUri;
 
+	// Client de l'application mobile des agents de credit et des directeurs d'agence — client
+	// PUBLIC (aucun secret ne tient dans un APK), PKCE obligatoire, redirection par schema
+	// d'application. Enregistre ici depuis le 2026-11-12 : il l'etait auparavant dans
+	// AuthorizationServerConfig, en mode « creer si absent », donc jamais mis a jour.
+	@Value("${mobile.oidc.client-id:mobile-app-client}")
+	private String mobileClientId;
+	@Value("${mobile.oidc.redirect-uri:com.digiservices.digicrg://oauth2redirect}")
+	private String mobileRedirectUri;
+	// Redirection supplementaire pour les essais (client de developpement Expo, par exemple).
+	// Vide => non ajoutee. Reversible : retirer la valeur et redemarrer.
+	@Value("${mobile.oidc.extra-redirect-uri:}")
+	private String mobileExtraRedirectUri;
+
 	public static void main(String[] args) {
 		SpringApplication.run(AuthorizationServerApplication.class, args);
 	}
@@ -128,6 +141,14 @@ public class AuthorizationServerApplication {
 			// scope rapprochement (profil, niveau, codes de points de service).
 			registerDesktopClient(registeredClientRepository, rapprochementClientId, rapprochementRedirectUri,
 					RAPPROCHEMENT_SCOPE);
+
+			// Client public de l'application mobile (agents de credit et directeurs d'agence).
+			Set<String> mobileRedirectUris = new LinkedHashSet<>();
+			mobileRedirectUris.add(mobileRedirectUri);
+			if (mobileExtraRedirectUri != null && !mobileExtraRedirectUri.isBlank()) {
+				mobileRedirectUris.add(mobileExtraRedirectUri.trim());
+			}
+			registerMobileClient(registeredClientRepository, mobileClientId, mobileRedirectUris);
 		};
 	}
 
@@ -195,6 +216,85 @@ public class AuthorizationServerApplication {
 					DESKTOP_ACCESS_TTL, DESKTOP_REFRESH_TTL);
 		}catch (Exception exception){
 			log.error("Failed to register desktop client {}: {}", clientId, exception.getMessage());
+		}
+	}
+
+	// TokenSettings du client mobile : acces 1 h, refresh 30 jours GLISSANTS grace a la rotation
+	// (reuseRefreshTokens=false). Un agent en tournee ne doit pas avoir a se reconnecter entre deux
+	// visites ; la rotation fait qu'un refresh token copie cesse de servir des que l'application en
+	// obtient un nouveau. Le blocage d'un compte (V182) coupe le renouvellement dans la foulee.
+	private static final Duration MOBILE_ACCESS_TTL = Duration.ofHours(1);
+	private static final Duration MOBILE_REFRESH_TTL = Duration.ofDays(30);
+
+	/**
+	 * Enregistre OU MET A JOUR (idempotent) le client PUBLIC de l'application mobile :
+	 * authentification NONE (aucun secret ne tient dans un APK), PKCE OBLIGATOIRE (RFC 8252),
+	 * redirection par schema d'application {@code com.digiservices.digicrg://oauth2redirect}.
+	 *
+	 * <p>Scopes openid/profile/email <b>et {@code agent_profile}</b> : l'application recoit dans
+	 * l'ID Token le role de l'agent et son rattachement (delegation, agence, point de service),
+	 * ce qui lui evite un appel de plus au demarrage et lui permet d'afficher son point de service
+	 * hors connexion. Les claims ne sont emis que pour les roles du reseau ; un compte hors
+	 * perimetre obtient un jeton sans ces claims, sans erreur.</p>
+	 *
+	 * <p>Ce client existait deja, cree au demarrage par {@code AuthorizationServerConfig} en mode
+	 * « creer si absent » : la ligne presente en base ne changeait donc JAMAIS, quel que soit le
+	 * code. C'est le piege deja rencontre sur le client desktop le 2026-07-06. La mise a jour est
+	 * ici reappliquee tant que la ligne diverge de ce que le code demande.</p>
+	 */
+	private void registerMobileClient(RegisteredClientRepository repository,
+									  String clientId, Set<String> redirectUris){
+		var existing = repository.findByClientId(clientId);
+		if(existing != null){
+			var ts = existing.getTokenSettings();
+			boolean tokenSettingsOk = MOBILE_ACCESS_TTL.equals(ts.getAccessTokenTimeToLive())
+					&& MOBILE_REFRESH_TTL.equals(ts.getRefreshTokenTimeToLive())
+					&& !ts.isReuseRefreshTokens();
+			// equals et non containsAll : la configuration fait autorite sur les redirections d'un
+			// client PUBLIC. Une redirection ajoutee a la main en base est donc retiree au demarrage.
+			boolean redirectsOk = existing.getRedirectUris().equals(redirectUris);
+			boolean pkceOk = existing.getClientSettings().isRequireProofKey();
+			boolean scopeOk = existing.getScopes().contains(AGENT_PROFILE_SCOPE);
+			boolean publicOk = existing.getClientAuthenticationMethods().contains(ClientAuthenticationMethod.NONE);
+			if(tokenSettingsOk && redirectsOk && pkceOk && scopeOk && publicOk){
+				return;
+			}
+		}
+		// Conserve le meme id pour METTRE A JOUR la ligne JDBC (sinon save() insere un doublon).
+		String id = existing != null ? existing.getId() : UUID.randomUUID().toString();
+		try {
+			var mobileClient = RegisteredClient.withId(id)
+					.clientId(clientId)
+					.clientName("DIGI CRG Mobile App")
+					.clientAuthenticationMethod(ClientAuthenticationMethod.NONE)   // client public, pas de secret
+					.authorizationGrantTypes(types -> {
+						types.add(AuthorizationGrantType.AUTHORIZATION_CODE);
+						types.add(AuthorizationGrantType.REFRESH_TOKEN);
+					})
+					.scopes(scopes -> {
+						scopes.add(OidcScopes.OPENID);
+						scopes.add(OidcScopes.PROFILE);
+						scopes.add(OidcScopes.EMAIL);
+						scopes.add(AGENT_PROFILE_SCOPE);
+					})
+					.redirectUris(uris -> uris.addAll(redirectUris))
+					.postLogoutRedirectUris(uris -> uris.addAll(redirectUris))
+					.clientSettings(ClientSettings.builder()
+							.requireProofKey(true)               // PKCE obligatoire (client public)
+							.requireAuthorizationConsent(false)  // application interne, pas d'ecran de consentement
+							.build())
+					.tokenSettings(TokenSettings.builder()
+							.accessTokenTimeToLive(MOBILE_ACCESS_TTL)
+							.refreshTokenTimeToLive(MOBILE_REFRESH_TTL)
+							.reuseRefreshTokens(false)           // rotation des refresh tokens
+							.build())
+					.build();
+			repository.save(mobileClient);
+			log.info("Mobile OIDC client {}: {} (redirects: {}, scope {}, access {} / refresh {} / rotation)",
+					existing != null ? "mis a jour" : "enregistre", clientId, redirectUris, AGENT_PROFILE_SCOPE,
+					MOBILE_ACCESS_TTL, MOBILE_REFRESH_TTL);
+		}catch (Exception exception){
+			log.error("Failed to register mobile client {}: {}", clientId, exception.getMessage());
 		}
 	}
 
