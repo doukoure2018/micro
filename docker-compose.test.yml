@@ -162,6 +162,11 @@ services:
       # Aucun courriel ni SMS ne part de la pile de test.
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-absent:9092}
       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_BLOCK_MS: "3000"
+      # Les trois lignes que porte la production. Sans la troisieme, Hibernate cherche
+      # JCacheRegionFactory, absent du classpath, et le service ne demarre pas du tout.
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       JAVA_TOOL_OPTIONS: "-Xms192m -Xmx384m -XX:+ExitOnOutOfMemoryError"
     volumes:
       - ./logs/test/userservice:/var/log/userservice
@@ -205,6 +210,7 @@ services:
       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_BLOCK_MS: "3000"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError"
     volumes:
       - ./logs/test/ecreditservice:/var/log/ecreditservice

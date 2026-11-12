@@ -43,11 +43,20 @@ fi
 echo "✅ kafka : aucun lien avec le courtier de production"
 
 # 4. La memoire. La machine a 7,6 Go et la production tourne a cote.
+#    Ce que les conteneurs de test consomment DEJA est deduit du besoin : sans cela, un
+#    redemarrage partiel serait refuse alors que la pile tourne en partie et que sa
+#    memoire est deja comptee dans ce qui n'est plus disponible.
+BESOIN_TOTAL=2600
 LIBRE=$(free -m 2>/dev/null | awk '/^Mem:/{print $7}')
+DEJA=$(docker stats --no-stream --format '{{.Name}}|{{.MemUsage}}' 2>/dev/null \
+       | grep -- '-test' \
+       | awk -F'|' '{split($2, a, " / "); v = a[1] + 0; if (a[1] ~ /GiB/) v = v * 1024; s += v} END {printf "%d", s}')
+DEJA=${DEJA:-0}
+BESOIN=$((BESOIN_TOTAL - DEJA))
 if [ -n "$LIBRE" ]; then
-    echo "ℹ️  memoire disponible : ${LIBRE} Mo (la pile de test en demande environ 2 400 en pointe)"
-    if [ "$LIBRE" -lt 2600 ]; then
-        echo "❌ Moins de 2,6 Go disponibles : demarrer la pile de test ferait tomber la production."
+    echo "ℹ️  memoire : ${LIBRE} Mo disponibles, ${DEJA} Mo deja pris par la pile de test, ${BESOIN} Mo encore necessaires"
+    if [ "$LIBRE" -lt "$BESOIN" ]; then
+        echo "❌ Pas assez de memoire : demarrer la pile de test ferait tomber la production."
         echo "   Liberer de la memoire, ou demarrer sans le profil saf (ebanking)."
         exit 1
     fi
