@@ -6,6 +6,8 @@ frontend/ultima-ng-19.0.0/.angular/cache/
 frontend/ultima-ng-19.0.0/dist/
 .env
 .env.*
+# Le modele de la pile de test ne porte que des valeurs d'exemple : il se versionne.
+!.env.test.example
 *.env
 nul
 **/.DS_Store
