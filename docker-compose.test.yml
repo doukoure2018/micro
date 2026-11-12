@@ -1,0 +1,296 @@
+# =====================================================================================
+# Pile de TEST, sur la meme machine que la production (arbitrage du 12/11/2026)
+# =====================================================================================
+#
+# Pourquoi ici : l'application mobile des agents se recette depuis un telephone, et un
+# telephone ne voit pas le poste de developpement. L'environnement de formation n'existe
+# pas encore ; le test vit donc a cote de la production, et JAMAIS dans sa base.
+#
+# Ce qui separe les deux piles, et qu'il ne faut pas confondre :
+#   * un projet compose distinct (name: digi-test) et des noms de conteneurs suffixes -test ;
+#   * un reseau a elle (digi_test_spring) ;
+#   * SA BASE, dans son propre conteneur et son propre volume (digi_test_postgres_data) ;
+#   * des ports en 1xxxx, tous confines en loopback comme en production ;
+#   * TOUTES LES ALERTES COUPEES : sans cela, cette pile enverrait chaque matin les 244
+#     courriels du digest aux agents, depuis des donnees de test.
+#
+# Seuls gateway-test et authorizationserver-test rejoignent aussi le reseau de production :
+# c'est le nginx de production qui les sert, sous test.digi-creditrural-io.com. Cette
+# jonction impose une verification avant tout demarrage : AUCUN service de cette pile ne
+# doit nommer « postgresdb » dans sa chaine de connexion, sinon il ecrirait dans la base
+# de production. Le script de demarrage le controle (docs/environnement-test.md).
+#
+# Demarrage :   docker compose -f docker-compose.test.yml --env-file .env.test up -d
+# Migrations :  docker compose -f docker-compose.test.yml --env-file .env.test --profile migration up flyway-test
+# Avec SAF :    ... --profile saf up -d        (lecture de la SAUVEGARDE uniquement)
+# Arret :       docker compose -f docker-compose.test.yml --env-file .env.test down
+# =====================================================================================
+
+name: digi-test
+
+services:
+
+  postgresdb-test:
+    container_name: postgrecontainer-test
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # Loopback seulement : la restauration d'une copie se fait par tunnel SSH.
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - digi_test_postgres_data:/var/lib/postgresql/data
+    networks:
+      - test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+
+  # Migrations de la base de TEST. Profil dedie : ne tourne qu'a la demande, comme en production.
+  flyway-test:
+    image: flyway/flyway:11.3.0
+    container_name: flyway-test
+    environment:
+      FLYWAY_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      FLYWAY_USER: ${POSTGRES_USER}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+      FLYWAY_SCHEMAS: public
+      FLYWAY_TABLE: flyway_schema_history
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_VALIDATE_ON_MIGRATE: "true"
+      FLYWAY_OUT_OF_ORDER: "false"
+      FLYWAY_CLEAN_DISABLED: "true"
+      FLYWAY_BASELINE_VERSION: "7"
+    volumes:
+      - ./micro-digiservices/database-migrations/src/main/resources/db/migration:/flyway/sql
+    command: migrate
+    networks:
+      - test
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: "no"
+    profiles:
+      - migration
+
+  discoveryserver-test:
+    image: doukoure93/discoveryserver:${TEST_IMAGE_TAG:-latest}
+    container_name: discoveryserver-test
+    ports:
+      - "127.0.0.1:15002:5002"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/discoveryserver:/var/log/discoveryserver
+    networks:
+      - test
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.5'
+
+  authorizationserver-test:
+    image: doukoure93/authorizationserver:${TEST_IMAGE_TAG:-latest}
+    container_name: authorizationserver-test
+    ports:
+      - "127.0.0.1:18080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      UI_APP_URL: ${UI_APP_URL}
+      OAUTH_ISSUER: ${OAUTH_ISSUER}
+      # Le client mobile pointe sur le meme schema d'application qu'en production : c'est
+      # la meme application, construite avec EXPO_PUBLIC_ENV=test.
+      MOBILE_OIDC_REDIRECT_URI: ${MOBILE_OIDC_REDIRECT_URI:-com.digiservices.digicrg://oauth2redirect}
+      MOBILE_OIDC_EXTRA_REDIRECT_URI: ${MOBILE_OIDC_EXTRA_REDIRECT_URI:-}
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx384m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/authorizationserver:/var/log/authorizationserver
+      # Paire RSA PROPRE AU TEST : signer les jetons de test avec la cle de production
+      # ferait accepter un jeton de test par les services de production.
+      - ${TEST_KEYS_DIR:-./keys-test}:/app/keys:ro
+    networks:
+      - test
+      - prod          # pour que le nginx de production puisse le servir
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  userservice-test:
+    image: doukoure93/userservice:${TEST_IMAGE_TAG:-latest}
+    container_name: userservice-test
+    ports:
+      - "127.0.0.1:18085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      UI_APP_URL: ${UI_APP_URL}
+      BACKEND_APP_URL: ${BACKEND_APP_URL}
+      # Aucun courriel ni SMS ne part de la pile de test.
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-absent:9092}
+      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_BLOCK_MS: "3000"
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx384m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/userservice:/var/log/userservice
+    networks:
+      - test
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  ecreditservice-test:
+    image: doukoure93/ecreditservice:${TEST_IMAGE_TAG:-latest}
+    container_name: ecreditservice-test
+    ports:
+      - "127.0.0.1:18087:8087"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      UI_APP_URL: ${UI_APP_URL}
+      BACKEND_APP_URL: ${BACKEND_APP_URL}
+      FILE_BASE_URL: "${BACKEND_APP_URL}/ecredit/files"
+      # ------------------------------------------------------------------ TOUT CE QUI SORT
+      # Ces cinq lignes sont la raison d'etre de ce fichier : la pile de test ne doit
+      # joindre personne. La production, elle, porte PORTEFEUILLE_ALERTES_ACTIVES=true.
+      PORTEFEUILLE_ALERTES_ACTIVES: "false"
+      CREDIT_NEGATIF_ACTIF: "false"
+      SAF_SANTE_ACTIF: "false"
+      SIGNALEMENT_TELEPHONE_SMS_ACTIF: "false"
+      SLACK_WEBHOOK_URL: ""
+      # Sans courtier Kafka : echec rapide au lieu d'une minute de blocage par envoi.
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-absent:9092}
+      SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_BLOCK_MS: "3000"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/ecreditservice:/var/log/ecreditservice
+      - ./uploads-test:/app/uploads
+    networks:
+      - test
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+          cpus: '0.5'
+
+  gateway-test:
+    image: doukoure93/gateway:${TEST_IMAGE_TAG:-latest}
+    container_name: gateway-test
+    ports:
+      - "127.0.0.1:18000:8000"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx384m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/gateway:/var/log/gateway
+    networks:
+      - test
+      - prod          # pour que le nginx de production puisse le servir
+    depends_on:
+      - discoveryserver-test
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # SAF en LECTURE SEULE sur la SAUVEGARDE (10.9.0.168), jamais sur la production :
+  # les deux sources pointent volontairement sur la meme adresse de sauvegarde, pour
+  # qu'aucune requete de test ne puisse atteindre la base bancaire vivante.
+  # Profil dedie : a demarrer seulement quand la recette a besoin du portefeuille.
+  ebankingservice-test:
+    image: doukoure93/ebanking:${TEST_IMAGE_TAG:-latest}
+    container_name: ebankingservice-test
+    ports:
+      - "127.0.0.1:18081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: "jdbc:sqlserver://10.9.0.168:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=false"
+      SPRING_DATASOURCE_USERNAME: ${SAF_SAUVEGARDE_USERNAME:-DIGI_LECTURE}
+      SPRING_DATASOURCE_PASSWORD: ${SAF_SAUVEGARDE_PASSWORD}
+      SPRING_SAUVEGARDE_DATASOURCE_URL: "jdbc:sqlserver://10.9.0.168:1433;databaseName=BDCRG;trustServerCertificate=true;encrypt=false"
+      SPRING_SAUVEGARDE_DATASOURCE_USERNAME: ${SAF_SAUVEGARDE_USERNAME:-DIGI_LECTURE}
+      SPRING_SAUVEGARDE_DATASOURCE_PASSWORD: ${SAF_SAUVEGARDE_PASSWORD}
+      SAF_SAUVEGARDE_ACTIVE: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      UI_APP_URL: ${UI_APP_URL}
+      BACKEND_APP_URL: ${BACKEND_APP_URL}
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/ebankingservice:/var/log/ebankingservice
+    networks:
+      - test
+    depends_on:
+      - discoveryserver-test
+    restart: unless-stopped
+    profiles:
+      - saf
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+          cpus: '0.5'
+
+volumes:
+  digi_test_postgres_data:
+    name: digi_test_postgres_data
+
+networks:
+  test:
+    driver: bridge
+    name: digi_test_spring
+  prod:
+    external: true
+    name: microservices_spring
