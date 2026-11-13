@@ -382,6 +382,11 @@ services:
       SPRING_MAIL_PORT: "1025"
       SPRING_MAIL_USERNAME: test
       SPRING_MAIL_PASSWORD: test
+      # La configuration de production EXIGE STARTTLS (starttls.required=true), que le piege
+      # n offre pas sans certificat : « STARTTLS is required but host does not support
+      # STARTTLS ». Le courrier de test voyage en clair a l interieur du reseau de test.
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
       JAVA_TOOL_OPTIONS: "-Xms192m -Xmx320m -XX:+ExitOnOutOfMemoryError"
     volumes:
       - ./logs/test/notificationservice:/var/log/notificationservice
