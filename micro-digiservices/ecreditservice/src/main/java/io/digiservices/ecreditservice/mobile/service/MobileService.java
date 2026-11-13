@@ -114,11 +114,13 @@ public class MobileService {
         for (VisiteCredit c : suivi) {
             PortefeuilleCreditDto s = saf.get(c.cle());
             CreditConnu k = connus.get(c.cle());
-            // SAF a répondu pour ce point de service sans porter ce crédit : il est sorti.
-            boolean absent = s == null && lecture.psLus().contains(c.codAgencia());
-            // Les chiffres d'un crédit sorti de SAF sont périmés par définition : on garde son
+            // SAF a répondu pour ce point de service sans porter ce crédit parmi les vivants :
+            // il est remboursé (capital restant dû nul) ou clos. Le crédit existe toujours dans
+            // SAF — c'est la lecture du portefeuille qui l'écarte, et rien d'autre.
+            boolean horsVivants = s == null && lecture.psLus().contains(c.codAgencia());
+            // Les chiffres d'un crédit sorti du cycle sont périmés par définition : on garde son
             // nom, pas son ancien solde, qui le ferait passer pour vivant.
-            CreditConnu chiffres = absent ? null : k;
+            CreditConnu chiffres = horsVivants ? null : k;
             String membre = premierRenseigne(c.codCliente(),
                     s == null ? null : s.getCodCliente(), k == null ? null : k.codCliente());
             IdentiteMembre fiche = membre == null ? null : fiches.get(membre);
@@ -140,7 +142,7 @@ public class MobileService {
                     c.derniereAppreciation(), c.derniereVisiteAt(),
                     c.promesseDate(), c.promesseMontant(),
                     s != null ? maintenant : (chiffres == null ? null : chiffres.luAt()),
-                    absent));
+                    horsVivants));
         }
         portefeuille.sort((a, b) -> Integer.compare(
                 b.joursRetard() == null ? -1 : b.joursRetard(),

@@ -106,7 +106,7 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       promesse_date TEXT,
       promesse_montant REAL,
       montants_at TEXT,
-      absent_de_saf INTEGER NOT NULL DEFAULT 0,
+      hors_credits_vivants INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (cod_agencia, num_credito)
     );
 

@@ -139,12 +139,12 @@ export async function remplacerPortefeuille(credits: CreditPortefeuille[]): Prom
                              encours, montant_impaye, jours_retard, prochaine_echeance,
                              prochaine_echeance_montant, derniere_appreciation,
                              derniere_visite_at, promesse_date, promesse_montant, montants_at,
-                             absent_de_saf)
+                             hors_credits_vivants)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         c.codAgencia, c.numCredito, c.codCliente, c.nomClient, c.telephone, c.produit,
         c.encours, c.montantImpaye, c.joursRetard, c.prochaineEcheance,
         c.prochaineEcheanceMontant, c.derniereAppreciation, c.derniereVisiteAt,
-        c.promesseDate, c.promesseMontant, c.montantsAt, c.absentDeSaf ? 1 : 0);
+        c.promesseDate, c.promesseMontant, c.montantsAt, c.horsCreditsVivants ? 1 : 0);
     }
   });
 }
@@ -169,7 +169,7 @@ export async function portefeuilleLocal(): Promise<CreditPortefeuille[]> {
     promesseDate: (l.promesse_date as string) ?? null,
     promesseMontant: (l.promesse_montant as number) ?? null,
     montantsAt: (l.montants_at as string) ?? null,
-    absentDeSaf: l.absent_de_saf === 1,
+    horsCreditsVivants: l.hors_credits_vivants === 1,
   }));
 }
 

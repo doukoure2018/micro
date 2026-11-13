@@ -73,9 +73,14 @@ public final class MobileDtos {
      * réussie quand le VPN bancaire est coupé. Vide, il dit que les montants sont inconnus —
      * l'écran montre alors le crédit et son membre, pas un zéro qui mentirait.</p>
      *
-     * <p>{@code absentDeSaf} sépare deux silences que l'agent ne doit pas confondre : SAF a
-     * répondu pour ce point de service et ne porte PAS ce crédit (soldé, ou numéro qui n'existe
-     * plus) — c'est une affectation à fermer, pas une panne ; ou SAF n'a rien dit du tout.</p>
+     * <p>{@code horsCreditsVivants} sépare deux silences que l'agent ne doit pas confondre. SAF a
+     * répondu pour ce point de service sans porter ce crédit parmi les vivants : il est
+     * remboursé (capital restant dû nul) ou clos — l'affectation est à fermer, ce n'est pas une
+     * panne. Ou SAF n'a rien dit du tout, et les chiffres reviendront.</p>
+     *
+     * <p>Le mot compte : le crédit EXISTE dans SAF. La lecture du portefeuille exclut
+     * {@code IND_ESTADO IN ('C','T','X')} et {@code MON_SALDO = 0}, et c'est tout ce que son
+     * absence de la réponse prouve.</p>
      */
     public record CreditPortefeuille(
             String codAgencia,
@@ -94,7 +99,7 @@ public final class MobileDtos {
             LocalDate promesseDate,
             BigDecimal promesseMontant,
             OffsetDateTime montantsAt,
-            boolean absentDeSaf) {
+            boolean horsCreditsVivants) {
     }
 
     /** Le profil que l'application affiche en tête, et garde hors ligne. */

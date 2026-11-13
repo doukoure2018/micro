@@ -21,8 +21,8 @@ export default function Portefeuille() {
 
   // Le portefeuille, c'est ce que SAF porte ; les affectations dont SAF n'a plus le credit
   // vivent dans leur propre onglet, visibles mais hors des comptes.
-  const portefeuille = useMemo(() => credits.filter((c) => !c.absentDeSaf), [credits]);
-  const clos = useMemo(() => credits.filter((c) => c.absentDeSaf), [credits]);
+  const portefeuille = useMemo(() => credits.filter((c) => !c.horsCreditsVivants), [credits]);
+  const clos = useMemo(() => credits.filter((c) => c.horsCreditsVivants), [credits]);
   const enRetard = useMemo(() => portefeuille.filter((c) => (c.joursRetard ?? 0) > 0), [portefeuille]);
   const aEcheance = useMemo(
     () => portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance), [portefeuille]);
@@ -129,11 +129,12 @@ export default function Portefeuille() {
 
 /**
  * Ce qu'on ecrit a la place des montants quand il n'y en a pas. Deux silences a ne pas
- * confondre : SAF a repondu sans ce credit (il est solde, l'affectation est a fermer), ou
- * SAF n'a rien dit (les chiffres reviendront a la prochaine synchronisation).
+ * confondre : SAF a repondu sans porter ce credit parmi les vivants — il est rembourse (capital
+ * restant du nul) ou clos, et l'affectation est a fermer ; ou SAF n'a rien dit du tout, et les
+ * chiffres reviendront a la prochaine synchronisation.
  */
 function etatSansMontant(c: CreditPortefeuille): string {
-  return c.absentDeSaf ? 'Solde ou clos dans SAF' : 'Montants indisponibles';
+  return c.horsCreditsVivants ? 'Rembourse ou clos dans SAF' : 'Montants indisponibles';
 }
 
 /** Ce dans quoi la recherche cherche : le nom d'abord, mais aussi les deux numeros. */

@@ -31,7 +31,7 @@ export type CreditPortefeuille = {
   /** Date des montants : SAF a l'instant, ou la derniere lecture SAF reussie. Vide = inconnus. */
   montantsAt: string | null;
   /** SAF a repondu pour ce point de service et ne porte PAS ce credit : solde, pas une panne. */
-  absentDeSaf: boolean;
+  horsCreditsVivants: boolean;
 };
 
 export type EntreeReferentiel = {

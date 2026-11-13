@@ -111,29 +111,29 @@ class PortefeuilleHorsSafTest {
         assertNull(ligne.encours(), "un encours inconnu reste vide : zero serait un mensonge");
         assertNull(ligne.joursRetard());
         assertNull(ligne.montantsAt(), "sans mesure, aucune date de mesure");
-        assertFalse(ligne.absentDeSaf(),
-                "SAF n'a pas repondu : on ne peut pas dire que le credit n'y est plus");
+        assertFalse(ligne.horsCreditsVivants(),
+                "SAF n'a pas repondu : on ne peut rien conclure de son silence");
     }
 
     @Test
-    @DisplayName("SAF repond mais ne porte pas ce credit : il est solde, et son ancien solde se tait")
-    void safRepondSansCeCreditDoncIlEstClos() {
+    @DisplayName("SAF repond sans ce credit : il est rembourse ou clos, et son ancien solde se tait")
+    void safRepondSansCeCreditDoncIlEstHorsDuCycle() {
         PortefeuilleCreditDto autre = new PortefeuilleCreditDto();
         autre.setCodAgencia(PS);
         autre.setNumCredito(999L);
         when(saf.getTousCredits(anyString())).thenReturn(List.of(autre));
         // Le credit a ete lu hier : son solde d'hier ne doit PAS le faire passer pour vivant,
-        // et ne doit pas entrer dans l'encours du portefeuille.
+        // ni entrer dans l'encours du portefeuille.
         when(photo.parCreditDeLAgent(anyLong())).thenReturn(Map.of(PS + "/" + CREDIT,
                 new CreditConnu(PS, CREDIT, MEMBRE, "TOURE SALIOU", "625000000", "AGRICOLE",
                         new BigDecimal("800000"), BigDecimal.ZERO, 3, null, null, HIER)));
 
         CreditPortefeuille ligne = service().portefeuille(UUID_AGENT).get(0);
 
-        assertTrue(ligne.absentDeSaf(),
-                "le point de service a repondu sans ce credit : l'affectation est a fermer");
+        assertTrue(ligne.horsCreditsVivants(),
+                "le point de service a repondu sans ce credit : il est hors du cycle, affectation a fermer");
         assertEquals("TOURE SALIOU", ligne.nomClient(), "le nom du membre reste utile a l'agent");
-        assertNull(ligne.encours(), "l'encours d'un credit sorti de SAF est perime");
+        assertNull(ligne.encours(), "l'encours d'un credit sorti du cycle est perime");
         assertNull(ligne.joursRetard());
         assertNull(ligne.montantsAt());
     }
@@ -163,7 +163,7 @@ class PortefeuilleHorsSafTest {
         assertEquals(new BigDecimal("1200000"), ligne.encours());
         assertEquals(new BigDecimal("120000"), ligne.montantImpaye(), "l'impaye est capital + interets");
         assertNotNull(ligne.montantsAt());
-        assertFalse(ligne.absentDeSaf());
+        assertFalse(ligne.horsCreditsVivants());
         verify(photo).ranger(List.of(credit));
     }
 }

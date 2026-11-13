@@ -42,8 +42,8 @@ export default function Aujourdhui() {
 
   // Le portefeuille, c'est ce que SAF porte. Une affectation dont SAF n'a plus le credit est
   // comptee a part : sinon le telephone annonce 90 credits la ou le web en compte 89.
-  const portefeuille = credits.filter((c) => !c.absentDeSaf);
-  const clos = credits.filter((c) => c.absentDeSaf);
+  const portefeuille = credits.filter((c) => !c.horsCreditsVivants);
+  const clos = credits.filter((c) => c.horsCreditsVivants);
   const enRetard = portefeuille.filter((c) => (c.joursRetard ?? 0) > 0);
   const aEcheance = portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance);
   const promesses = portefeuille.filter((c) => c.promesseDate);
@@ -99,8 +99,8 @@ export default function Aujourdhui() {
           {clos.length > 0 ? (
             <Text style={s.aFermer}>
               {clos.length === 1
-                ? '1 affectation sans credit dans SAF : a signaler a votre directeur'
-                : `${clos.length} affectations sans credit dans SAF : a signaler a votre directeur`}
+                ? '1 credit rembourse ou clos vous est encore affecte'
+                : `${clos.length} credits rembourses ou clos vous sont encore affectes`}
             </Text>
           ) : null}
           {profil?.note !== null && profil?.note !== undefined ? (

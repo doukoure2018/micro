@@ -75,8 +75,8 @@ export default function FicheCredit() {
         <Text style={s.source}>
           {credit.montantsAt
             ? `Montants SAF du ${dateCourte(credit.montantsAt)} a ${heureCourte(credit.montantsAt)}`
-            : credit.absentDeSaf
-              ? 'Ce credit n\'est plus dans SAF : solde ou clos. Signalez-le a votre directeur d\'agence.'
+            : credit.horsCreditsVivants
+              ? 'Credit rembourse ou clos dans SAF : il ne fait plus partie de votre portefeuille, mais il vous reste affecte. Signalez-le a votre directeur d\'agence.'
               : 'Montants indisponibles : la banque n\'a pas pu etre lue'}
         </Text>
       </View>
