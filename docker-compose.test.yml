@@ -156,7 +156,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
-      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      # Le prefixe /auth est celui du serveur d'autorisation (server.servlet.context-path) :
+      # sans lui, la recuperation des cles repond 404 et TOUT jeton est refuse, avec un
+      # « You are not logged in » qui fait croire a un probleme de connexion.
+      JWKS_URI: "http://authorizationserver-test:8080/auth/oauth2/jwks"
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       # Aucun courriel ni SMS ne part de la pile de test.
@@ -193,7 +196,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
-      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      # Le prefixe /auth est celui du serveur d'autorisation (server.servlet.context-path) :
+      # sans lui, la recuperation des cles repond 404 et TOUT jeton est refuse, avec un
+      # « You are not logged in » qui fait croire a un probleme de connexion.
+      JWKS_URI: "http://authorizationserver-test:8080/auth/oauth2/jwks"
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       FILE_BASE_URL: "${BACKEND_APP_URL}/ecredit/files"
@@ -239,7 +245,10 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
-      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      # Le prefixe /auth est celui du serveur d'autorisation (server.servlet.context-path) :
+      # sans lui, la recuperation des cles repond 404 et TOUT jeton est refuse, avec un
+      # « You are not logged in » qui fait croire a un probleme de connexion.
+      JWKS_URI: "http://authorizationserver-test:8080/auth/oauth2/jwks"
       JAVA_TOOL_OPTIONS: "-Xms192m -Xmx384m -XX:+ExitOnOutOfMemoryError"
     volumes:
       - ./logs/test/gateway:/var/log/gateway
@@ -274,7 +283,10 @@ services:
       SPRING_SAUVEGARDE_DATASOURCE_PASSWORD: ${SAF_SAUVEGARDE_PASSWORD}
       SAF_SAUVEGARDE_ACTIVE: "true"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
-      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      # Le prefixe /auth est celui du serveur d'autorisation (server.servlet.context-path) :
+      # sans lui, la recuperation des cles repond 404 et TOUT jeton est refuse, avec un
+      # « You are not logged in » qui fait croire a un probleme de connexion.
+      JWKS_URI: "http://authorizationserver-test:8080/auth/oauth2/jwks"
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError"
@@ -365,7 +377,10 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
-      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      # Le prefixe /auth est celui du serveur d'autorisation (server.servlet.context-path) :
+      # sans lui, la recuperation des cles repond 404 et TOUT jeton est refuse, avec un
+      # « You are not logged in » qui fait croire a un probleme de connexion.
+      JWKS_URI: "http://authorizationserver-test:8080/auth/oauth2/jwks"
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
