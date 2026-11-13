@@ -4,6 +4,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { profilGarde } from '@/auth/session';
 import type { Profil } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
+import { estOuverte } from '@/db/base';
 import type { CreditPortefeuille } from '@/api/types';
 import { etatDeLaFile, synchroniser } from '@/sync/moteur';
 import { couleurRetard, couleurs, dateCourte, espaces, heureCourte, montant, texte } from '@/ui/theme';
@@ -23,6 +24,7 @@ export default function Aujourdhui() {
 
   const charger = useCallback(async () => {
     setProfil(await profilGarde());
+    if (!estOuverte()) return;
     setCredits(await portefeuilleLocal());
     const { compte, derniere: d } = await etatDeLaFile();
     setEnAttente(compte.EN_ATTENTE + compte.ENVOI);

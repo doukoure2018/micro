@@ -3,6 +3,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { CreditPortefeuille } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
+import { estOuverte } from '@/db/base';
 import { couleurRetard, couleurs, dateCourte, espaces, montant, texte } from '@/ui/theme';
 
 /** La fiche d'un credit, lue dans la copie locale, avec l'acces a la saisie d'une visite. */
@@ -14,6 +15,7 @@ export default function FicheCredit() {
   const [credit, setCredit] = useState<CreditPortefeuille | null>(null);
 
   useFocusEffect(useCallback(() => {
+    if (!estOuverte()) return;
     void (async () => {
       const tous = await portefeuilleLocal();
       setCredit(tous.find((c) => c.codAgencia === codAgencia && c.numCredito === numero) ?? null);

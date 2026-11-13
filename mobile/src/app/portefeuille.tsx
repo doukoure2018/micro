@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { Link, useFocusEffect } from 'expo-router';
 import type { CreditPortefeuille } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
+import { estOuverte } from '@/db/base';
 import { couleurRetard, couleurs, espaces, montant, texte } from '@/ui/theme';
 
 type Filtre = 'RETARD' | 'ECHEANCE' | 'TOUS';
@@ -14,6 +15,7 @@ export default function Portefeuille() {
   const [recherche, setRecherche] = useState('');
 
   useFocusEffect(useCallback(() => {
+    if (!estOuverte()) return;
     void (async () => setCredits(await portefeuilleLocal()))();
   }, []));
 

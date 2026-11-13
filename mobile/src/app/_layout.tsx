@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import NetInfo from '@react-native-community/netinfo';
 import { AppState } from 'react-native';
@@ -63,6 +64,19 @@ export default function Ossature() {
       surPremierPlan.remove();
     };
   }, [connecte]);
+
+  // Tant que la base n'est pas ouverte, aucun ecran ne monte : un ecran qui lit avant
+  // l'ouverture echoue sans rien afficher, et l'agent ne voit qu'une page vide.
+  if (!pret) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center',
+                       backgroundColor: couleurs.fond }}>
+          <ActivityIndicator color={couleurs.vert} />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
     <SafeAreaProvider>

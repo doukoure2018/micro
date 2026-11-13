@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import type { EntreeReferentiel } from '@/api/types';
 import { enregistrerVisite, liste } from '@/db/visites';
 import { synchroniser } from '@/sync/moteur';
+import { estOuverte } from '@/db/base';
 import { couleurs, espaces, texte } from '@/ui/theme';
 
 /**
@@ -39,6 +40,7 @@ export default function SaisieVisite() {
   const [enregistre, setEnregistre] = useState(false);
 
   useFocusEffect(useCallback(() => {
+    if (!estOuverte()) return;
     void (async () => {
       setTypesContact(await liste('TYPE_CONTACT'));
       setResultats(await liste('RESULTAT'));

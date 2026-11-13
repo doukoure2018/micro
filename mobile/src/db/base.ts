@@ -51,6 +51,15 @@ async function deverrouiller(db: SQLite.SQLiteDatabase, cle: string): Promise<vo
   await db.execAsync(`PRAGMA key = "x'${cle}'"`);
 }
 
+/**
+ * La base est-elle ouverte ? Les ecrans s'en servent pour ne pas lire pendant l'ouverture :
+ * au demarrage, l'ossature ouvre la base de maniere asynchrone, et un ecran monte avant la
+ * fin lisait une base absente — une promesse rejetee, et l'ecran restait vide.
+ */
+export function estOuverte(): boolean {
+  return base !== null;
+}
+
 export function baseOuverte(): SQLite.SQLiteDatabase {
   if (!base) {
     throw new Error("La base locale n'est pas ouverte : connexion requise");
