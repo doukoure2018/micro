@@ -20,7 +20,7 @@
 # doit nommer « postgresdb » dans sa chaine de connexion, sinon il ecrirait dans la base
 # de production. Le script de demarrage le controle (docs/environnement-test.md).
 #
-# Demarrage :   docker compose -f docker-compose.test.yml --env-file .env.test up -d
+# Demarrage :   ./start-test.sh   (ajoute les profils saf et web quand leurs prerequis sont la)
 # Migrations :  docker compose -f docker-compose.test.yml --env-file .env.test --profile migration up flyway-test
 # Avec SAF :    ... --profile saf up -d        (lecture de la SAUVEGARDE uniquement)
 # Arret :       docker compose -f docker-compose.test.yml --env-file .env.test down
@@ -160,8 +160,13 @@ services:
       UI_APP_URL: ${UI_APP_URL}
       BACKEND_APP_URL: ${BACKEND_APP_URL}
       # Aucun courriel ni SMS ne part de la pile de test.
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-absent:9092}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-test:9092}
       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_BLOCK_MS: "3000"
+      # Les trois lignes que porte la production. Sans la troisieme, Hibernate cherche
+      # JCacheRegionFactory, absent du classpath, et le service ne demarre pas du tout.
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       JAVA_TOOL_OPTIONS: "-Xms192m -Xmx384m -XX:+ExitOnOutOfMemoryError"
     volumes:
       - ./logs/test/userservice:/var/log/userservice
@@ -195,16 +200,21 @@ services:
       # ------------------------------------------------------------------ TOUT CE QUI SORT
       # Ces cinq lignes sont la raison d'etre de ce fichier : la pile de test ne doit
       # joindre personne. La production, elle, porte PORTEFEUILLE_ALERTES_ACTIVES=true.
-      PORTEFEUILLE_ALERTES_ACTIVES: "false"
+      PORTEFEUILLE_ALERTES_ACTIVES: ${TEST_ALERTES_ACTIVES:-false}   # vers le piege a courriels seulement
       CREDIT_NEGATIF_ACTIF: "false"
       SAF_SANTE_ACTIF: "false"
       SIGNALEMENT_TELEPHONE_SMS_ACTIF: "false"
       SLACK_WEBHOOK_URL: ""
-      # Sans courtier Kafka : echec rapide au lieu d'une minute de blocage par envoi.
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-absent:9092}
+      # SMS : l API canal pointe sur un hote qui n existe pas. Aucun SMS ne peut partir d ici.
+      CANAL_API_BASE_URL: "http://canal-absent:1"
+      CANAL_API_USERNAME: ""
+      CANAL_API_PASSWORD: ""
+      # Si le courtier de test est absent : echec rapide au lieu d'une minute de blocage par envoi.
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-test:9092}
       SPRING_KAFKA_PRODUCER_PROPERTIES_MAX_BLOCK_MS: "3000"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_SECOND_LEVEL_CACHE: "false"
       SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_USE_QUERY_CACHE: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_CACHE_REGION_FACTORY_CLASS: "org.hibernate.cache.internal.NoCachingRegionFactory"
       JAVA_TOOL_OPTIONS: "-Xms256m -Xmx512m -XX:+ExitOnOutOfMemoryError"
     volumes:
       - ./logs/test/ecreditservice:/var/log/ecreditservice
@@ -282,6 +292,181 @@ services:
         limits:
           memory: 640M
           cpus: '0.5'
+
+  # ------------------------------------------------------------------ le jumeau complet
+  # Ajoute le 13/11/2026 pour la machine a 16 Go. Tout ce qui, en production, sort de la
+  # plateforme (courriels, SMS, Slack, API partenaires) est ici soit capture, soit coupe.
+
+  zookeeper-test:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper-test
+    environment:
+      ZOOKEEPER_CLIENT_PORT: "2181"
+      ZOOKEEPER_TICK_TIME: "2000"
+      KAFKA_HEAP_OPTS: "-Xms64m -Xmx128m"
+    networks:
+      - test
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Un seul point d ecoute, interne au reseau de test : aucun port sur la machine.
+  kafka-test:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka-test
+    environment:
+      KAFKA_BROKER_ID: "1"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper-test:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-test:9092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_HEAP_OPTS: "-Xms128m -Xmx384m"
+    depends_on:
+      - zookeeper-test
+    networks:
+      - test
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+          cpus: '0.5'
+
+  # Piege a courriels : TOUT ce que le service de notification envoie finit ici, visible dans
+  # une interface web (par tunnel SSH, port 18025), et n atteint jamais une vraie boite.
+  # C est ce qui permet d activer les alertes en test sans risque (TEST_ALERTES_ACTIVES).
+  mailpit-test:
+    image: axllent/mailpit:latest
+    container_name: mailpit-test
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+      MP_MAX_MESSAGES: "5000"
+    ports:
+      - "127.0.0.1:18025:8025"
+    networks:
+      - test
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+  notificationservice-test:
+    image: doukoure93/notificationservice:${TEST_IMAGE_TAG:-latest}
+    container_name: notificationservice-test
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      JWKS_URI: "http://authorizationserver-test:8080/oauth2/jwks"
+      UI_APP_URL: ${UI_APP_URL}
+      BACKEND_APP_URL: ${BACKEND_APP_URL}
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${TEST_KAFKA:-kafka-test:9092}
+      # Le courrier part dans le piege, jamais vers Gmail : hote et port du conteneur mailpit.
+      MAIL_HOST: mailpit-test
+      MAIL_PORT: "1025"
+      MAIL_USERNAME: test
+      MAIL_PASSWORD: test
+      MAIL_FROM_NAME: "DIGI-CRG TEST"
+      SPRING_MAIL_HOST: mailpit-test
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_USERNAME: test
+      SPRING_MAIL_PASSWORD: test
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx320m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/notificationservice:/var/log/notificationservice
+    networks:
+      - test
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 448M
+          cpus: '0.5'
+
+  # Cles d API PROPRES AU TEST : KUMY et la BCRG appellent la production, jamais ce nom.
+  agriculteurservice-test:
+    image: doukoure93/agriculteurservice:${TEST_IMAGE_TAG:-latest}
+    container_name: agriculteurservice-test
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      AGRIPILOT_PUBLIC_API_KEY: ${TEST_AGRIPILOT_PUBLIC_API_KEY:-cle-de-test-agripilot}
+      EBANKING_AGRI_API_KEY: ${TEST_EBANKING_AGRI_API_KEY:-cle-de-test-agri}
+      KUMY_AGENTS_API_KEY: ${TEST_KUMY_AGENTS_API_KEY:-cle-de-test-kumy}
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx320m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/agriculteurservice:/var/log/agriculteurservice
+    networks:
+      - test
+    depends_on:
+      - discoveryserver-test
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 448M
+          cpus: '0.5'
+
+  bcrgservice-test:
+    image: doukoure93/bcrgservice:${TEST_IMAGE_TAG:-latest}
+    container_name: bcrgservice-test
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://admin:${EUREKA_PASSWORD:-admin2711}@discoveryserver-test:5002/eureka/"
+      BCRG_PUBLIC_API_KEY: ${TEST_BCRG_PUBLIC_API_KEY:-cle-de-test-bcrg}
+      EBANKING_REG_API_KEY: ${TEST_BCRG_INTERNAL_API_KEY:-cle-de-test-bcrg-interne}
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresdb-test:5432/${POSTGRES_DB}"
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: "-Xms192m -Xmx320m -XX:+ExitOnOutOfMemoryError"
+    volumes:
+      - ./logs/test/bcrgservice:/var/log/bcrgservice
+    networks:
+      - test
+    depends_on:
+      postgresdb-test:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 448M
+          cpus: '0.5'
+
+  # L application web, construite POUR LE TEST par le workflow test-cd (ses adresses sont
+  # figees dans l image). Profil web : ne demarre que si l image existe sur la machine ;
+  # start-test.sh ajoute le profil de lui-meme dans ce cas.
+  digicrg-app-test:
+    image: doukoure93/digicrg-app:${TEST_APP_IMAGE_TAG:-test}
+    container_name: digicrg-app-test
+    environment:
+      API_BASE_URL: ${BACKEND_APP_URL}/api
+      AUTH_SERVER_URL: ${BACKEND_APP_URL}/auth
+    networks:
+      - test
+      - prod          # servie par le nginx de production sous test.digi-creditrural-io.com
+    restart: unless-stopped
+    profiles:
+      - web
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: '0.25'
 
 volumes:
   digi_test_postgres_data:

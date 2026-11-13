@@ -1,0 +1,176 @@
+name: CD - Deploiement sur la pile de TEST
+
+# La branche « test » est la marche avant la production : tout developpement y est fusionne
+# d'abord, s'y eprouve depuis un telephone ou un navigateur, puis passe sur main.
+#
+# Ce workflow construit les memes images que la production, les pousse sous le marqueur
+# « test », construit l'application web avec les adresses de test figees dedans, puis met a
+# jour la SECONDE copie du depot sur le serveur (~/microservices-test, branche test) et
+# redemarre la pile de test par start-test.sh, dont les controles font autorite : si la
+# machine n'a pas la memoire, le run echoue au lieu de faire tomber la production.
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploiement-test
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test
+    paths:
+      - micro-digiservices/**
+      - frontend/**
+      - docker-compose.test.yml
+      - start-test.sh
+      - stop-test.sh
+      - rafraichir-base-test.sh
+      - nginx-test/**
+      - .github/workflows/test-cd.yml
+      - '!micro-digiservices/**/*.md'
+      - '!frontend/**/*.md'
+
+jobs:
+  construire-et-deployer-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Connexion a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+
+      # Memes identifiants de registre que la production : Docker Hub pour pousser, ghcr.io
+      # pour les images de base de Jib (acces anonyme limite, cf. backend-cd.yml).
+      - name: Reglages Maven pour Docker Hub et ghcr.io
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << EOF
+          <settings>
+            <servers>
+              <server>
+                <id>registry-1.docker.io</id>
+                <username>${{ secrets.DOCKERHUB_USERNAME }}</username>
+                <password>${{ secrets.DOCKERHUB_ACCESS_TOKEN }}</password>
+              </server>
+              <server>
+                <id>registry.hub.docker.com</id>
+                <username>${{ secrets.DOCKERHUB_USERNAME }}</username>
+                <password>${{ secrets.DOCKERHUB_ACCESS_TOKEN }}</password>
+              </server>
+              <server>
+                <id>ghcr.io</id>
+                <username>${{ github.actor }}</username>
+                <password>${{ secrets.GITHUB_TOKEN }}</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Marqueur de cette construction
+        id: marqueur
+        run: echo "SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Installation des modules (dont clients)
+        working-directory: ./micro-digiservices
+        run: mvn -ntp -B install -DskipTests
+
+      # Les neuf services, chacun sous deux marqueurs : « test » (ce que la pile tire) et
+      # « test-<commit> » (pour revenir en arriere ou savoir ce qui tourne).
+      - name: Construire et pousser les neuf images sous le marqueur test
+        working-directory: ./micro-digiservices
+        run: |
+          set -e
+          for couple in discoveryserver:discoveryserver gateway:gateway authorizationserver:authorizationserver \
+                        userservice:userservice ecreditservice:ecreditservice ebanking:ebanking \
+                        notificationservice:notificationservice agriculteurservice:agriculteurservice bcrgservice:bcrgservice; do
+            module=${couple%%:*}; image=${couple##*:}
+            echo "::group::$module"
+            ( cd "$module" && mvn -ntp -B verify -DskipTests jib:dockerBuild )
+            docker tag "doukoure93/$image:0.0.1-SNAPSHOT" "doukoure93/$image:test"
+            docker tag "doukoure93/$image:0.0.1-SNAPSHOT" "doukoure93/$image:test-${{ steps.marqueur.outputs.SHA }}"
+            bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" "doukoure93/$image:test"
+            bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" "doukoure93/$image:test-${{ steps.marqueur.outputs.SHA }}"
+            echo "::endgroup::"
+          done
+
+      # L'application web fige ses adresses a la construction : celle de test est donc une
+      # image a part, qui ne peut parler qu'a test.digi-creditrural-io.com.
+      - name: Construire et pousser l'application web de test
+        working-directory: ./frontend/ultima-ng-19.0.0
+        run: |
+          docker build \
+            -t doukoure93/digicrg-app:test \
+            -t doukoure93/digicrg-app:test-${{ steps.marqueur.outputs.SHA }} \
+            --build-arg API_BASE_URL=https://test.digi-creditrural-io.com/api \
+            --build-arg AUTH_SERVER_URL=https://test.digi-creditrural-io.com/auth \
+            --build-arg REDIRECT_URI=https://test.digi-creditrural-io.com \
+            --file Dockerfile .
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/digicrg-app:test
+          bash "$GITHUB_WORKSPACE/.github/scripts/pousser-image.sh" doukoure93/digicrg-app:test-${{ steps.marqueur.outputs.SHA }}
+
+      - name: Deployer sur la pile de test
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OVH_HOST }}
+          username: ${{ secrets.OVH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          command_timeout: 25m
+          script: |
+            set -e
+            DEPOT_PROD=~/microservices
+            DEPOT_TEST=~/microservices-test
+
+            # 1. La seconde copie du depot, sur la branche test. Jamais celle de la production.
+            if [ ! -d "$DEPOT_TEST/.git" ]; then
+              echo "📥 premiere installation : clone de la branche test"
+              git clone --branch test https://github.com/${{ github.repository }}.git "$DEPOT_TEST"
+            fi
+            cd "$DEPOT_TEST"
+            git fetch origin test
+            git reset --hard origin/test
+            echo "📌 branche test a $(git rev-parse --short HEAD)"
+
+            # 2. L environnement de test : pose a la main une fois, herite au premier passage.
+            if [ ! -f .env.test ]; then
+              cp "$DEPOT_PROD/.env.test" .env.test && chmod 600 .env.test
+              echo "ℹ️  .env.test repris depuis la copie de production"
+            fi
+            grep -q '^TEST_IMAGE_TAG=' .env.test && sed -i 's/^TEST_IMAGE_TAG=.*/TEST_IMAGE_TAG=test/' .env.test || echo 'TEST_IMAGE_TAG=test' >> .env.test
+            grep -q '^TEST_APP_IMAGE_TAG=' .env.test && sed -i 's/^TEST_APP_IMAGE_TAG=.*/TEST_APP_IMAGE_TAG=test/' .env.test || echo 'TEST_APP_IMAGE_TAG=test' >> .env.test
+
+            # 3. Le bloc nginx de test vit dans la copie de production (c est son nginx) :
+            #    on l y recopie s il a change, et on recharge.
+            CIBLE="$DEPOT_PROD/nginx/sites-enabled/test-digi-creditrural.conf"
+            if ! cmp -s nginx-test/test-digi-creditrural.conf "$CIBLE"; then
+              cp nginx-test/test-digi-creditrural.conf "$CIBLE"
+              docker exec nginx-proxy nginx -t && docker exec nginx-proxy nginx -s reload
+              echo "🔁 bloc nginx de test mis a jour et recharge"
+            fi
+
+            # 4. Redemarrage par le script et ses controles, SANS arret prealable : si la
+            #    memoire manque, le script refuse et la pile en place continue de tourner.
+            #    Compose retrouve le projet digi-test quel que soit le dossier d ou il a ete
+            #    lance ; --remove-orphans retire les services que la branche ne declare plus.
+            ./start-test.sh --remove-orphans
+
+      - name: Compte rendu
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then exit 0; fi
+          if [ "${{ job.status }}" = "success" ]; then ICONE=":test_tube:"; TEXTE="Pile de TEST mise a jour (${{ steps.marqueur.outputs.SHA }}) : https://test.digi-creditrural-io.com"; else ICONE=":x:"; TEXTE="Deploiement sur la pile de TEST en echec (${{ steps.marqueur.outputs.SHA }}) : voir le run"; fi
+          curl -s -X POST -H 'Content-type: application/json' --data "{\"text\":\"$ICONE $TEXTE\"}" "$SLACK_WEBHOOK_URL" || true
