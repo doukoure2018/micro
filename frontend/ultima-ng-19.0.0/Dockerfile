@@ -3,6 +3,9 @@ FROM node:20.16.0-alpine AS build
 # Define both URL arguments
 ARG API_BASE_URL
 ARG AUTH_SERVER_URL
+# Adresse de retour OAuth2 : sans elle, une image construite pour le test renvoyait la
+# connexion vers la production (environment.prod.ts la fige a la construction).
+ARG REDIRECT_URI
 
 # 1. Install build essentials and python3
 RUN apk add --no-cache python3 make g++
@@ -28,6 +31,9 @@ RUN if [ -n "$API_BASE_URL" ]; then \
     fi && \
     if [ -n "$AUTH_SERVER_URL" ]; then \
       sed -i "s|authServer:.*|authServer: '$AUTH_SERVER_URL',|g" src/environments/environment.prod.ts; \
+    fi && \
+    if [ -n "$REDIRECT_URI" ]; then \
+      sed -i "s|redirectUri:.*|redirectUri: '$REDIRECT_URI',|g" src/environments/environment.prod.ts; \
     fi
 
 # 6. Build with production configuration

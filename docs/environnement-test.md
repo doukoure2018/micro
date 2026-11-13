@@ -12,10 +12,13 @@ développement.
 | Base | `postgrecontainer`, volume `microservices_postgres_data_v16` | `postgrecontainer-test`, volume `digi_test_postgres_data` |
 | Ports | 5432, 5002, 8000, 8080, 8085, 8087, 8081 | 15432, 15002, 18000, 18080, 18085, 18087, 18081 |
 | Adresse | `digi-creditrural-io.com` | `test.digi-creditrural-io.com` |
-| Alertes, courriels, SMS | actifs | **tous coupés** |
+| Courriels | vrais envois | **capturés par mailpit-test**, visibles par tunnel SSH sur le port 18025 |
+| SMS, Slack, API partenaires | actifs | **coupés** (hôte inexistant, webhook vide, clés propres au test) |
 | SAF | production, plus la sauvegarde selon l'aiguillage | **sauvegarde seule (10.9.0.168)** |
+| Dépôt sur le serveur | `~/microservices`, branche `main` | `~/microservices-test`, branche `test` |
+| Images | `latest`, construites par `backend-cd` depuis `main` | `test`, construites par `test-cd` depuis la branche `test` |
 
-Fichiers : `docker-compose.test.yml`, `.env.test.example`, `start-test.sh`, `stop-test.sh`.
+Fichiers : `docker-compose.test.yml`, `.env.test.example`, `start-test.sh`, `stop-test.sh`, `rafraichir-base-test.sh`, `nginx-test/`, `.github/workflows/test-cd.yml`.
 
 ## La mise en route, telle qu'elle a été faite le 13 novembre 2026
 
@@ -115,13 +118,59 @@ que `latest` dans `.env.test`, puis `docker compose ... pull && ./start-test.sh`
 `start-test.sh` vérifie les quatre premiers avant chaque démarrage, et refuse de partir si
 l'un manque.
 
-## Ce que cette pile n'a pas
+## Le jumeau complet, pour la machine à 16 Go
 
-- **Pas de Kafka, donc aucun courriel ni notification poussée.** C'est voulu au lot 0. Le
-  jour où la recette des notifications l'exigera, ajouter un courtier **propre au test**,
-  jamais celui de production, et un notificationservice de test avec sa propre boîte
-  d'envoi.
-- **Pas d'application Angular.** Le client, ici, c'est le téléphone. Ajouter `digicrg-app`
-  en profil le jour où les écrans web des réclamations se recettent.
-- **Pas d'agriculteurservice ni de bcrgservice** : hors du périmètre mobile.
-- **SAF en lecture de la sauvegarde**, donc des données à J-1 et pas de mouvement du jour.
+Depuis le 13 novembre 2026 la pile déclare les quatorze services de la production, avec
+leurs tailles de tas réduites. Trois d'entre eux changent de nature en test :
+
+- **mailpit-test, le piège à courriels.** Le service de notification de test lui envoie tout
+  ce qu'il enverrait d'ordinaire à Gmail : rien n'atteint une vraie boîte, et tout se lit dans
+  une interface web. C'est ce qui permet d'activer les alertes du portefeuille en test
+  (`TEST_ALERTES_ACTIVES=true`) et de voir le digest de 08h20 tel que les agents le recevront.
+  Pour lire les courriels : `ssh -L 18025:127.0.0.1:18025 ubuntu@51.91.254.218`, puis
+  `http://localhost:18025`.
+- **kafka-test et zookeeper-test**, propres à la pile : le notificationservice de production
+  ne voit jamais un événement de test.
+- **digicrg-app-test**, l'application web construite pour le test par `test-cd`, avec les
+  adresses de test figées dans l'image. Profil `web` : `start-test.sh` l'ajoute de lui-même
+  quand l'image est sur la machine. Sans elle, la racine du site affiche une page texte.
+
+Les clés d'API des services agriculteur et BCRG sont propres au test ; KUMY et la BCRG
+appellent la production, jamais ce nom. ebanking lit toujours la seule sauvegarde SAF.
+
+Mémoire attendue : environ 3 500 Mo pour le jumeau complet. Le contrôle de `start-test.sh`
+compte 4 200 Mo de besoin, déduction faite de ce que les conteneurs de test consomment déjà.
+Sur la machine à 8 Go il refuse, et c'est voulu.
+
+## La chaîne : la branche test avant main
+
+1. Un développement est fusionné sur la branche **`test`**.
+2. Le workflow `test-cd` construit les neuf images et l'application web sous le marqueur
+   `test`, les pousse, met à jour `~/microservices-test` sur le serveur, recopie le bloc
+   nginx de test s'il a changé, et relance `start-test.sh`. Si la mémoire manque, le run
+   échoue et la pile en place n'est pas touchée.
+3. La recette se fait sur `https://test.digi-creditrural-io.com`, depuis un téléphone ou
+   un navigateur, sur une copie des vraies données, sans qu'aucun courriel ni SMS ne sorte.
+4. Le même développement est fusionné de `test` vers **`main`**, et `backend-cd` le porte
+   en production.
+
+Les migrations de la pile de test sont jouées depuis `~/microservices-test`, donc depuis la
+branche `test` : une migration s'éprouve là avant d'atteindre la production.
+
+## Rafraîchir la base de test
+
+```bash
+./rafraichir-base-test.sh                        # la sauvegarde de la nuit
+./rafraichir-base-test.sh ~/backups_db/backup_localdb_20261113_011909.sql.gz
+```
+
+Le script arrête les services de test, supprime et recrée la base de test, restaure la
+sauvegarde, rejoue les migrations et relance la pile. Il refuse d'agir si le conteneur visé
+n'appartient pas au projet compose `digi-test`.
+
+## Ce qui reste hors de la pile de test
+
+- **pgAdmin et certbot** restent uniques, du côté de la production : l'un n'a pas de raison
+  d'exister en double, l'autre renouvelle déjà le certificat de test.
+- **Le nginx** est celui de la production, qui sert les deux noms ; le bloc de test est
+  versionné dans `nginx-test/` et recopié par `test-cd`.
