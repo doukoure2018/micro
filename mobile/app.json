@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "DIGI-CRG",
+    "slug": "digicrg",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "com.digiservices.digicrg",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.digiservices.digicrg",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "La position sert a situer une visite de recouvrement sur le terrain.",
+        "NSCameraUsageDescription": "L appareil photo sert a joindre une piece a une visite ou a une reclamation.",
+        "NSPhotoLibraryUsageDescription": "Pour joindre une photo deja prise a une visite."
+      }
+    },
+    "android": {
+      "package": "com.digiservices.digicrg",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#1F6B45"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "La position sert a situer une visite de recouvrement sur le terrain."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pour joindre une photo a une visite.",
+          "cameraPermission": "L appareil photo sert a joindre une piece a une visite."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}
