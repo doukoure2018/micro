@@ -2,6 +2,9 @@ services:
   # Database Services
   postgresdb:
     container_name: postgrecontainer
+    # Relance automatique (constat du 13/11/2026, machine jamais redemarree en 125 jours) :
+    # la base de production : sans cette ligne, un redemarrage de la machine la laissait a l'arret pendant que les services la cherchaient.
+    restart: unless-stopped
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -56,6 +59,7 @@ services:
   pgadmin:
 # pgAdmin : accès restreint à la loopback (via tunnel SSH). N'expose plus l'UI d'admin sur Internet.
     container_name: pgadmincontainer
+    restart: unless-stopped
     image: dpage/pgadmin4:latest
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
@@ -77,6 +81,7 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: zookeeper
+    restart: unless-stopped
     ports:
       - "127.0.0.1:2181:2181"
     environment:
@@ -88,6 +93,9 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
+    # Relance automatique (constat du 13/11/2026, machine jamais redemarree en 125 jours) :
+    # sans Kafka, aucun courriel ni alerte ne part, et le producteur d'ecreditservice bloque.
+    restart: unless-stopped
     ports:
       - "127.0.0.1:9092:9092"
     environment:
@@ -581,6 +589,9 @@ services:
   certbot:
     image: certbot/certbot
     container_name: certbot
+    # Relance automatique (constat du 13/11/2026, machine jamais redemarree en 125 jours) :
+    # la boucle de renouvellement des certificats : a l'arret, les certificats expirent en silence.
+    restart: unless-stopped
     volumes:
       - ./certbot/www:/var/www/certbot:rw
       - ./certbot/conf:/etc/letsencrypt:rw
