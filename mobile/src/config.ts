@@ -31,10 +31,19 @@ const ENVIRONNEMENTS: Record<'test' | 'prod', Environnement> = {
 
 export const config = ENVIRONNEMENTS[ENV] ?? ENVIRONNEMENTS.test;
 
-/** Le client OIDC public de l'application, enregistre cote serveur (PKCE obligatoire). */
+/**
+ * Le client OIDC public de l'application, enregistre cote serveur (PKCE obligatoire).
+ *
+ * La redirection n'est pas ecrite en dur : dans une construction native c'est le schema de
+ * l'application, mais dans Expo Go c'est une adresse `exp://` qui porte l'adresse du poste de
+ * developpement. Les deux doivent etre declarees cote serveur, sans quoi le navigateur ne sait
+ * pas ou revenir et la connexion s'arrete sans message. L'ecran de connexion affiche l'adresse
+ * reellement utilisee quand l'environnement est le test, pour qu'on puisse la declarer.
+ */
 export const OAUTH = {
   clientId: 'mobile-app-client',
-  redirectUri: 'com.digiservices.digicrg://oauth2redirect',
+  schema: 'com.digiservices.digicrg',
+  chemin: 'oauth2redirect',
   scopes: ['openid', 'profile', 'email', 'agent_profile'],
 } as const;
 

@@ -20,11 +20,18 @@ export default function Connexion() {
   const [erreur, setErreur] = useState<string | null>(null);
   const router = useRouter();
 
+  // Calculee, jamais ecrite en dur : schema d'application dans une construction native,
+  // adresse exp:// dans Expo Go.
+  const redirection = AuthSession.makeRedirectUri({
+    scheme: OAUTH.schema,
+    path: OAUTH.chemin,
+  });
+
   const [demande, , declencher] = AuthSession.useAuthRequest(
     {
       clientId: OAUTH.clientId,
       scopes: [...OAUTH.scopes],
-      redirectUri: OAUTH.redirectUri,
+      redirectUri: redirection,
       usePKCE: true,
     },
     documentDecouverte(),
@@ -43,7 +50,7 @@ export default function Connexion() {
         {
           clientId: OAUTH.clientId,
           code: reponse.params.code,
-          redirectUri: OAUTH.redirectUri,
+          redirectUri: redirection,
           extraParams: { code_verifier: demande?.codeVerifier ?? '' },
         },
         documentDecouverte(),
@@ -109,7 +116,12 @@ export default function Connexion() {
       </View>
 
       {!config.estProduction ? (
-        <Text style={s.environnement}>environnement de test</Text>
+        <View style={{ gap: espaces.s }}>
+          <Text style={s.environnement}>environnement de test</Text>
+          <Text style={s.redirection} selectable>
+            Redirection a declarer cote serveur :{'\n'}{redirection}
+          </Text>
+        </View>
       ) : null}
     </ScrollView>
   );
@@ -151,5 +163,6 @@ const s = StyleSheet.create({
     color: couleurs.ambre, backgroundColor: couleurs.ambreClair,
     paddingHorizontal: espaces.m, paddingVertical: espaces.xs, borderRadius: 8, overflow: 'hidden',
   },
+  redirection: { fontSize: texte.minuscule, color: couleurs.texteSecondaire },
   cibleMin: { minHeight: CIBLE_MIN },
 });
