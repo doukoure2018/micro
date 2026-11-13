@@ -21,6 +21,10 @@ fi
 PROFILS=""
 if grep -qE '^SAF_SAUVEGARDE_PASSWORD=.+' .env.test; then PROFILS="$PROFILS --profile saf"; fi
 APP_TAG=$(grep -E '^TEST_APP_IMAGE_TAG=' .env.test | cut -d= -f2-); APP_TAG=${APP_TAG:-test}
+# L image de l application web est tiree ICI, avant le choix des profils : le pull general
+# ne porte que sur les profils actifs, et le profil web ne s active que si l image est la.
+# Sans cette ligne, le profil ne pouvait jamais s activer au premier passage.
+docker pull --quiet "doukoure93/digicrg-app:$APP_TAG" >/dev/null 2>&1 || true
 if docker image inspect "doukoure93/digicrg-app:$APP_TAG" >/dev/null 2>&1; then PROFILS="$PROFILS --profile web"; fi
 echo "ℹ️  profils : ${PROFILS:-aucun (base, annuaire, auth, utilisateurs, credit, passerelle, kafka, notification, agriculteur, bcrg, piege a courriels)}"
 
