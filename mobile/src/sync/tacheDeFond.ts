@@ -27,18 +27,36 @@ TaskManager.defineTask(TACHE_SYNC, async () => {
   }
 });
 
-export async function enregistrerTacheDeFond(): Promise<void> {
-  const deja = await TaskManager.isTaskRegisteredAsync(TACHE_SYNC);
-  if (deja) {
-    return;
+/**
+ * Enregistre la tache, ou renonce sans bruit.
+ *
+ * <p>Expo Go ne porte pas les taches de fond, et un telephone peut les refuser. Ce n'est pas
+ * une panne : les deux autres declencheurs — le retour du reseau et l'ouverture de
+ * l'application — suffisent a transmettre. Laisser l'erreur remonter arrete l'application
+ * au demarrage pour une fonction qui n'est qu'un confort.</p>
+ */
+export async function enregistrerTacheDeFond(): Promise<boolean> {
+  try {
+    if (await TaskManager.isTaskRegisteredAsync(TACHE_SYNC)) {
+      return true;
+    }
+    await BackgroundTask.registerTaskAsync(TACHE_SYNC, {
+      minimumInterval: LIMITES.minutesTacheDeFond,
+    });
+    return true;
+  } catch (e) {
+    console.warn('[sync] transmission en arriere-plan indisponible :',
+      e instanceof Error ? e.message : e);
+    return false;
   }
-  await BackgroundTask.registerTaskAsync(TACHE_SYNC, {
-    minimumInterval: LIMITES.minutesTacheDeFond,
-  });
 }
 
 export async function retirerTacheDeFond(): Promise<void> {
-  if (await TaskManager.isTaskRegisteredAsync(TACHE_SYNC)) {
-    await BackgroundTask.unregisterTaskAsync(TACHE_SYNC);
+  try {
+    if (await TaskManager.isTaskRegisteredAsync(TACHE_SYNC)) {
+      await BackgroundTask.unregisterTaskAsync(TACHE_SYNC);
+    }
+  } catch {
+    // Jamais enregistree : rien a retirer.
   }
 }
