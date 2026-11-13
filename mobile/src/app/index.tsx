@@ -35,7 +35,7 @@ export default function Aujourdhui() {
 
   const surRafraichir = useCallback(async () => {
     setRafraichit(true);
-    await synchroniser();
+    await synchroniser({ force: true });
     await charger();
     setRafraichit(false);
   }, [charger]);

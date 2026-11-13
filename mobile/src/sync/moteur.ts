@@ -32,8 +32,21 @@ export type ResultatSync = {
 };
 
 let enCours = false;
+let dernierEssai = 0;
 
-export async function synchroniser(): Promise<ResultatSync> {
+/**
+ * Intervalle minimal entre deux synchronisations AUTOMATIQUES.
+ *
+ * <p>Trois declencheurs mènent ici — le reveil du systeme, le retour du reseau, l'ouverture de
+ * l'application — et ils se suivent de pres : au premier essai sur un telephone, le serveur a
+ * recu dix demandes de portefeuille en deux minutes. Chacune interroge SAF. Sur un forfait de
+ * terrain, c'est de la donnee payee pour rien.</p>
+ *
+ * <p>Le bouton « Synchroniser maintenant » n'est pas concerne : quand l'agent demande, on y va.</p>
+ */
+const INTERVALLE_MIN_MS = 120_000;
+
+export async function synchroniser(options: { force?: boolean } = {}): Promise<ResultatSync> {
   const vide: ResultatSync = {
     transmises: 0, refusees: 0, doublons: 0, creditsRecus: 0,
     horsConnexion: false, erreur: null,
@@ -41,6 +54,10 @@ export async function synchroniser(): Promise<ResultatSync> {
   if (enCours) {
     return vide;
   }
+  if (!options.force && Date.now() - dernierEssai < INTERVALLE_MIN_MS) {
+    return vide;
+  }
+  dernierEssai = Date.now();
   const reseau = await NetInfo.fetch();
   if (!reseau.isConnected) {
     return { ...vide, horsConnexion: true };

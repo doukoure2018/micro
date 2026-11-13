@@ -25,7 +25,7 @@ export default function Synchronisation() {
   async function lancer() {
     setEnCours(true);
     setMessage(null);
-    const r = await synchroniser();
+    const r = await synchroniser({ force: true });
     setMessage(
       r.horsConnexion ? 'Hors connexion : les saisies attendent.'
         : r.erreur ? r.erreur
