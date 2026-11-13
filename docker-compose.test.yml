@@ -375,12 +375,14 @@ services:
       # Le courrier part dans le piege, jamais vers Gmail : hote et port du conteneur mailpit.
       MAIL_HOST: mailpit-test
       MAIL_PORT: "1025"
-      MAIL_USERNAME: test
+      # L identifiant SMTP sert aussi d adresse d expediteur : le piege exige une adresse
+      # conforme (« 553 5.1.3 The address is not a valid RFC 5321 address » sinon).
+      MAIL_USERNAME: test@test.digi-creditrural-io.com
       MAIL_PASSWORD: test
       MAIL_FROM_NAME: "DIGI-CRG TEST"
       SPRING_MAIL_HOST: mailpit-test
       SPRING_MAIL_PORT: "1025"
-      SPRING_MAIL_USERNAME: test
+      SPRING_MAIL_USERNAME: test@test.digi-creditrural-io.com
       SPRING_MAIL_PASSWORD: test
       # La configuration de production EXIGE STARTTLS (starttls.required=true), que le piege
       # n offre pas sans certificat : « STARTTLS is required but host does not support
