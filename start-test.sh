@@ -58,6 +58,12 @@ if echo "$CONFIG" | grep -qE 'SPRING_KAFKA_BOOTSTRAP_SERVERS: "?kafka:9092'; the
     echo "❌ La pile de test pointe sur le Kafka de production."
     exit 1
 fi
+if echo "$CONFIG" | grep -q "kafka-absent"; then
+    echo "❌ TEST_KAFKA pointe encore sur kafka-absent (valeur d avant le jumeau complet)."
+    echo "   Le consommateur du service de notification refuse de demarrer sur une adresse qui ne"
+    echo "   resout pas. Mettre TEST_KAFKA=kafka-test:9092 dans .env.test."
+    exit 1
+fi
 echo "✅ kafka : courtier propre au test"
 
 # 4. La memoire. Ce que les conteneurs de test consomment DEJA est deduit du besoin : sans
