@@ -114,6 +114,11 @@ public class MobileService {
         for (VisiteCredit c : suivi) {
             PortefeuilleCreditDto s = saf.get(c.cle());
             CreditConnu k = connus.get(c.cle());
+            // SAF a répondu pour ce point de service sans porter ce crédit : il est sorti.
+            boolean absent = s == null && lecture.psLus().contains(c.codAgencia());
+            // Les chiffres d'un crédit sorti de SAF sont périmés par définition : on garde son
+            // nom, pas son ancien solde, qui le ferait passer pour vivant.
+            CreditConnu chiffres = absent ? null : k;
             String membre = premierRenseigne(c.codCliente(),
                     s == null ? null : s.getCodCliente(), k == null ? null : k.codCliente());
             IdentiteMembre fiche = membre == null ? null : fiches.get(membre);
@@ -125,17 +130,17 @@ public class MobileService {
                     premierRenseigne(s == null ? null : PortefeuilleCreditPhotoRepository.telephone(s),
                             k == null ? null : k.telephone(),
                             fiche == null ? null : fiche.telephone()),
-                    s != null ? s.getDesTipCredito() : (k == null ? null : k.produit()),
-                    s != null ? s.getMonSaldo() : (k == null ? null : k.encours()),
-                    s != null ? impaye(s) : (k == null ? null : k.montantImpaye()),
+                    s != null ? s.getDesTipCredito() : (chiffres == null ? null : chiffres.produit()),
+                    s != null ? s.getMonSaldo() : (chiffres == null ? null : chiffres.encours()),
+                    s != null ? impaye(s) : (chiffres == null ? null : chiffres.montantImpaye()),
                     s != null ? (s.getJoursRetard() == null ? null : s.getJoursRetard().intValue())
-                            : (k == null ? null : k.joursRetard()),
-                    s != null ? s.getProchaineEcheance() : (k == null ? null : k.prochaineEcheance()),
-                    s != null ? s.getMonCuota() : (k == null ? null : k.prochaineEcheanceMontant()),
+                            : (chiffres == null ? null : chiffres.joursRetard()),
+                    s != null ? s.getProchaineEcheance() : (chiffres == null ? null : chiffres.prochaineEcheance()),
+                    s != null ? s.getMonCuota() : (chiffres == null ? null : chiffres.prochaineEcheanceMontant()),
                     c.derniereAppreciation(), c.derniereVisiteAt(),
                     c.promesseDate(), c.promesseMontant(),
-                    s != null ? maintenant : (k == null ? null : k.luAt()),
-                    s == null && lecture.psLus().contains(c.codAgencia())));
+                    s != null ? maintenant : (chiffres == null ? null : chiffres.luAt()),
+                    absent));
         }
         portefeuille.sort((a, b) -> Integer.compare(
                 b.joursRetard() == null ? -1 : b.joursRetard(),

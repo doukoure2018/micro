@@ -116,18 +116,25 @@ class PortefeuilleHorsSafTest {
     }
 
     @Test
-    @DisplayName("SAF repond mais ne porte pas ce credit : il est soldé, ce n'est pas une panne")
+    @DisplayName("SAF repond mais ne porte pas ce credit : il est solde, et son ancien solde se tait")
     void safRepondSansCeCreditDoncIlEstClos() {
         PortefeuilleCreditDto autre = new PortefeuilleCreditDto();
         autre.setCodAgencia(PS);
         autre.setNumCredito(999L);
         when(saf.getTousCredits(anyString())).thenReturn(List.of(autre));
+        // Le credit a ete lu hier : son solde d'hier ne doit PAS le faire passer pour vivant,
+        // et ne doit pas entrer dans l'encours du portefeuille.
+        when(photo.parCreditDeLAgent(anyLong())).thenReturn(Map.of(PS + "/" + CREDIT,
+                new CreditConnu(PS, CREDIT, MEMBRE, "TOURE SALIOU", "625000000", "AGRICOLE",
+                        new BigDecimal("800000"), BigDecimal.ZERO, 3, null, null, HIER)));
 
         CreditPortefeuille ligne = service().portefeuille(UUID_AGENT).get(0);
 
         assertTrue(ligne.absentDeSaf(),
                 "le point de service a repondu sans ce credit : l'affectation est a fermer");
-        assertNull(ligne.encours());
+        assertEquals("TOURE SALIOU", ligne.nomClient(), "le nom du membre reste utile a l'agent");
+        assertNull(ligne.encours(), "l'encours d'un credit sorti de SAF est perime");
+        assertNull(ligne.joursRetard());
         assertNull(ligne.montantsAt());
     }
 

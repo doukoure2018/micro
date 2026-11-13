@@ -40,11 +40,15 @@ export default function Aujourdhui() {
     setRafraichit(false);
   }, [charger]);
 
-  const enRetard = credits.filter((c) => (c.joursRetard ?? 0) > 0);
-  const aEcheance = credits.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance);
-  const promesses = credits.filter((c) => c.promesseDate);
+  // Le portefeuille, c'est ce que SAF porte. Une affectation dont SAF n'a plus le credit est
+  // comptee a part : sinon le telephone annonce 90 credits la ou le web en compte 89.
+  const portefeuille = credits.filter((c) => !c.absentDeSaf);
+  const clos = credits.filter((c) => c.absentDeSaf);
+  const enRetard = portefeuille.filter((c) => (c.joursRetard ?? 0) > 0);
+  const aEcheance = portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance);
+  const promesses = portefeuille.filter((c) => c.promesseDate);
   // Un encours inconnu n'est pas un encours nul : sans un seul montant lu, l'ecran le dit.
-  const avecMontant = credits.filter((c) => c.encours !== null && c.encours !== undefined);
+  const avecMontant = portefeuille.filter((c) => c.encours !== null && c.encours !== undefined);
   const encours = avecMontant.reduce((t, c) => t + (c.encours ?? 0), 0);
 
   return (
@@ -87,11 +91,18 @@ export default function Aujourdhui() {
         <Pressable style={s.carte}>
           <Text style={s.carteLibelle}>Mon portefeuille</Text>
           <Text style={s.carteValeur}>
-            {credits.length} credits
-            {credits.length > 0 && avecMontant.length === 0
+            {portefeuille.length} credits
+            {portefeuille.length > 0 && avecMontant.length === 0
               ? ' · montants indisponibles'
               : ` · ${montant(encours)}`}
           </Text>
+          {clos.length > 0 ? (
+            <Text style={s.aFermer}>
+              {clos.length === 1
+                ? '1 affectation sans credit dans SAF : a signaler a votre directeur'
+                : `${clos.length} affectations sans credit dans SAF : a signaler a votre directeur`}
+            </Text>
+          ) : null}
           {profil?.note !== null && profil?.note !== undefined ? (
             <Text style={s.score}>Mon score du jour : {profil.note} / 100 · classe {profil.classe}</Text>
           ) : null}
@@ -170,6 +181,7 @@ const s = StyleSheet.create({
   carteLibelle: { fontSize: texte.petit, color: couleurs.texteSecondaire },
   carteValeur: { fontSize: texte.sousTitre + 1, fontWeight: '600', color: couleurs.texte },
   score: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600', marginTop: espaces.xs },
+  aFermer: { fontSize: texte.minuscule, color: couleurs.ambre, fontWeight: '600', marginTop: espaces.xs },
   titreSection: { fontSize: texte.sousTitre, fontWeight: '600', color: couleurs.texte, marginTop: espaces.s },
   vide: { fontSize: texte.corps, color: couleurs.texteSecondaire },
   ligne: {

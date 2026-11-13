@@ -6,7 +6,7 @@ import { portefeuilleLocal } from '@/db/visites';
 import { estOuverte } from '@/db/base';
 import { cleDeRecherche, couleurRetard, couleurs, espaces, montant, texte } from '@/ui/theme';
 
-type Filtre = 'RETARD' | 'ECHEANCE' | 'TOUS';
+type Filtre = 'RETARD' | 'ECHEANCE' | 'TOUS' | 'CLOS';
 
 /** Le portefeuille de l'agent, lu dans la copie locale : il s'ouvre sans reseau. */
 export default function Portefeuille() {
@@ -19,9 +19,13 @@ export default function Portefeuille() {
     void (async () => setCredits(await portefeuilleLocal()))();
   }, []));
 
-  const enRetard = useMemo(() => credits.filter((c) => (c.joursRetard ?? 0) > 0), [credits]);
+  // Le portefeuille, c'est ce que SAF porte ; les affectations dont SAF n'a plus le credit
+  // vivent dans leur propre onglet, visibles mais hors des comptes.
+  const portefeuille = useMemo(() => credits.filter((c) => !c.absentDeSaf), [credits]);
+  const clos = useMemo(() => credits.filter((c) => c.absentDeSaf), [credits]);
+  const enRetard = useMemo(() => portefeuille.filter((c) => (c.joursRetard ?? 0) > 0), [portefeuille]);
   const aEcheance = useMemo(
-    () => credits.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance), [credits]);
+    () => portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance), [portefeuille]);
 
   const cherche = recherche.trim().length > 0;
 
@@ -35,18 +39,26 @@ export default function Portefeuille() {
       const q = cleDeRecherche(recherche);
       return credits.filter((c) => cleDeRecherche(aChercher(c)).includes(q));
     }
-    return filtre === 'RETARD' ? enRetard : filtre === 'ECHEANCE' ? aEcheance : credits;
-  }, [cherche, filtre, recherche, credits, enRetard, aEcheance]);
+    if (filtre === 'RETARD') return enRetard;
+    if (filtre === 'ECHEANCE') return aEcheance;
+    if (filtre === 'CLOS') return clos;
+    return portefeuille;
+  }, [cherche, filtre, recherche, credits, portefeuille, clos, enRetard, aEcheance]);
 
   return (
     <View style={s.page}>
+      {/* Quatre onglets au plus : les libelles restent courts pour tenir sur 390 points. */}
       <View style={s.filtres}>
-        <Onglet actif={!cherche && filtre === 'RETARD'} libelle={`En retard · ${enRetard.length}`}
+        <Onglet actif={!cherche && filtre === 'RETARD'} libelle={`Retard · ${enRetard.length}`}
                 surAppui={() => setFiltre('RETARD')} />
         <Onglet actif={!cherche && filtre === 'ECHEANCE'} libelle={`A venir · ${aEcheance.length}`}
                 surAppui={() => setFiltre('ECHEANCE')} />
-        <Onglet actif={!cherche && filtre === 'TOUS'} libelle={`Tous · ${credits.length}`}
+        <Onglet actif={!cherche && filtre === 'TOUS'} libelle={`Tous · ${portefeuille.length}`}
                 surAppui={() => setFiltre('TOUS')} />
+        {clos.length > 0 ? (
+          <Onglet actif={!cherche && filtre === 'CLOS'} libelle={`Clos · ${clos.length}`}
+                  surAppui={() => setFiltre('CLOS')} />
+        ) : null}
       </View>
 
       <View style={s.barre}>
@@ -78,7 +90,9 @@ export default function Portefeuille() {
           <Text style={s.vide}>
             {cherche
               ? `Aucun societaire ne correspond a « ${recherche.trim()} » dans votre portefeuille.`
-              : 'Aucun credit dans cette vue.'}
+              : filtre === 'CLOS'
+                ? 'Aucune affectation a fermer.'
+                : 'Aucun credit dans cette vue.'}
           </Text>
         }
         renderItem={({ item: c }) => (
@@ -133,7 +147,7 @@ function Onglet({ actif, libelle, surAppui }:
   return (
     <Pressable accessibilityRole="button" accessibilityState={{ selected: actif }}
                onPress={surAppui} style={[s.onglet, actif && s.ongletActif]}>
-      <Text style={[s.ongletTexte, actif && s.ongletTexteActif]}>{libelle}</Text>
+      <Text numberOfLines={1} style={[s.ongletTexte, actif && s.ongletTexteActif]}>{libelle}</Text>
     </Pressable>
   );
 }
