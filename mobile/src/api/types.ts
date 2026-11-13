@@ -17,6 +17,7 @@ export type CreditPortefeuille = {
   numCredito: number;
   codCliente: string | null;
   nomClient: string | null;
+  telephone: string | null;
   produit: string | null;
   encours: number | null;
   montantImpaye: number | null;
@@ -27,6 +28,8 @@ export type CreditPortefeuille = {
   derniereVisiteAt: string | null;
   promesseDate: string | null;
   promesseMontant: number | null;
+  /** Date des montants : SAF a l'instant, ou la derniere lecture SAF reussie. Vide = inconnus. */
+  montantsAt: string | null;
 };
 
 export type EntreeReferentiel = {

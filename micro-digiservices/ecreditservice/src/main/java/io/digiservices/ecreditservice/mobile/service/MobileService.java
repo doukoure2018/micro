@@ -14,7 +14,10 @@ import io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.VisiteEnregistree;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.VisiteRecue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository;
+import io.digiservices.ecreditservice.mobile.repository.MobileRepository.IdentiteMembre;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteCredit;
+import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
+import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository.CreditConnu;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,8 +28,10 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -52,6 +57,7 @@ public class MobileService {
     private final MobileRepository repository;
     private final UserClient userClient;
     private final EbankingPortefeuilleClient portefeuilleClient;
+    private final PortefeuilleCreditPhotoRepository creditPhotoRepository;
 
     /** Les rôles qui portent un téléphone : l'agent saisit, le directeur d'agence lit. */
     private static final Set<String> ROLES_MOBILES = Set.of("AGENT_CREDIT", "DA");
@@ -82,6 +88,12 @@ public class MobileService {
      * fois par synchronisation : l'application garde ensuite la liste hors ligne. Lire SAF à
      * chaque ouverture d'écran, sur 280 téléphones, chargerait le VPN bancaire sans servir
      * personne.</p>
+     *
+     * <p><b>Trois sources, dans cet ordre.</b> SAF à l'instant ; à défaut le dernier état connu
+     * de chaque crédit (V210), rangé à chaque lecture SAF réussie ; et pour le seul nom du
+     * membre, ce que digi porte dans ses propres fiches. Un agent ne doit jamais voir une liste
+     * de numéros : il cherche ses sociétaires par leur nom, et une coupure du VPN bancaire ne
+     * peut pas lui retirer ce nom-là.</p>
      */
     public List<CreditPortefeuille> portefeuille(String uuid) {
         User user = exigerCompteMobile(uuid);
@@ -90,21 +102,38 @@ public class MobileService {
             return List.of();
         }
         Map<String, PortefeuilleCreditDto> saf = creditsSaf(repository.pointsDeServiceAffectes(user.getUserId()));
+        rangerCeQueSafADit(suivi, saf);
+        Map<String, CreditConnu> connus = creditPhotoRepository.parCreditDeLAgent(user.getUserId());
+        Set<String> aNommer = membresSansNom(suivi, saf, connus);
+        Map<String, IdentiteMembre> fiches = aNommer.isEmpty() ? Map.of()
+                : repository.identitesConnues(aNommer);
+
+        OffsetDateTime maintenant = OffsetDateTime.now();
         List<CreditPortefeuille> portefeuille = new ArrayList<>();
         for (VisiteCredit c : suivi) {
             PortefeuilleCreditDto s = saf.get(c.cle());
+            CreditConnu k = connus.get(c.cle());
+            String membre = premierRenseigne(c.codCliente(),
+                    s == null ? null : s.getCodCliente(), k == null ? null : k.codCliente());
+            IdentiteMembre fiche = membre == null ? null : fiches.get(membre);
             portefeuille.add(new CreditPortefeuille(
-                    c.codAgencia(), c.numCredito(),
-                    c.codCliente() != null ? c.codCliente() : (s == null ? null : s.getCodCliente()),
-                    s == null ? null : s.getNomCliente(),
-                    s == null ? null : s.getDesTipCredito(),
-                    s == null ? null : s.getMonSaldo(),
-                    s == null ? null : impaye(s),
-                    s == null || s.getJoursRetard() == null ? null : s.getJoursRetard().intValue(),
-                    s == null ? null : s.getProchaineEcheance(),
-                    s == null ? null : s.getMonCuota(),
+                    c.codAgencia(), c.numCredito(), membre,
+                    premierRenseigne(s == null ? null : s.getNomCliente(),
+                            k == null ? null : k.nomClient(),
+                            fiche == null ? null : fiche.nom()),
+                    premierRenseigne(s == null ? null : PortefeuilleCreditPhotoRepository.telephone(s),
+                            k == null ? null : k.telephone(),
+                            fiche == null ? null : fiche.telephone()),
+                    s != null ? s.getDesTipCredito() : (k == null ? null : k.produit()),
+                    s != null ? s.getMonSaldo() : (k == null ? null : k.encours()),
+                    s != null ? impaye(s) : (k == null ? null : k.montantImpaye()),
+                    s != null ? (s.getJoursRetard() == null ? null : s.getJoursRetard().intValue())
+                            : (k == null ? null : k.joursRetard()),
+                    s != null ? s.getProchaineEcheance() : (k == null ? null : k.prochaineEcheance()),
+                    s != null ? s.getMonCuota() : (k == null ? null : k.prochaineEcheanceMontant()),
                     c.derniereAppreciation(), c.derniereVisiteAt(),
-                    c.promesseDate(), c.promesseMontant()));
+                    c.promesseDate(), c.promesseMontant(),
+                    s != null ? maintenant : (k == null ? null : k.luAt())));
         }
         portefeuille.sort((a, b) -> Integer.compare(
                 b.joursRetard() == null ? -1 : b.joursRetard(),
@@ -113,9 +142,57 @@ public class MobileService {
     }
 
     /**
+     * Range ce que SAF vient de dire des crédits de CET agent, et de personne d'autre. Le
+     * réseau entier est rangé une fois par jour par la photo de 08h40 ; ici, quelques dizaines
+     * de lignes, pour que la prochaine coupure ne vide pas l'écran de l'agent.
+     */
+    private void rangerCeQueSafADit(List<VisiteCredit> suivi, Map<String, PortefeuilleCreditDto> saf) {
+        if (saf.isEmpty()) {
+            return;
+        }
+        try {
+            creditPhotoRepository.ranger(suivi.stream().map(c -> saf.get(c.cle()))
+                    .filter(Objects::nonNull).toList());
+        } catch (Exception e) {
+            // Ranger est un confort : si l'écriture échoue, l'agent voit quand même SAF.
+            log.warn("[MOBILE] dernier etat des credits non range : {}", e.getMessage());
+        }
+    }
+
+    /** Les membres dont ni SAF ni le dernier état connu ne donnent le nom. */
+    private static Set<String> membresSansNom(List<VisiteCredit> suivi,
+                                              Map<String, PortefeuilleCreditDto> saf,
+                                              Map<String, CreditConnu> connus) {
+        Set<String> membres = new LinkedHashSet<>();
+        for (VisiteCredit c : suivi) {
+            PortefeuilleCreditDto s = saf.get(c.cle());
+            CreditConnu k = connus.get(c.cle());
+            if (premierRenseigne(s == null ? null : s.getNomCliente(),
+                    k == null ? null : k.nomClient()) != null) {
+                continue;
+            }
+            String membre = premierRenseigne(c.codCliente(),
+                    s == null ? null : s.getCodCliente(), k == null ? null : k.codCliente());
+            if (membre != null) {
+                membres.add(membre);
+            }
+        }
+        return membres;
+    }
+
+    private static String premierRenseigne(String... valeurs) {
+        for (String v : valeurs) {
+            if (v != null && !v.isBlank()) {
+                return v.trim();
+            }
+        }
+        return null;
+    }
+
+    /**
      * SAF, point de service par point de service. Une panne de SAF ne vide pas le portefeuille :
-     * l'application reçoit alors les crédits sans leurs montants, et le dit à l'agent, plutôt
-     * que de lui répondre « aucun crédit » un jour de coupure.
+     * l'application reçoit alors les crédits avec le dernier état connu, daté, plutôt que de
+     * répondre « aucun crédit » un jour de coupure.
      */
     private Map<String, PortefeuilleCreditDto> creditsSaf(Set<String> codesSaf) {
         Map<String, PortefeuilleCreditDto> parCle = new HashMap<>();
@@ -132,9 +209,7 @@ public class MobileService {
     }
 
     private static BigDecimal impaye(PortefeuilleCreditDto c) {
-        BigDecimal capital = c.getMntCapImpaye() == null ? BigDecimal.ZERO : c.getMntCapImpaye();
-        BigDecimal interets = c.getMntIntImpaye() == null ? BigDecimal.ZERO : c.getMntIntImpaye();
-        return capital.add(interets);
+        return PortefeuilleCreditPhotoRepository.impaye(c);
     }
 
     // ------------------------------------------------------------------- les référentiels

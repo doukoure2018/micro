@@ -6,6 +6,7 @@ import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.dto.PortefeuilleAffectationDtos.AffectationDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PortefeuilleAffectationRepository;
+import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
 import io.digiservices.ecreditservice.repository.PortefeuilleRisqueRepository;
 import io.digiservices.ecreditservice.service.PortefeuilleRisqueCalculateur.Resultat;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class PortefeuilleRisquePhotoService {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final PortefeuilleAffectationRepository affectationRepository;
     private final PortefeuilleRisqueRepository repository;
+    private final PortefeuilleCreditPhotoRepository creditPhotoRepository;
     private final SafJobRetry safJobs;
 
     @Value("${portefeuille.risque.photo.actif:true}")
@@ -130,6 +132,7 @@ public class PortefeuilleRisquePhotoService {
             }
             List<PortefeuilleCreditDto> enCoursSaf = credits.stream()
                     .filter(c -> CategorieCredit.depuis(c.getIndEstado()).isAffectable()).toList();
+            rangerLEtatDesCredits(cod, enCoursSaf);
             Map<Long, AffectationDto> affectations = affectationRepository.findActivesParPointService(cod).stream()
                     .filter(a -> !TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
                     .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
@@ -148,6 +151,23 @@ public class PortefeuilleRisquePhotoService {
         log.info("[RISQUE] Photo du {} : {} PS lus, {} en erreur, {} lignes rangees, {} lignes anciennes purgees (retention {} j)",
                 jour, psLus, psEnErreur, lignes, purgees, retention);
         return psLus;
+    }
+
+    /**
+     * Range au passage le dernier etat connu de chaque credit (V210), pour l'application
+     * mobile. Cette photo lit deja tout le reseau : c'est ici, et nulle part ailleurs, que le
+     * detail par credit se garde sans une seule lecture SAF de plus.
+     *
+     * <p>Un echec n'interrompt pas la photo du portefeuille a risque, qui est la raison d'etre
+     * de ce travail : il est trace et le point de service suivant est photographie.</p>
+     */
+    private void rangerLEtatDesCredits(String codAgencia, List<PortefeuilleCreditDto> credits) {
+        try {
+            creditPhotoRepository.ranger(credits);
+        } catch (Exception e) {
+            log.warn("[RISQUE] PS {} : dernier etat des credits non range pour le mobile : {}",
+                    codAgencia, e.getMessage());
+        }
     }
 
     private static String heure(LocalDateTime t) {

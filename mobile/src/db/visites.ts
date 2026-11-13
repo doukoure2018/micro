@@ -135,14 +135,15 @@ export async function remplacerPortefeuille(credits: CreditPortefeuille[]): Prom
     await db.runAsync('DELETE FROM credit');
     for (const c of credits) {
       await db.runAsync(
-        `INSERT INTO credit (cod_agencia, num_credito, cod_cliente, nom_client, produit, encours,
-                             montant_impaye, jours_retard, prochaine_echeance,
+        `INSERT INTO credit (cod_agencia, num_credito, cod_cliente, nom_client, telephone, produit,
+                             encours, montant_impaye, jours_retard, prochaine_echeance,
                              prochaine_echeance_montant, derniere_appreciation,
-                             derniere_visite_at, promesse_date, promesse_montant)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        c.codAgencia, c.numCredito, c.codCliente, c.nomClient, c.produit, c.encours,
-        c.montantImpaye, c.joursRetard, c.prochaineEcheance, c.prochaineEcheanceMontant,
-        c.derniereAppreciation, c.derniereVisiteAt, c.promesseDate, c.promesseMontant);
+                             derniere_visite_at, promesse_date, promesse_montant, montants_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        c.codAgencia, c.numCredito, c.codCliente, c.nomClient, c.telephone, c.produit,
+        c.encours, c.montantImpaye, c.joursRetard, c.prochaineEcheance,
+        c.prochaineEcheanceMontant, c.derniereAppreciation, c.derniereVisiteAt,
+        c.promesseDate, c.promesseMontant, c.montantsAt);
     }
   });
 }
@@ -155,6 +156,7 @@ export async function portefeuilleLocal(): Promise<CreditPortefeuille[]> {
     numCredito: l.num_credito as number,
     codCliente: (l.cod_cliente as string) ?? null,
     nomClient: (l.nom_client as string) ?? null,
+    telephone: (l.telephone as string) ?? null,
     produit: (l.produit as string) ?? null,
     encours: (l.encours as number) ?? null,
     montantImpaye: (l.montant_impaye as number) ?? null,
@@ -165,6 +167,7 @@ export async function portefeuilleLocal(): Promise<CreditPortefeuille[]> {
     derniereVisiteAt: (l.derniere_visite_at as string) ?? null,
     promesseDate: (l.promesse_date as string) ?? null,
     promesseMontant: (l.promesse_montant as number) ?? null,
+    montantsAt: (l.montants_at as string) ?? null,
   }));
 }
 

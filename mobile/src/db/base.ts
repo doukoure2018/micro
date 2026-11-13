@@ -82,6 +82,7 @@ export async function fermerEtEffacer(userId: number | string): Promise<void> {
  * qui n'existe que chez lui.
  */
 async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
+  await rebatirLaCopieSiLeFormatAChange(db);
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
@@ -93,6 +94,7 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       num_credito INTEGER NOT NULL,
       cod_cliente TEXT,
       nom_client TEXT,
+      telephone TEXT,
       produit TEXT,
       encours REAL,
       montant_impaye REAL,
@@ -103,6 +105,7 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       derniere_visite_at TEXT,
       promesse_date TEXT,
       promesse_montant REAL,
+      montants_at TEXT,
       PRIMARY KEY (cod_agencia, num_credito)
     );
 
@@ -155,6 +158,32 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       cle TEXT PRIMARY KEY,
       valeur TEXT
     );
+  `);
+}
+
+/**
+ * Le numero de format de la base locale. A changer des qu'une table CHANGE DE FORME : une
+ * colonne ajoutee n'arrive jamais dans la base d'un telephone deja installe, parce que
+ * `CREATE TABLE IF NOT EXISTS` ne modifie pas une table existante — l'agent garderait l'ancien
+ * format en silence, et l'ecran afficherait des vides pour toujours.
+ *
+ * 2 : le telephone du membre et la date des montants (13/11/2026).
+ */
+const FORMAT_BASE = 2;
+
+/**
+ * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des
+ * saisies, elle, n'est jamais touchee : c'est le travail de l'agent, il n'existe nulle part
+ * ailleurs tant qu'il n'est pas transmis. Le portefeuille se refait a la synchronisation
+ * suivante.
+ */
+async function rebatirLaCopieSiLeFormatAChange(db: SQLite.SQLiteDatabase): Promise<void> {
+  const ligne = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  const format = ligne?.user_version ?? 0;
+  if (format >= FORMAT_BASE) return;
+  await db.execAsync(`
+    DROP TABLE IF EXISTS credit;
+    PRAGMA user_version = ${FORMAT_BASE};
   `);
 }
 

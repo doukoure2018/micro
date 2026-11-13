@@ -43,7 +43,9 @@ export default function Aujourdhui() {
   const enRetard = credits.filter((c) => (c.joursRetard ?? 0) > 0);
   const aEcheance = credits.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance);
   const promesses = credits.filter((c) => c.promesseDate);
-  const encours = credits.reduce((t, c) => t + (c.encours ?? 0), 0);
+  // Un encours inconnu n'est pas un encours nul : sans un seul montant lu, l'ecran le dit.
+  const avecMontant = credits.filter((c) => c.encours !== null && c.encours !== undefined);
+  const encours = avecMontant.reduce((t, c) => t + (c.encours ?? 0), 0);
 
   return (
     <ScrollView
@@ -84,7 +86,12 @@ export default function Aujourdhui() {
       <Link href="/portefeuille" asChild>
         <Pressable style={s.carte}>
           <Text style={s.carteLibelle}>Mon portefeuille</Text>
-          <Text style={s.carteValeur}>{credits.length} credits · {montant(encours)}</Text>
+          <Text style={s.carteValeur}>
+            {credits.length} credits
+            {credits.length > 0 && avecMontant.length === 0
+              ? ' · montants indisponibles'
+              : ` · ${montant(encours)}`}
+          </Text>
           {profil?.note !== null && profil?.note !== undefined ? (
             <Text style={s.score}>Mon score du jour : {profil.note} / 100 · classe {profil.classe}</Text>
           ) : null}
@@ -103,7 +110,9 @@ export default function Aujourdhui() {
                   asChild>
               <Pressable style={s.ligne}>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.ligneNom}>{c.nomClient ?? c.codCliente ?? 'Membre inconnu'}</Text>
+                  <Text style={s.ligneNom} numberOfLines={1}>
+                    {c.nomClient ?? (c.codCliente ? `Membre ${c.codCliente}` : 'Membre inconnu')}
+                  </Text>
                   <Text style={s.ligneDetail}>
                     {c.joursRetard && c.joursRetard > 0
                       ? `Impaye depuis ${c.joursRetard} j · ${montant(c.montantImpaye)}`

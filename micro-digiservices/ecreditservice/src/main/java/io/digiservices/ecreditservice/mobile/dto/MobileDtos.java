@@ -66,12 +66,19 @@ public final class MobileDtos {
                             List<SortSaisie> sorts) {
     }
 
-    /** Une ligne du portefeuille de l'agent, telle que le téléphone l'affiche hors ligne. */
+    /**
+     * Une ligne du portefeuille de l'agent, telle que le téléphone l'affiche hors ligne.
+     *
+     * <p>{@code montantsAt} date les chiffres : SAF à l'instant, ou la dernière lecture SAF
+     * réussie quand le VPN bancaire est coupé. Vide, il dit que les montants sont inconnus —
+     * l'écran montre alors le crédit et son membre, pas un zéro qui mentirait.</p>
+     */
     public record CreditPortefeuille(
             String codAgencia,
             Long numCredito,
             String codCliente,
             String nomClient,
+            String telephone,
             String produit,
             BigDecimal encours,
             BigDecimal montantImpaye,
@@ -81,7 +88,8 @@ public final class MobileDtos {
             String derniereAppreciation,
             OffsetDateTime derniereVisiteAt,
             LocalDate promesseDate,
-            BigDecimal promesseMontant) {
+            BigDecimal promesseMontant,
+            OffsetDateTime montantsAt) {
     }
 
     /** Le profil que l'application affiche en tête, et garde hors ligne. */

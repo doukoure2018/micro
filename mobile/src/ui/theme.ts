@@ -57,3 +57,17 @@ export function heureCourte(iso: string | null | undefined): string {
   return Number.isNaN(d.getTime()) ? ''
     : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
+
+/**
+ * La forme d'un texte pour la recherche : sans accent, sans majuscule. « conde » doit trouver
+ * « CONDÉ », et « n'diaye » se saisit rarement comme il est ecrit.
+ */
+export function cleDeRecherche(valeur: string | null | undefined): string {
+  if (!valeur) return '';
+  const minuscules = valeur.toLowerCase();
+  try {
+    return minuscules.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch {
+    return minuscules;
+  }
+}

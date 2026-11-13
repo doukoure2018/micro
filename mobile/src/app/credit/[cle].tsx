@@ -4,7 +4,7 @@ import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import type { CreditPortefeuille } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
 import { estOuverte } from '@/db/base';
-import { couleurRetard, couleurs, dateCourte, espaces, montant, texte } from '@/ui/theme';
+import { couleurRetard, couleurs, dateCourte, espaces, heureCourte, montant, texte } from '@/ui/theme';
 
 /** La fiche d'un credit, lue dans la copie locale, avec l'acces a la saisie d'une visite. */
 export default function FicheCredit() {
@@ -26,14 +26,26 @@ export default function FicheCredit() {
     return <View style={s.page}><Text style={s.vide}>Credit introuvable dans la copie locale.</Text></View>;
   }
 
+  // Une fiche porte parfois deux numeros (« 628833094/624380638 ») : on compose le premier.
+  const aAppeler = premierNumero(credit.telephone);
+
   return (
     <ScrollView style={{ backgroundColor: couleurs.fond }} contentContainerStyle={s.page}>
       <View style={s.entete}>
-        <Text style={s.nom}>{credit.nomClient ?? credit.codCliente ?? 'Membre inconnu'}</Text>
+        <Text style={s.nom}>
+          {credit.nomClient ?? (credit.codCliente ? `Membre ${credit.codCliente}` : 'Membre inconnu')}
+        </Text>
         <Text style={s.reference}>
-          {credit.codCliente ? `Membre ${credit.codCliente} · ` : ''}
+          {credit.nomClient && credit.codCliente ? `Membre ${credit.codCliente} · ` : ''}
           credit {credit.codAgencia}/{credit.numCredito}
         </Text>
+        {aAppeler ? (
+          <Pressable accessibilityRole="button"
+                     accessibilityLabel={`Appeler le ${aAppeler}`}
+                     onPress={() => void Linking.openURL(`tel:${aAppeler}`)}>
+            <Text style={s.telephone}>Appeler {credit.telephone}</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={s.carte}>
@@ -59,6 +71,12 @@ export default function FicheCredit() {
           <Donnee libelle="Derniere appreciation"
                   valeur={`${credit.derniereAppreciation} · visite du ${dateCourte(credit.derniereVisiteAt)}`} />
         ) : null}
+        {/* Dater les chiffres, toujours : un montant sans date se prend pour celui de l'instant. */}
+        <Text style={s.source}>
+          {credit.montantsAt
+            ? `Montants SAF du ${dateCourte(credit.montantsAt)} a ${heureCourte(credit.montantsAt)}`
+            : 'Montants indisponibles : la banque n\'a pas pu etre lue'}
+        </Text>
       </View>
 
       <View style={s.actions}>
@@ -77,6 +95,11 @@ export default function FicheCredit() {
   );
 }
 
+function premierNumero(telephone: string | null): string {
+  const numeros = (telephone ?? '').split(/[^0-9+]+/).filter((n) => n.length >= 6);
+  return numeros[0] ?? '';
+}
+
 function Donnee({ libelle, valeur, couleur }:
   { libelle: string; valeur: string; couleur?: string }) {
   return (
@@ -92,6 +115,11 @@ const s = StyleSheet.create({
   entete: { gap: 2 },
   nom: { fontSize: texte.titre - 2, fontWeight: '600', color: couleurs.texte },
   reference: { fontSize: texte.petit, color: couleurs.texteSecondaire },
+  telephone: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600', marginTop: espaces.xs },
+  source: {
+    fontSize: texte.minuscule, color: couleurs.texteSecondaire,
+    marginTop: espaces.xs, fontStyle: 'italic',
+  },
   carte: {
     backgroundColor: couleurs.surface, borderRadius: 14, padding: espaces.l,
     borderWidth: 1, borderColor: couleurs.bord, gap: espaces.s,

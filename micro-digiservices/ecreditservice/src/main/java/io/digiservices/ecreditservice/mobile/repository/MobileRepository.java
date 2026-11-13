@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,6 +164,55 @@ public class MobileRepository {
                         """)
                 .param("agent", agentUserId).query(String.class).list()
                 .stream().collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * Le nom et le téléphone que DIGI connaît de ces membres, par numéro de membre.
+     *
+     * <p>SAF reste la source du nom : ceci n'est qu'un filet. Un membre dont digi porte la
+     * fiche signalétique, un dossier individuel ou une adhésion à un groupe garde son nom à
+     * l'écran même si SAF n'a jamais pu être lu — l'agent reconnaît son sociétaire au lieu de
+     * lire onze chiffres. Les trois sources sont classées : la fiche signalétique d'abord,
+     * qui est la plus tenue, le dossier ensuite, l'adhésion en dernier.</p>
+     */
+    public Map<String, IdentiteMembre> identitesConnues(Collection<String> codClients) {
+        if (codClients == null || codClients.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, IdentiteMembre> identites = new LinkedHashMap<>();
+        jdbcClient.sql("""
+                        SELECT DISTINCT ON (cod_cliente) cod_cliente, nom, telephone
+                          FROM (
+                               SELECT pp.cod_cliente AS cod_cliente,
+                                      btrim(coalesce(pp.nom_client, pp.nom_cliente, '') || ' '
+                                            || coalesce(pp.prenom_client, '')) AS nom,
+                                      pp.tel_principal AS telephone, 1 AS rang
+                                 FROM personne_physique pp
+                                WHERE pp.cod_cliente IN (:ids)
+                               UNION ALL
+                               SELECT di.numero_membre,
+                                      btrim(coalesce(di.nom, '') || ' ' || coalesce(di.prenom, '')),
+                                      di.telephone, 2
+                                 FROM demandeindividuel di
+                                WHERE di.numero_membre IN (:ids)
+                               UNION ALL
+                               SELECT mg.numero_membre,
+                                      coalesce(mg.membre_nom_saf, mg.nom_prenom), NULL, 3
+                                 FROM membre_groupe mg
+                                WHERE mg.numero_membre IN (:ids)
+                          ) t
+                         WHERE nom IS NOT NULL AND btrim(nom) <> ''
+                         ORDER BY cod_cliente, rang
+                        """)
+                .param("ids", List.copyOf(codClients))
+                .query().listOfRows()
+                .forEach(r -> identites.put((String) r.get("cod_cliente"),
+                        new IdentiteMembre((String) r.get("nom"), (String) r.get("telephone"))));
+        return identites;
+    }
+
+    /** Ce que digi sait d'un membre quand SAF se tait. */
+    public record IdentiteMembre(String nom, String telephone) {
     }
 
     // ------------------------------------------------------------------------ les visites
