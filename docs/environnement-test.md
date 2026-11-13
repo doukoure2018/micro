@@ -17,7 +17,7 @@ développement.
 
 Fichiers : `docker-compose.test.yml`, `.env.test.example`, `start-test.sh`, `stop-test.sh`.
 
-## Avant la première mise en route
+## La mise en route, telle qu'elle a été faite le 13 novembre 2026
 
 **1. Mesurer la mémoire.** La machine a 7,6 Go et la production tourne dessus. La pile de
 test demande environ 2,4 Go en pointe, 1,8 Go sans le profil `saf`.
@@ -29,35 +29,34 @@ free -m && docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}"
 S'il reste moins de 2,6 Go disponibles, `start-test.sh` refuse de démarrer. Démarrer quand
 même ferait tomber la production, pas le test.
 
-**2. Le nom et le certificat.** Un enregistrement DNS `test.digi-creditrural-io.com` vers
-51.91.254.218, puis un certificat par le conteneur certbot déjà en place :
+**2. Le nom et le certificat.** ✅ Faits le 13 novembre 2026. L'enregistrement DNS
+`test.digi-creditrural-io.com` pointe vers 51.91.254.218, et le certificat Let's Encrypt a
+été obtenu par le conteneur certbot déjà en place :
 
 ```bash
-docker compose run --rm certbot certonly --webroot -w /var/www/certbot \
-  -d test.digi-creditrural-io.com
+docker compose --env-file .env.prod run --rm --entrypoint certbot certbot \
+  certonly --webroot -w /var/www/certbot -d test.digi-creditrural-io.com \
+  --non-interactive --agree-tos --no-eff-email
 ```
 
-**3. Le bloc nginx.** Partir du bloc de production, en changeant le nom et les deux
-destinations. La configuration nginx vit sur le serveur, pas dans le dépôt : la recopier,
-ne pas la réinventer. La forme attendue :
+Il expire le 10 février 2027 et se renouvelle tout seul : le conteneur certbot lance
+`certbot renew` toutes les douze heures, ce qui couvre tous les certificats de la machine.
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name test.digi-creditrural-io.com;
-    ssl_certificate     /etc/letsencrypt/live/test.digi-creditrural-io.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/test.digi-creditrural-io.com/privkey.pem;
+**3. Le bloc nginx.** ✅ Fait. Il vit sur le serveur, dans
+`nginx/sites-enabled/test-digi-creditrural.conf`, et sa copie de référence est versionnée
+ici dans `nginx-test/`. La configuration nginx n'étant pas suivie par git, cette copie est
+le seul moyen de la retrouver si le serveur est reconstruit.
 
-    location /api/  { proxy_pass http://gateway-test:8000/; }
-    location /auth/ { proxy_pass http://authorizationserver-test:8080/; }
-    # mêmes en-têtes proxy que le bloc de production
-}
-```
+Deux choses à savoir sur ce bloc. D'abord, il faut le poser **en deux temps** : le bloc sur
+le port 80 d'abord, qui sert le défi de validation, puis le bloc chiffré une fois le
+certificat obtenu, nginx refusant de démarrer s'il référence un certificat absent. Ensuite,
+il ne dessert que la passerelle et le serveur d'autorisation de test, les deux seuls
+conteneurs de test à rejoindre le réseau de production ; tout le reste de l'API passe par la
+passerelle, comme le fait un téléphone.
 
-`gateway-test` et `authorizationserver-test` rejoignent le réseau de production pour que
-nginx les résolve par leur nom. C'est la seule jonction entre les deux piles, et elle
-impose la vérification que fait `start-test.sh` : aucun service de test ne doit nommer
-`postgresdb`, l'hôte de la base de production.
+Les adresses y sont résolues à chaque appel, par `resolver 127.0.0.11 valid=10s` et une
+variable dans `proxy_pass`. Sans cela, un conteneur de test redémarré change d'adresse et
+nginx garde l'ancienne, ce qui donne des 502 jusqu'au prochain rechargement.
 
 **4. Les clés de signature.** Une paire RSA propre au test, dans `/etc/crg/keys-test`.
 Réutiliser celle de production ferait accepter un jeton de test par les services de
