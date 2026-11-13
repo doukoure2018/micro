@@ -94,7 +94,7 @@ export default function Portefeuille() {
                 </Text>
                 <Text style={s.detail} numberOfLines={1}>
                   {[c.produit, c.encours === null ? null : montant(c.encours)]
-                    .filter((x) => x).join(' · ') || 'Montants indisponibles'}
+                    .filter((x) => x).join(' · ') || etatSansMontant(c)}
                 </Text>
               </View>
               <View style={s.droite}>
@@ -111,6 +111,15 @@ export default function Portefeuille() {
       />
     </View>
   );
+}
+
+/**
+ * Ce qu'on ecrit a la place des montants quand il n'y en a pas. Deux silences a ne pas
+ * confondre : SAF a repondu sans ce credit (il est solde, l'affectation est a fermer), ou
+ * SAF n'a rien dit (les chiffres reviendront a la prochaine synchronisation).
+ */
+function etatSansMontant(c: CreditPortefeuille): string {
+  return c.absentDeSaf ? 'Solde ou clos dans SAF' : 'Montants indisponibles';
 }
 
 /** Ce dans quoi la recherche cherche : le nom d'abord, mais aussi les deux numeros. */

@@ -54,17 +54,38 @@ public class SmsRepertoireResource {
                         "Repertoire recharge", OK));
     }
 
+    /**
+     * Les numeros du repertoire, page par page, avec recherche. L'endpoint existait deja et
+     * aucun ecran ne l'appelait : le responsable digital chargeait dix mille numeros sans
+     * pouvoir en verifier un seul, ni repondre a un client demandant pourquoi il a recu un
+     * message.
+     */
     @GetMapping("/{repertoireId}/numeros")
     public ResponseEntity<Response> getNumeros(
             @PathVariable Long repertoireId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "50") int size,
+            @RequestParam(name = "recherche", required = false) String recherche,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         requireDigital(authentication);
         return ResponseEntity.ok(
-                getResponse(httpRequest, Map.of("numeros", smsRepertoireService.getNumeros(repertoireId, page, size)),
+                getResponse(httpRequest,
+                        Map.of("numerosPage", smsRepertoireService.getNumeros(repertoireId, page, size, recherche)),
                         "Numeros recuperes", OK));
+    }
+
+    /** Historique des chargements : journalise depuis aout, affiche depuis le lot 0. */
+    @GetMapping("/{repertoireId}/chargements")
+    public ResponseEntity<Response> getChargements(
+            @PathVariable Long repertoireId,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        requireDigital(authentication);
+        return ResponseEntity.ok(
+                getResponse(httpRequest,
+                        Map.of("chargements", smsRepertoireService.getChargements(repertoireId)),
+                        "Historique des chargements", OK));
     }
 
     private io.digiservices.clients.domain.User requireDigital(Authentication authentication) {

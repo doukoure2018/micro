@@ -101,7 +101,8 @@ public class MobileService {
         if (suivi.isEmpty()) {
             return List.of();
         }
-        Map<String, PortefeuilleCreditDto> saf = creditsSaf(repository.pointsDeServiceAffectes(user.getUserId()));
+        LectureSaf lecture = creditsSaf(repository.pointsDeServiceAffectes(user.getUserId()));
+        Map<String, PortefeuilleCreditDto> saf = lecture.parCle();
         rangerCeQueSafADit(suivi, saf);
         Map<String, CreditConnu> connus = creditPhotoRepository.parCreditDeLAgent(user.getUserId());
         Set<String> aNommer = membresSansNom(suivi, saf, connus);
@@ -133,7 +134,8 @@ public class MobileService {
                     s != null ? s.getMonCuota() : (k == null ? null : k.prochaineEcheanceMontant()),
                     c.derniereAppreciation(), c.derniereVisiteAt(),
                     c.promesseDate(), c.promesseMontant(),
-                    s != null ? maintenant : (k == null ? null : k.luAt())));
+                    s != null ? maintenant : (k == null ? null : k.luAt()),
+                    s == null && lecture.psLus().contains(c.codAgencia())));
         }
         portefeuille.sort((a, b) -> Integer.compare(
                 b.joursRetard() == null ? -1 : b.joursRetard(),
@@ -193,19 +195,29 @@ public class MobileService {
      * SAF, point de service par point de service. Une panne de SAF ne vide pas le portefeuille :
      * l'application reçoit alors les crédits avec le dernier état connu, daté, plutôt que de
      * répondre « aucun crédit » un jour de coupure.
+     *
+     * <p>Les points de service RÉELLEMENT lus sont rendus avec les crédits. Sans eux, un crédit
+     * absent de la réponse serait indiscernable d'un crédit qu'on n'a pas pu lire : l'agent
+     * doit savoir si son crédit est soldé ou si c'est la banque qui se tait.</p>
      */
-    private Map<String, PortefeuilleCreditDto> creditsSaf(Set<String> codesSaf) {
+    private LectureSaf creditsSaf(Set<String> codesSaf) {
         Map<String, PortefeuilleCreditDto> parCle = new HashMap<>();
+        Set<String> lus = new LinkedHashSet<>();
         for (String code : codesSaf) {
             try {
                 for (PortefeuilleCreditDto c : portefeuilleClient.getTousCredits(code)) {
                     parCle.put(c.getCodAgencia() + "/" + c.getNumCredito(), c);
                 }
+                lus.add(code);
             } catch (Exception e) {
                 log.warn("[MOBILE] SAF indisponible pour le point de service {} : {}", code, e.getMessage());
             }
         }
-        return parCle;
+        return new LectureSaf(parCle, lus);
+    }
+
+    /** Ce que SAF a rendu, et de quels points de service il a répondu. */
+    private record LectureSaf(Map<String, PortefeuilleCreditDto> parCle, Set<String> psLus) {
     }
 
     private static BigDecimal impaye(PortefeuilleCreditDto c) {

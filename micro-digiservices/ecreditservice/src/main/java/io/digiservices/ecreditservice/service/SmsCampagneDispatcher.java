@@ -25,6 +25,7 @@ import java.util.List;
 public class SmsCampagneDispatcher {
 
     private final SmsCampagneRepository repository;
+    private final SmsOptoutService optoutService;
     private final SmsService smsService;
 
     @Value("${sms.campagne.batch-size:50}")
@@ -36,9 +37,12 @@ public class SmsCampagneDispatcher {
     @Value("${sms.campagne.max-tentatives:3}")
     private int maxTentatives;
 
-    public SmsCampagneDispatcher(SmsCampagneRepository repository, SmsService smsService) {
+    public SmsCampagneDispatcher(SmsCampagneRepository repository,
+                                 SmsService smsService,
+                                 SmsOptoutService optoutService) {
         this.repository = repository;
         this.smsService = smsService;
+        this.optoutService = optoutService;
     }
 
     /** Au démarrage : les envois interrompus par un arrêt du service redeviennent EN_ATTENTE. */
@@ -73,6 +77,16 @@ public class SmsCampagneDispatcher {
 
         for (SmsDestinataireDto destinataire : lot) {
             try {
+                // SECOND filtre de desinscription. Le premier agit au tirage des destinataires ;
+                // celui-ci rattrape le client qui s'est desinscrit entre la creation de la
+                // campagne et son envoi. L'echec est marque pour que le decompte le montre :
+                // un numero « non envoye parce que desinscrit » n'est pas un echec technique.
+                if (optoutService.estExclu(destinataire.getTelephone())) {
+                    repository.marquerEchec(destinataire.getDestinataireId(),
+                            "Numero desinscrit : envoi annule", 0);
+                    continue;
+                }
+
                 SmsService.SendResult result = smsService.send(destinataire.getTelephone(), message);
                 if (result.success()) {
                     repository.marquerSucces(destinataire.getDestinataireId());

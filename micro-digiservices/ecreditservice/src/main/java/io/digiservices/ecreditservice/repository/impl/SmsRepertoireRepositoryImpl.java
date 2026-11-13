@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.repository.impl;
 
+import io.digiservices.ecreditservice.dto.SmsOptoutDtos.SmsChargementDto;
 import io.digiservices.ecreditservice.dto.SmsRepertoireDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.SmsRepertoireRepository;
@@ -43,12 +44,27 @@ public class SmsRepertoireRepositoryImpl implements SmsRepertoireRepository {
         jdbcClient.sql(DELETE_NUMEROS).param("repertoireId", repertoireId).update();
     }
 
+    /**
+     * Un ordre SQL par tranche de {@value #TAILLE_LOT} numeros. L'ancienne version envoyait une
+     * requete par numero : dix mille allers-retours pour une campagne, dans une transaction qui
+     * tenait le verrou du repertoire — deja vide — pendant toute la duree.
+     */
+    private static final int TAILLE_LOT = 20_000;
+
     @Override
-    public int insererNumero(Long repertoireId, String telephone) {
-        return jdbcClient.sql(INSERT_NUMERO)
-                .param("repertoireId", repertoireId)
-                .param("telephone", telephone)
-                .update();
+    public int insererNumeros(Long repertoireId, List<String> telephones) {
+        if (telephones == null || telephones.isEmpty()) {
+            return 0;
+        }
+        int inseres = 0;
+        for (int debut = 0; debut < telephones.size(); debut += TAILLE_LOT) {
+            List<String> tranche = telephones.subList(debut, Math.min(debut + TAILLE_LOT, telephones.size()));
+            inseres += jdbcClient.sql(INSERT_NUMEROS_EN_LOT)
+                    .param("repertoireId", repertoireId)
+                    .param("telephones", String.join(",", tranche))
+                    .update();
+        }
+        return inseres;
     }
 
     @Override
@@ -71,12 +87,49 @@ public class SmsRepertoireRepositoryImpl implements SmsRepertoireRepository {
     }
 
     @Override
-    public List<String> getNumeros(Long repertoireId, int page, int size) {
-        return jdbcClient.sql(SELECT_NUMEROS)
+    public List<String> getNumeros(Long repertoireId, int page, int size, String motif) {
+        if (motif == null || "%".equals(motif)) {
+            return jdbcClient.sql(SELECT_NUMEROS)
+                    .param("repertoireId", repertoireId)
+                    .param("size", size)
+                    .param("offset", page * size)
+                    .query(String.class)
+                    .list();
+        }
+        return jdbcClient.sql(SELECT_NUMEROS_RECHERCHE)
                 .param("repertoireId", repertoireId)
+                .param("motif", motif)
                 .param("size", size)
                 .param("offset", page * size)
                 .query(String.class)
+                .list();
+    }
+
+    @Override
+    public int compterNumeros(Long repertoireId, String motif) {
+        Integer n = jdbcClient.sql(COUNT_NUMEROS)
+                .param("repertoireId", repertoireId)
+                .param("motif", motif == null ? "%" : motif)
+                .query(Integer.class)
+                .single();
+        return n == null ? 0 : n;
+    }
+
+    @Override
+    public int compterExclus(Long repertoireId) {
+        Integer n = jdbcClient.sql(COUNT_EXCLUS_REPERTOIRE)
+                .param("repertoireId", repertoireId)
+                .query(Integer.class)
+                .single();
+        return n == null ? 0 : n;
+    }
+
+    @Override
+    public List<SmsChargementDto> getChargements(Long repertoireId, int limite) {
+        return jdbcClient.sql(SELECT_CHARGEMENTS)
+                .param("repertoireId", repertoireId)
+                .param("limite", limite)
+                .query(SmsChargementDto.class)
                 .list();
     }
 

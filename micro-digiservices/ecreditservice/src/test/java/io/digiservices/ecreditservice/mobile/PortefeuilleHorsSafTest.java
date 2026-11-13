@@ -23,8 +23,10 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -109,6 +111,24 @@ class PortefeuilleHorsSafTest {
         assertNull(ligne.encours(), "un encours inconnu reste vide : zero serait un mensonge");
         assertNull(ligne.joursRetard());
         assertNull(ligne.montantsAt(), "sans mesure, aucune date de mesure");
+        assertFalse(ligne.absentDeSaf(),
+                "SAF n'a pas repondu : on ne peut pas dire que le credit n'y est plus");
+    }
+
+    @Test
+    @DisplayName("SAF repond mais ne porte pas ce credit : il est soldé, ce n'est pas une panne")
+    void safRepondSansCeCreditDoncIlEstClos() {
+        PortefeuilleCreditDto autre = new PortefeuilleCreditDto();
+        autre.setCodAgencia(PS);
+        autre.setNumCredito(999L);
+        when(saf.getTousCredits(anyString())).thenReturn(List.of(autre));
+
+        CreditPortefeuille ligne = service().portefeuille(UUID_AGENT).get(0);
+
+        assertTrue(ligne.absentDeSaf(),
+                "le point de service a repondu sans ce credit : l'affectation est a fermer");
+        assertNull(ligne.encours());
+        assertNull(ligne.montantsAt());
     }
 
     @Test
@@ -136,6 +156,7 @@ class PortefeuilleHorsSafTest {
         assertEquals(new BigDecimal("1200000"), ligne.encours());
         assertEquals(new BigDecimal("120000"), ligne.montantImpaye(), "l'impaye est capital + interets");
         assertNotNull(ligne.montantsAt());
+        assertFalse(ligne.absentDeSaf());
         verify(photo).ranger(List.of(credit));
     }
 }

@@ -106,6 +106,7 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       promesse_date TEXT,
       promesse_montant REAL,
       montants_at TEXT,
+      absent_de_saf INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (cod_agencia, num_credito)
     );
 
@@ -168,8 +169,9 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
  * format en silence, et l'ecran afficherait des vides pour toujours.
  *
  * 2 : le telephone du membre et la date des montants (13/11/2026).
+ * 3 : le credit absent de SAF, distingue de SAF muet (13/11/2026).
  */
-const FORMAT_BASE = 2;
+const FORMAT_BASE = 3;
 
 /**
  * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des

@@ -1,6 +1,8 @@
 package io.digiservices.ecreditservice.service.impl;
 
 import io.digiservices.ecreditservice.dto.SmsImportResultDto;
+import io.digiservices.ecreditservice.dto.SmsOptoutDtos.SmsChargementDto;
+import io.digiservices.ecreditservice.dto.SmsOptoutDtos.SmsNumerosPageDto;
 import io.digiservices.ecreditservice.dto.SmsRepertoireDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.SmsRepertoireRepository;
@@ -15,6 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.Set;
 
 @Service
@@ -69,23 +73,47 @@ public class SmsRepertoireServiceImpl implements SmsRepertoireService {
 
         // Vider puis recharger — dans la MEME transaction : un echec conserve l'ancien contenu
         repository.viderNumeros(repertoireId);
-        int importes = 0;
-        for (String numero : valides) {
-            importes += repository.insererNumero(repertoireId, numero);
-        }
+        int importes = repository.insererNumeros(repertoireId, List.copyOf(valides));
         repository.majApresChargement(repertoireId, chargePar);
         repository.journaliserChargement(repertoireId, importes, doublons, invalides.size(), chargePar);
 
-        log.info("[SMS-REPERTOIRE] '{}' recharge par {} : {} importes, {} doublons, {} invalides",
-                repertoire.getLibelle(), chargePar, importes, doublons, invalides.size());
+        // Ce que le responsable digital doit savoir AVANT de lancer : combien de numeros sont
+        // desinscrits (ils ne partiront pas) et comment le volume se repartit par operateur,
+        // sans quoi aucun cout n'est estimable.
+        int exclus = repository.compterExclus(repertoireId);
+        Map<String, Integer> parOperateur = new TreeMap<>();
+        for (String numero : valides) {
+            parOperateur.merge(SmsFichierUtils.operateur(numero), 1, Integer::sum);
+        }
+
+        log.info("[SMS-REPERTOIRE] '{}' recharge par {} : {} importes, {} doublons, {} invalides, {} desinscrits",
+                repertoire.getLibelle(), chargePar, importes, doublons, invalides.size(), exclus);
 
         return new SmsImportResultDto(lignes.size(), importes, doublons, invalides.size(),
-                invalides.stream().limit(100).toList());
+                invalides.stream().limit(100).toList(), parOperateur, exclus);
     }
 
     @Override
-    public List<String> getNumeros(Long repertoireId, int page, int size) {
+    public SmsNumerosPageDto getNumeros(Long repertoireId, int page, int size, String recherche) {
         getRepertoire(repertoireId);
-        return repository.getNumeros(repertoireId, page, Math.min(size, 500));
+        int taille = Math.min(Math.max(size, 1), 500);
+        int depart = Math.max(page, 0);
+        String motif = recherche == null || recherche.isBlank()
+                ? "%"
+                : "%" + recherche.replaceAll("[^0-9]", "") + "%";
+
+        List<String> numeros = repository.getNumeros(repertoireId, depart, taille, motif);
+        Map<String, Integer> parOperateur = new TreeMap<>();
+        for (String numero : numeros) {
+            parOperateur.merge(SmsFichierUtils.operateur(numero), 1, Integer::sum);
+        }
+        return new SmsNumerosPageDto(numeros, repository.compterNumeros(repertoireId, motif),
+                depart, taille, parOperateur);
+    }
+
+    @Override
+    public List<SmsChargementDto> getChargements(Long repertoireId) {
+        getRepertoire(repertoireId);
+        return repository.getChargements(repertoireId, 12);
     }
 }

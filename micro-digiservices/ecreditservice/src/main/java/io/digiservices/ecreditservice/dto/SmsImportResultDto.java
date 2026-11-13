@@ -16,4 +16,8 @@ public class SmsImportResultDto {
     private int doublons;
     private int invalides;
     private List<String> numerosInvalides;
+    /** Repartition par operateur : sans elle, aucun cout n'est estimable avant l'envoi. */
+    private java.util.Map<String, Integer> parOperateur;
+    /** Numeros importes qui figurent sur la liste de desinscription. */
+    private int exclus;
 }

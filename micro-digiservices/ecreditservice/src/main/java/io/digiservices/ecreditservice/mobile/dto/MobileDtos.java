@@ -72,6 +72,10 @@ public final class MobileDtos {
      * <p>{@code montantsAt} date les chiffres : SAF à l'instant, ou la dernière lecture SAF
      * réussie quand le VPN bancaire est coupé. Vide, il dit que les montants sont inconnus —
      * l'écran montre alors le crédit et son membre, pas un zéro qui mentirait.</p>
+     *
+     * <p>{@code absentDeSaf} sépare deux silences que l'agent ne doit pas confondre : SAF a
+     * répondu pour ce point de service et ne porte PAS ce crédit (soldé, ou numéro qui n'existe
+     * plus) — c'est une affectation à fermer, pas une panne ; ou SAF n'a rien dit du tout.</p>
      */
     public record CreditPortefeuille(
             String codAgencia,
@@ -89,7 +93,8 @@ public final class MobileDtos {
             OffsetDateTime derniereVisiteAt,
             LocalDate promesseDate,
             BigDecimal promesseMontant,
-            OffsetDateTime montantsAt) {
+            OffsetDateTime montantsAt,
+            boolean absentDeSaf) {
     }
 
     /** Le profil que l'application affiche en tête, et garde hors ligne. */
