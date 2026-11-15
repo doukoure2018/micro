@@ -130,9 +130,13 @@ public class PortefeuilleRisquePhotoService {
                 log.warn("[RISQUE] Photo : PS {} non lu : {}", cod, e.getMessage());
                 continue;
             }
+            // Le dernier etat connu range TOUT ce que SAF a rendu, apures et contentieux compris :
+            // le portefeuille mobile les porte aussi (sa lecture n'ecarte que C, T, X et le solde
+            // nul). Ne ranger que les affectables ferait disparaitre le nom d'un membre en
+            // contentieux le jour ou SAF se tait.
+            rangerLEtatDesCredits(cod, credits);
             List<PortefeuilleCreditDto> enCoursSaf = credits.stream()
                     .filter(c -> CategorieCredit.depuis(c.getIndEstado()).isAffectable()).toList();
-            rangerLEtatDesCredits(cod, enCoursSaf);
             Map<Long, AffectationDto> affectations = affectationRepository.findActivesParPointService(cod).stream()
                     .filter(a -> !TYPE_CONTENTIEUX.equals(a.getTypeAffectation()))
                     .collect(Collectors.toMap(AffectationDto::getNumCredito, Function.identity(), (a, b) -> a));
