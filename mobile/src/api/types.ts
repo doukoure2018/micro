@@ -162,3 +162,26 @@ export type ReclamationAEnvoyer = {
   codCliente: string | null;
   saisieAt: string;
 };
+
+/** Un dossier de credit de l'agent, et ou il en est dans le circuit. */
+export type DossierVue = {
+  id: number;
+  nom: string | null;
+  prenom: string | null;
+  numeroMembre: string | null;
+  telephone: string | null;
+  montantDemande: number | null;
+  montantPropose: number | null;
+  objetCredit: string | null;
+  createdAt: string | null;
+  statutDemande: string;
+  validationState: string;
+  etape: 'RECEPTION' | 'ANALYSE' | 'CORRECTION' | 'APPROBATION' | 'ANNULATION' | 'APPROUVE' | 'REJETE';
+  libelleEtat: string;
+  /** L'agent doit agir : analyser ou corriger. Le reste, il l'attend. */
+  attendLAgent: boolean;
+  aCorriger: string | null;
+  motifRenvoi: string | null;
+  derniereDecisionAt: string | null;
+  joursDansLEtape: number;
+};

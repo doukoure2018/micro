@@ -98,6 +98,7 @@ export default function Ossature() {
         <Stack.Screen name="visite/[cle]" options={{ title: 'Visite de recouvrement' }} />
         <Stack.Screen name="synchronisation" options={{ title: 'Synchronisation' }} />
         <Stack.Screen name="equipe" options={{ title: 'Mon equipe' }} />
+        <Stack.Screen name="dossiers" options={{ title: 'Mes dossiers' }} />
         <Stack.Screen name="reclamations" options={{ title: 'Reclamations' }} />
         <Stack.Screen name="agri/index" options={{ title: 'Collecte agricole' }} />
         <Stack.Screen name="agri/[cle]" options={{ title: 'Parcelle' }} />

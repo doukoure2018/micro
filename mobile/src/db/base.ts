@@ -110,6 +110,30 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       PRIMARY KEY (cod_agencia, num_credito)
     );
 
+    -- La copie des dossiers de l'agent, remplacee a chaque synchronisation. Comme le
+    -- portefeuille : c'est une copie, pas une source.
+    CREATE TABLE IF NOT EXISTS dossier (
+      id INTEGER PRIMARY KEY,
+      nom TEXT,
+      prenom TEXT,
+      numero_membre TEXT,
+      telephone TEXT,
+      montant_demande REAL,
+      montant_propose REAL,
+      objet_credit TEXT,
+      created_at TEXT,
+      statut_demande TEXT NOT NULL,
+      validation_state TEXT NOT NULL,
+      etape TEXT NOT NULL,
+      libelle_etat TEXT NOT NULL,
+      attend_l_agent INTEGER NOT NULL DEFAULT 0,
+      a_corriger TEXT,
+      motif_renvoi TEXT,
+      derniere_decision_at TEXT,
+      jours_dans_l_etape INTEGER NOT NULL DEFAULT 0,
+      cloture INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE TABLE IF NOT EXISTS referentiel (
       liste TEXT NOT NULL,
       code TEXT NOT NULL,
@@ -246,8 +270,9 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
  * 3 : le credit absent de SAF, distingue de SAF muet (13/11/2026).
  * 4 : la file des reclamations du terrain (15/11/2026).
  * 5 : la collecte agricole — parcelle, passages, recolte (15/11/2026).
+ * 6 : la copie des dossiers de credit de l'agent (15/11/2026).
  */
-const FORMAT_BASE = 5;
+const FORMAT_BASE = 6;
 
 /**
  * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des
@@ -261,6 +286,7 @@ async function rebatirLaCopieSiLeFormatAChange(db: SQLite.SQLiteDatabase): Promi
   if (format >= FORMAT_BASE) return;
   await db.execAsync(`
     DROP TABLE IF EXISTS credit;
+    DROP TABLE IF EXISTS dossier;
     PRAGMA user_version = ${FORMAT_BASE};
   `);
 }

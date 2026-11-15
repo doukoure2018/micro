@@ -1,7 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import { baseOuverte } from '@/db/base';
 import type {
-  CreditPortefeuille, EntreeReferentiel, ReclamationAEnvoyer, VisiteAEnvoyer,
+  CreditPortefeuille, DossierVue, EntreeReferentiel, ReclamationAEnvoyer, VisiteAEnvoyer,
 } from '@/api/types';
 import { LIMITES } from '@/config';
 
@@ -311,6 +311,59 @@ function versReclamation(l: Record<string, unknown>): ReclamationAEnvoyer {
     codCliente: (l.cod_cliente as string) ?? null,
     saisieAt: l.saisie_at as string,
   };
+}
+
+// ------------------------------------------------------------------ mes dossiers
+
+/**
+ * Remplace la copie des dossiers. Les deux perimetres — en cours et clotures — sont rangés
+ * ensemble et distingues par une colonne : l'agent bascule de l'un a l'autre sans reseau.
+ */
+export async function remplacerDossiers(
+  dossiers: DossierVue[], clotures: boolean,
+): Promise<void> {
+  const db = baseOuverte();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM dossier WHERE cloture = ?', clotures ? 1 : 0);
+    for (const d of dossiers) {
+      await db.runAsync(
+        `INSERT OR REPLACE INTO dossier (id, nom, prenom, numero_membre, telephone,
+             montant_demande, montant_propose, objet_credit, created_at, statut_demande,
+             validation_state, etape, libelle_etat, attend_l_agent, a_corriger, motif_renvoi,
+             derniere_decision_at, jours_dans_l_etape, cloture)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        d.id, d.nom, d.prenom, d.numeroMembre, d.telephone, d.montantDemande, d.montantPropose,
+        d.objetCredit, d.createdAt, d.statutDemande, d.validationState, d.etape, d.libelleEtat,
+        d.attendLAgent ? 1 : 0, d.aCorriger, d.motifRenvoi, d.derniereDecisionAt,
+        d.joursDansLEtape, clotures ? 1 : 0);
+    }
+  });
+}
+
+export async function dossiersLocaux(clotures: boolean): Promise<DossierVue[]> {
+  const lignes = await baseOuverte().getAllAsync<Record<string, unknown>>(
+    `SELECT * FROM dossier WHERE cloture = ?
+      ORDER BY attend_l_agent DESC, jours_dans_l_etape DESC`, clotures ? 1 : 0);
+  return lignes.map((l) => ({
+    id: l.id as number,
+    nom: (l.nom as string) ?? null,
+    prenom: (l.prenom as string) ?? null,
+    numeroMembre: (l.numero_membre as string) ?? null,
+    telephone: (l.telephone as string) ?? null,
+    montantDemande: (l.montant_demande as number) ?? null,
+    montantPropose: (l.montant_propose as number) ?? null,
+    objetCredit: (l.objet_credit as string) ?? null,
+    createdAt: (l.created_at as string) ?? null,
+    statutDemande: l.statut_demande as string,
+    validationState: l.validation_state as string,
+    etape: l.etape as DossierVue['etape'],
+    libelleEtat: l.libelle_etat as string,
+    attendLAgent: l.attend_l_agent === 1,
+    aCorriger: (l.a_corriger as string) ?? null,
+    motifRenvoi: (l.motif_renvoi as string) ?? null,
+    derniereDecisionAt: (l.derniere_decision_at as string) ?? null,
+    joursDansLEtape: (l.jours_dans_l_etape as number) ?? 0,
+  }));
 }
 
 // ------------------------------------------------------------------- les listes fermees

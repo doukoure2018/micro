@@ -20,6 +20,8 @@ import io.digiservices.ecreditservice.mobile.repository.MobileRepository.AgentDu
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.IdentiteMembre;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteConnue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteCredit;
+import io.digiservices.ecreditservice.dossier.DossierAgentRepository;
+import io.digiservices.ecreditservice.dossier.DossierAgentRepository.DossierVue;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
 import io.digiservices.ecreditservice.service.FileStorageService;
 import io.digiservices.ecreditservice.service.PerimetreSafService;
@@ -69,6 +71,7 @@ public class MobileService {
     private final FileStorageService stockage;
     private final PerimetreSafService perimetreSafService;
     private final ExpoPushService push;
+    private final DossierAgentRepository dossiers;
 
     /** Les rôles qui portent un téléphone : l'agent saisit, le directeur d'agence lit. */
     private static final Set<String> ROLES_MOBILES = Set.of("AGENT_CREDIT", "DA");
@@ -284,6 +287,24 @@ public class MobileService {
     private static AgentVu versAgentVu(AgentDuDirecteur a) {
         return new AgentVu(a.userId(), a.nom(), a.codAgencia(), a.pointVente(), a.nbCredits(),
                 a.nbVisites(), a.derniereVisiteAt(), a.nbA(), a.nbB(), a.nbC(), a.nbD());
+    }
+
+    // ------------------------------------------------------------------- mes dossiers
+
+    /**
+     * Les dossiers de crédit que l'agent porte, et où chacun en est.
+     *
+     * <p>C'est la sixième fonction demandée le 12/11. L'agent voit sur le web la liste de son
+     * agence ; ce qu'il lui faut sur le terrain est plus étroit et plus utile : SES dossiers,
+     * l'étape de chacun, et depuis combien de jours il n'a pas bougé. Ce dernier chiffre est
+     * le seul qui désigne un dossier enlisé, et aucune liste d'états ne le remplace.</p>
+     */
+    public List<DossierVue> mesDossiers(String uuid, boolean clotures) {
+        User user = exigerCompteMobile(uuid);
+        if (!"AGENT_CREDIT".equals(user.getRole())) {
+            throw new ApiException("Le suivi des dossiers est celui de l'agent de credit");
+        }
+        return dossiers.dossiersDeLAgent(user.getUserId(), clotures, 200);
     }
 
     // ------------------------------------------------------------------- les référentiels

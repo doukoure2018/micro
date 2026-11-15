@@ -186,6 +186,19 @@ public class MobileResource {
                 mes.size() + " reclamation(s)", OK));
     }
 
+    /**
+     * Les dossiers de l'agent, en cours ou clôturés. Les libellés d'état sont ceux du web,
+     * calculés par le serveur : le téléphone et le poste du DA doivent dire la même chose.
+     */
+    @GetMapping("/dossiers")
+    public ResponseEntity<Response> mesDossiers(@NotNull Authentication authentication,
+                                                @RequestParam(name = "scope", defaultValue = "EN_COURS") String scope,
+                                                HttpServletRequest request) {
+        var liste = service.mesDossiers(authentication.getName(), "CLOTURES".equalsIgnoreCase(scope));
+        return ResponseEntity.ok(getResponse(request, Map.of("dossiers", liste),
+                liste.size() + " dossier(s)", OK));
+    }
+
     // --------------------------------------------------------------- la collecte agricole
 
     /**

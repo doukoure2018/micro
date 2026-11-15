@@ -1,11 +1,13 @@
 import NetInfo from '@react-native-community/netinfo';
 import { api, ErreurReseau, ErreurServeur } from '@/api/client';
 import { jetonValide } from '@/auth/session';
-import type { CreditPortefeuille, EntreeReferentiel, LotTraite } from '@/api/types';
+import type {
+  CreditPortefeuille, DossierVue, EntreeReferentiel, LotTraite,
+} from '@/api/types';
 import {
   aTransmettre, appliquerSort, appliquerSortReclamation, compterParEtat, majReferentiels,
   marquerEnvoi, marquerPhoto, photosATransmettre, purger, reclamationsATransmettre,
-  remplacerPortefeuille, rendreALaFile,
+  remplacerDossiers, remplacerPortefeuille, rendreALaFile,
 } from '@/db/visites';
 import { ajouterPhotoAuFormulaire } from '@/sync/fichier';
 import { jetonDeLAppareil } from '@/sync/appareil';
@@ -267,6 +269,18 @@ async function rafraichirLaCopie(jeton: string): Promise<number> {
   const credits = portefeuille?.credits ?? [];
   await remplacerPortefeuille(credits);
   await ecrireEtat(CLES.dernierePhotoPortefeuille, new Date().toISOString());
+
+  // Les dossiers suivent le portefeuille : ce sont deux copies, lues sur le terrain sans
+  // reseau. Un echec ici ne doit pas perdre le portefeuille deja range.
+  try {
+    for (const clotures of [false, true]) {
+      const reponse = await api.get<{ dossiers: DossierVue[] }>(
+        `/ecredit/mobile/dossiers?scope=${clotures ? 'CLOTURES' : 'EN_COURS'}`, jeton);
+      await remplacerDossiers(reponse?.dossiers ?? [], clotures);
+    }
+  } catch (e) {
+    console.warn('[sync] dossiers non rafraichis :', e instanceof Error ? e.message : e);
+  }
   return credits.length;
 }
 

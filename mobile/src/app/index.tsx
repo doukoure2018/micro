@@ -115,6 +115,15 @@ export default function Aujourdhui() {
         </Pressable>
       </Link>
 
+      <Link href="/dossiers" asChild>
+        <Pressable style={s.lienCarte}>
+          <Text style={s.lienCarteTexte}>Mes dossiers de credit</Text>
+          <Text style={s.lienCarteAide}>
+            Ou en est chacun, et lesquels vous attendent.
+          </Text>
+        </Pressable>
+      </Link>
+
       <Link href="/agri" asChild>
         <Pressable style={s.lienCarte}>
           <Text style={s.lienCarteTexte}>Collecte agricole</Text>
