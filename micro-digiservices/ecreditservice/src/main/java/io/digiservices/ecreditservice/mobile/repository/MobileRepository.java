@@ -64,6 +64,15 @@ public class MobileRepository {
                 .param("jeton", jeton).param("motif", motif).update();
     }
 
+    /** Les appareils vivants de cet agent : ceux qui recevront une notification. */
+    public List<String> jetonsActifs(Long userId) {
+        return jdbcClient.sql("""
+                        SELECT jeton_push FROM appareil_mobile
+                         WHERE actif AND user_id = :user AND jeton_push IS NOT NULL
+                        """)
+                .param("user", userId).query(String.class).list();
+    }
+
     public Optional<Long> idAppareil(String jeton) {
         if (jeton == null || jeton.isBlank()) {
             return Optional.empty();

@@ -68,6 +68,7 @@ public class MobileService {
     private final PortefeuilleCreditPhotoRepository creditPhotoRepository;
     private final FileStorageService stockage;
     private final PerimetreSafService perimetreSafService;
+    private final ExpoPushService push;
 
     /** Les rôles qui portent un téléphone : l'agent saisit, le directeur d'agence lit. */
     private static final Set<String> ROLES_MOBILES = Set.of("AGENT_CREDIT", "DA");
@@ -358,7 +359,38 @@ public class MobileService {
         repository.cloreLot(lotId, acceptees, refusees, doublons, System.currentTimeMillis() - debut);
         log.info("[MOBILE] lot {} de l'agent {} : {} recues, {} acceptees, {} refusees, {} doublons",
                 lotId, user.getUserId(), visites.size(), acceptees, refusees, doublons);
+        annoncerLaTransmission(user, lot, acceptees, refusees);
         return new LotTraite(lotId, visites.size(), acceptees, refusees, doublons, sorts);
+    }
+
+    /**
+     * Annonce à l'agent ce qui est parti pendant qu'il faisait autre chose.
+     *
+     * <p>C'était la demande d'origine : le travail du terrain se transmet seul dès que le
+     * réseau revient, et l'agent l'apprend. Un envoi qu'il a lui-même déclenché ne donne rien :
+     * il a la réponse sous les yeux.</p>
+     *
+     * <p>Aucun montant, aucun nom de membre : une notification s'affiche sur un écran
+     * verrouillé. Et une notification perdue ne perd rien — la saisie, elle, est rangée.</p>
+     */
+    private void annoncerLaTransmission(User user, LotRecu lot, int acceptees, int refusees) {
+        if (lot == null || !lot.partiToutSeul() || acceptees + refusees == 0 || !push.estActif()) {
+            return;
+        }
+        try {
+            List<String> jetons = repository.jetonsActifs(user.getUserId());
+            if (jetons.isEmpty()) {
+                return;
+            }
+            String corps = acceptees + (acceptees > 1 ? " saisies transmises" : " saisie transmise")
+                    + (refusees > 0 ? ", " + refusees + " a corriger" : "");
+            var resultat = push.envoyer(jetons, "DIGI-CRG", corps,
+                    Map.of("ecran", refusees > 0 ? "synchronisation" : "accueil"));
+            resultat.jetonsMorts().forEach(j -> repository.desactiverAppareil(j, "JETON_PERIME"));
+        } catch (Exception e) {
+            // Une notification n'est jamais une raison de faire echouer une transmission.
+            log.warn("[MOBILE] notification non envoyee a l'agent {} : {}", user.getUserId(), e.getMessage());
+        }
     }
 
     private Long ecrire(VisiteRecue v, User user, Long appareilId, Long lotId, Set<String> affectes) {

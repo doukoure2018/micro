@@ -34,8 +34,21 @@ public final class MobileDtos {
             String corrigeIdentifiantClient) {
     }
 
-    /** Un lot de saisies, tel qu'un téléphone le transmet. */
-    public record LotRecu(String jetonAppareil, List<VisiteRecue> visites) {
+    /**
+     * Un lot de saisies, tel qu'un téléphone le transmet.
+     *
+     * <p>{@code origine} dit si l'envoi est parti TOUT SEUL, pendant que l'agent faisait autre
+     * chose ({@code FOND}), ou parce qu'il regardait l'écran ({@code ECRAN}). Seul le premier
+     * mérite une notification : annoncer « 3 saisies transmises » à quelqu'un qui vient
+     * d'appuyer sur « Synchroniser » est du bruit.</p>
+     */
+    public record LotRecu(String jetonAppareil, String origine, List<VisiteRecue> visites) {
+
+        public static final String FOND = "FOND";
+
+        public boolean partiToutSeul() {
+            return FOND.equalsIgnoreCase(origine);
+        }
     }
 
     /**

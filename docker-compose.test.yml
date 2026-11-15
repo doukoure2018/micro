@@ -207,6 +207,9 @@ services:
       # Ces cinq lignes sont la raison d'etre de ce fichier : la pile de test ne doit
       # joindre personne. La production, elle, porte PORTEFEUILLE_ALERTES_ACTIVES=true.
       PORTEFEUILLE_ALERTES_ACTIVES: ${TEST_ALERTES_ACTIVES:-false}   # vers le piege a courriels seulement
+      # Les telephones des agents sont de VRAIS telephones : une notification partie du
+      # jumeau de test sonnerait dans leur poche. Coupe par defaut.
+      MOBILE_PUSH_ACTIF: "${TEST_PUSH_ACTIF:-false}"
       CREDIT_NEGATIF_ACTIF: "false"
       SAF_SANTE_ACTIF: "false"
       SIGNALEMENT_TELEPHONE_SMS_ACTIF: "false"

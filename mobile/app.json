@@ -54,6 +54,12 @@
           "photosPermission": "Pour joindre une photo a une visite.",
           "cameraPermission": "L appareil photo sert a joindre une piece a une visite."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1F6B45"
+        }
       ]
     ],
     "experiments": {

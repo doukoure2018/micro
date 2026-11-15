@@ -71,7 +71,8 @@ class PhotoDeVisiteTest {
 
     private MobileService service() {
         return new MobileService(repository, userClient, saf, photoCredit, stockage,
-                mock(PerimetreSafService.class));
+                mock(PerimetreSafService.class),
+                mock(io.digiservices.ecreditservice.mobile.service.ExpoPushService.class));
     }
 
     private static MultipartFile photo(byte[] contenu, String type) {

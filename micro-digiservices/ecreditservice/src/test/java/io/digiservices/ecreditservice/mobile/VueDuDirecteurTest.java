@@ -64,7 +64,8 @@ class VueDuDirecteurTest {
     }
 
     private MobileService service() {
-        return new MobileService(repository, userClient, saf, photoCredit, stockage, perimetres);
+        return new MobileService(repository, userClient, saf, photoCredit, stockage, perimetres,
+                mock(io.digiservices.ecreditservice.mobile.service.ExpoPushService.class));
     }
 
     private static AgentDuDirecteur agent(String nom, OffsetDateTime derniereVisite, int a, int d) {

@@ -7,6 +7,8 @@ import { AppState } from 'react-native';
 import { cleDeLaBase, jetonValide, profilGarde } from '@/auth/session';
 import { ouvrir } from '@/db/base';
 import { enregistrerTacheDeFond } from '@/sync/tacheDeFond';
+import { declarerLAppareil } from '@/sync/notifications';
+import { memoriserLeJetonDeLAppareil } from '@/sync/appareil';
 import { synchroniser } from '@/sync/moteur';
 import { couleurs } from '@/ui/theme';
 
@@ -34,6 +36,9 @@ export default function Ossature() {
         setConnecte(true);
         if (jeton) {
           void enregistrerTacheDeFond();
+          // Le telephone se declare AVANT la premiere synchronisation : le serveur saura a
+          // quel appareil annoncer ce qui est parti tout seul.
+          memoriserLeJetonDeLAppareil(await declarerLAppareil());
           void synchroniser();
         }
       }

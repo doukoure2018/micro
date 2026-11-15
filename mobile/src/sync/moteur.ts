@@ -7,6 +7,7 @@ import {
   photosATransmettre, purger, remplacerPortefeuille, rendreALaFile,
 } from '@/db/visites';
 import { ajouterPhotoAuFormulaire } from '@/sync/fichier';
+import { jetonDeLAppareil } from '@/sync/appareil';
 import { CLES, ecrireEtat, lireEtat } from '@/db/base';
 
 /**
@@ -71,7 +72,9 @@ export async function synchroniser(options: { force?: boolean } = {}): Promise<R
 
   enCours = true;
   try {
-    const envoi = await envoyerLesSaisies(jeton);
+    // « L'agent a demande » ou « c'est parti tout seul » : le serveur n'annonce que le second,
+    // car annoncer une transmission a quelqu'un qui regarde l'ecran est du bruit.
+    const envoi = await envoyerLesSaisies(jeton, options.force ? 'ECRAN' : 'FOND');
     // Les photos suivent les saisies, jamais l'inverse : le serveur refuse une photo dont il
     // ne connait pas encore la visite.
     const photos = await envoyerLesPhotos(jeton);
@@ -89,7 +92,7 @@ export async function synchroniser(options: { force?: boolean } = {}): Promise<R
   }
 }
 
-async function envoyerLesSaisies(jeton: string) {
+async function envoyerLesSaisies(jeton: string, origine: 'FOND' | 'ECRAN') {
   let transmises = 0;
   let refusees = 0;
   let doublons = 0;
@@ -105,7 +108,8 @@ async function envoyerLesSaisies(jeton: string) {
     await marquerEnvoi(identifiants);
     try {
       const data = await api.post<{ lot: LotTraite }>(
-        '/ecredit/mobile/sync', jeton, { jetonAppareil: null, visites: lot });
+        '/ecredit/mobile/sync', jeton,
+        { jetonAppareil: jetonDeLAppareil(), origine, visites: lot });
       const sorts = data?.lot?.sorts ?? [];
       for (const s of sorts) {
         await appliquerSort(s.identifiantClient, s.sort, s.motif);
