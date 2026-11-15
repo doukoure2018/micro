@@ -86,6 +86,17 @@ export default function FicheCredit() {
                    onPress={() => void Linking.openURL(`geo:0,0?q=${encodeURIComponent(credit.nomClient ?? '')}`)}>
           <Text style={s.actionSecondaireTexte}>Itineraire</Text>
         </Pressable>
+        <Link href={{
+          pathname: '/reclamations',
+          params: {
+            credit: `${credit.codAgencia}-${credit.numCredito}`,
+            membre: credit.codCliente ?? '',
+          },
+        }} asChild>
+          <Pressable accessibilityRole="button" style={s.actionSecondaire}>
+            <Text style={s.actionSecondaireTexte}>Signaler un probleme sur ce credit</Text>
+          </Pressable>
+        </Link>
         <Link href={{ pathname: '/visite/[cle]', params: { cle: `${credit.codAgencia}-${credit.numCredito}` } }}
               asChild>
           <Pressable accessibilityRole="button" style={s.action}>

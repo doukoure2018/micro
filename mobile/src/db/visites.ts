@@ -1,6 +1,8 @@
 import * as Crypto from 'expo-crypto';
 import { baseOuverte } from '@/db/base';
-import type { CreditPortefeuille, EntreeReferentiel, VisiteAEnvoyer } from '@/api/types';
+import type {
+  CreditPortefeuille, EntreeReferentiel, ReclamationAEnvoyer, VisiteAEnvoyer,
+} from '@/api/types';
 import { LIMITES } from '@/config';
 
 /** L'etat d'une saisie sur le telephone. Le serveur n'en connait que le resultat. */
@@ -238,6 +240,77 @@ export async function portefeuilleLocal(): Promise<CreditPortefeuille[]> {
     montantsAt: (l.montants_at as string) ?? null,
     horsCreditsVivants: l.hors_credits_vivants === 1,
   }));
+}
+
+// --------------------------------------------------------------- les reclamations
+
+export type ReclamationLocale = ReclamationAEnvoyer & {
+  etat: EtatVisite;
+  motifRefus: string | null;
+};
+
+/**
+ * Enregistre une reclamation. Elle entre dans la file comme une visite : l'agent la signale
+ * depuis le terrain, sans reseau, et la transmission est l'affaire du moteur.
+ */
+export async function enregistrerReclamation(
+  saisie: Omit<ReclamationAEnvoyer, 'identifiantClient' | 'saisieAt'>,
+): Promise<string> {
+  const identifiant = Crypto.randomUUID();
+  await baseOuverte().runAsync(
+    `INSERT INTO reclamation (identifiant_client, categorie, objet, message, cod_agencia,
+                              num_credito, cod_cliente, saisie_at, etat)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'EN_ATTENTE')`,
+    identifiant, saisie.categorie, saisie.objet, saisie.message, saisie.codAgencia,
+    saisie.numCredito, saisie.codCliente, new Date().toISOString());
+  return identifiant;
+}
+
+export async function reclamationsATransmettre(): Promise<ReclamationAEnvoyer[]> {
+  const lignes = await baseOuverte().getAllAsync<Record<string, unknown>>(
+    `SELECT * FROM reclamation WHERE etat IN ('EN_ATTENTE', 'ENVOI')
+      ORDER BY saisie_at LIMIT ?`, LIMITES.tailleLot);
+  return lignes.map(versReclamation);
+}
+
+/** Ce que l'agent a signale et qui n'est pas encore parti : affiche avec les reponses recues. */
+export async function reclamationsLocales(): Promise<ReclamationLocale[]> {
+  const lignes = await baseOuverte().getAllAsync<Record<string, unknown>>(
+    "SELECT * FROM reclamation WHERE etat <> 'TRANSMISE' ORDER BY saisie_at DESC");
+  return lignes.map((l) => ({
+    ...versReclamation(l),
+    etat: (l.etat as EtatVisite) ?? 'EN_ATTENTE',
+    motifRefus: (l.motif_refus as string) ?? null,
+  }));
+}
+
+export async function appliquerSortReclamation(
+  identifiant: string, sort: 'ACCEPTEE' | 'DOUBLON' | 'REFUSEE', motif: string | null,
+): Promise<void> {
+  const etat: EtatVisite = sort === 'REFUSEE' ? 'REFUSEE' : 'TRANSMISE';
+  await baseOuverte().runAsync(
+    `UPDATE reclamation SET etat = ?, motif_refus = ?, transmise_at = ?
+      WHERE identifiant_client = ?`,
+    etat, motif, etat === 'TRANSMISE' ? new Date().toISOString() : null, identifiant);
+}
+
+export async function compterReclamationsEnAttente(): Promise<number> {
+  const ligne = await baseOuverte().getFirstAsync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM reclamation WHERE etat IN ('EN_ATTENTE', 'ENVOI')");
+  return ligne?.n ?? 0;
+}
+
+function versReclamation(l: Record<string, unknown>): ReclamationAEnvoyer {
+  return {
+    identifiantClient: l.identifiant_client as string,
+    categorie: l.categorie as string,
+    objet: l.objet as string,
+    message: l.message as string,
+    codAgencia: (l.cod_agencia as string) ?? null,
+    numCredito: (l.num_credito as number) ?? null,
+    codCliente: (l.cod_cliente as string) ?? null,
+    saisieAt: l.saisie_at as string,
+  };
 }
 
 // ------------------------------------------------------------------- les listes fermees

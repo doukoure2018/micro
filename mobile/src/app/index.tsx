@@ -115,6 +115,15 @@ export default function Aujourdhui() {
         </Pressable>
       </Link>
 
+      <Link href="/reclamations" asChild>
+        <Pressable style={s.lienCarte}>
+          <Text style={s.lienCarteTexte}>Signaler un probleme</Text>
+          <Text style={s.lienCarteAide}>
+            Aux directions concernees. La reponse revient sur ce telephone.
+          </Text>
+        </Pressable>
+      </Link>
+
       <Text style={s.titreSection}>A faire aujourd'hui</Text>
       {enRetard.length === 0 && promesses.length === 0 ? (
         <Text style={s.vide}>Aucun retard ni promesse a verifier dans votre portefeuille.</Text>
@@ -188,6 +197,12 @@ const s = StyleSheet.create({
   carteValeur: { fontSize: texte.sousTitre + 1, fontWeight: '600', color: couleurs.texte },
   score: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600', marginTop: espaces.xs },
   aFermer: { fontSize: texte.minuscule, color: couleurs.ambre, fontWeight: '600', marginTop: espaces.xs },
+  lienCarte: {
+    backgroundColor: couleurs.surface, borderRadius: 14, padding: espaces.l,
+    borderWidth: 1, borderColor: couleurs.bord, gap: 2, minHeight: 48,
+  },
+  lienCarteTexte: { fontSize: texte.corps, fontWeight: '600', color: couleurs.vert },
+  lienCarteAide: { fontSize: texte.minuscule, color: couleurs.texteSecondaire },
   titreSection: { fontSize: texte.sousTitre, fontWeight: '600', color: couleurs.texte, marginTop: espaces.s },
   vide: { fontSize: texte.corps, color: couleurs.texteSecondaire },
   ligne: {

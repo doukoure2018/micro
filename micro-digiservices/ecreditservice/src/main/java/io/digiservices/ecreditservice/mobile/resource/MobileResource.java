@@ -4,6 +4,9 @@ import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.LotRecu;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie;
 import io.digiservices.ecreditservice.mobile.service.MobileService;
+import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.ReclamationRecue;
+import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.SortReclamation;
+import io.digiservices.ecreditservice.reclamation.service.ReclamationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,7 @@ import static org.springframework.http.HttpStatus.OK;
 public class MobileResource {
 
     private final MobileService service;
+    private final ReclamationService reclamations;
 
     /** Le profil affiché en tête de l'application, et gardé hors ligne. */
     @GetMapping("/moi")
@@ -142,6 +146,39 @@ public class MobileResource {
         return ResponseEntity.ok(getResponse(request, Map.of("sort", sort),
                 SortSaisie.REFUSEE.equals(sort.sort()) ? sort.motif() : "Photo " + sort.sort().toLowerCase(),
                 OK));
+    }
+
+    /** Les catégories de réclamation, que le téléphone garde hors ligne. */
+    @GetMapping("/reclamations/categories")
+    public ResponseEntity<Response> categoriesDeReclamation(@NotNull Authentication authentication,
+                                                            HttpServletRequest request) {
+        return ResponseEntity.ok(getResponse(request,
+                Map.of("categories", reclamations.categories()), "Categories", OK));
+    }
+
+    /**
+     * Une réclamation du terrain. Même langage que les saisies de recouvrement : la réponse
+     * est toujours 200, et c'est le SORT qui dit au téléphone s'il doit la ranger ou la garder.
+     */
+    @PostMapping("/reclamations")
+    public ResponseEntity<Response> signaler(@NotNull Authentication authentication,
+                                             @RequestBody ReclamationRecue reclamation,
+                                             @RequestParam(name = "jetonAppareil", required = false) String jetonAppareil,
+                                             HttpServletRequest request) {
+        Long appareilId = service.idAppareil(jetonAppareil);
+        var sort = reclamations.recevoir(authentication.getName(), reclamation, appareilId, null);
+        return ResponseEntity.ok(getResponse(request, Map.of("sort", sort),
+                SortReclamation.REFUSEE.equals(sort.sort()) ? sort.motif()
+                        : "Reclamation " + sort.sort().toLowerCase(), OK));
+    }
+
+    /** Ce que l'agent a signalé, et ce qui lui a été répondu. */
+    @GetMapping("/reclamations")
+    public ResponseEntity<Response> mesReclamations(@NotNull Authentication authentication,
+                                                    HttpServletRequest request) {
+        var mes = reclamations.mes(authentication.getName(), 50);
+        return ResponseEntity.ok(getResponse(request, Map.of("reclamations", mes),
+                mes.size() + " reclamation(s)", OK));
     }
 
     /** Déclare le téléphone, ou le réveille : c'est lui qui recevra les notifications. */

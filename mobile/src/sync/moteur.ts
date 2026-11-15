@@ -3,8 +3,9 @@ import { api, ErreurReseau, ErreurServeur } from '@/api/client';
 import { jetonValide } from '@/auth/session';
 import type { CreditPortefeuille, EntreeReferentiel, LotTraite } from '@/api/types';
 import {
-  aTransmettre, appliquerSort, compterParEtat, majReferentiels, marquerEnvoi, marquerPhoto,
-  photosATransmettre, purger, remplacerPortefeuille, rendreALaFile,
+  aTransmettre, appliquerSort, appliquerSortReclamation, compterParEtat, majReferentiels,
+  marquerEnvoi, marquerPhoto, photosATransmettre, purger, reclamationsATransmettre,
+  remplacerPortefeuille, rendreALaFile,
 } from '@/db/visites';
 import { ajouterPhotoAuFormulaire } from '@/sync/fichier';
 import { jetonDeLAppareil } from '@/sync/appareil';
@@ -29,6 +30,7 @@ export type ResultatSync = {
   refusees: number;
   doublons: number;
   photos: number;
+  reclamations: number;
   creditsRecus: number;
   horsConnexion: boolean;
   erreur: string | null;
@@ -51,7 +53,7 @@ const INTERVALLE_MIN_MS = 120_000;
 
 export async function synchroniser(options: { force?: boolean } = {}): Promise<ResultatSync> {
   const vide: ResultatSync = {
-    transmises: 0, refusees: 0, doublons: 0, photos: 0, creditsRecus: 0,
+    transmises: 0, refusees: 0, doublons: 0, photos: 0, reclamations: 0, creditsRecus: 0,
     horsConnexion: false, erreur: null,
   };
   if (enCours) {
@@ -78,10 +80,13 @@ export async function synchroniser(options: { force?: boolean } = {}): Promise<R
     // Les photos suivent les saisies, jamais l'inverse : le serveur refuse une photo dont il
     // ne connait pas encore la visite.
     const photos = await envoyerLesPhotos(jeton);
+    const reclamations = await envoyerLesReclamations(jeton);
     const recu = await rafraichirLaCopie(jeton);
     await purger();
     await ecrireEtat(CLES.derniereSyncReussie, new Date().toISOString());
-    return { ...envoi, photos, creditsRecus: recu, horsConnexion: false, erreur: null };
+    return {
+      ...envoi, photos, reclamations, creditsRecus: recu, horsConnexion: false, erreur: null,
+    };
   } catch (e) {
     if (e instanceof ErreurReseau) {
       return { ...vide, horsConnexion: true };
@@ -167,6 +172,34 @@ async function envoyerLesPhotos(jeton: string): Promise<number> {
     } catch (e) {
       if (e instanceof ErreurReseau) {
         // La connexion est tombee : les photos restantes attendront, rien n'est perdu.
+        break;
+      }
+      throw e;
+    }
+  }
+  return envoyees;
+}
+
+/**
+ * Les reclamations, une par une : chacune porte son identifiant, donc un renvoi est repondu
+ * « doublon ». Un refus definitif revient a l'agent avec son motif, comme pour une saisie.
+ */
+async function envoyerLesReclamations(jeton: string): Promise<number> {
+  let envoyees = 0;
+  for (const r of await reclamationsATransmettre()) {
+    try {
+      const data = await api.post<{ sort: { sort: string; motif: string | null } }>(
+        '/ecredit/mobile/reclamations', jeton, r);
+      const sort = data?.sort?.sort;
+      if (sort === 'ACCEPTEE' || sort === 'DOUBLON') {
+        await appliquerSortReclamation(r.identifiantClient, sort, null);
+        envoyees += 1;
+      } else if (sort === 'REFUSEE') {
+        await appliquerSortReclamation(r.identifiantClient, 'REFUSEE', data?.sort?.motif ?? null);
+      }
+    } catch (e) {
+      if (e instanceof ErreurReseau) {
+        // Elle repartira : rien n'est perdu, rien n'est marque.
         break;
       }
       throw e;

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
 import { api, ErreurReseau } from '@/api/client';
 import { jetonValide } from '@/auth/session';
 import type { AgentVu, EquipeVue } from '@/api/types';
@@ -97,6 +97,12 @@ export default function Equipe() {
         </>
       ) : null}
 
+      <Link href="/reclamations" asChild>
+        <Pressable style={s.lien}>
+          <Text style={s.lienTexte}>Signaler un probleme</Text>
+        </Pressable>
+      </Link>
+
       <Text style={s.pied}>
         Lecture seule. Les decisions — affectation, validation — restent sur le poste de travail.
       </Text>
@@ -165,5 +171,11 @@ const s = StyleSheet.create({
   noteValeur: { fontSize: texte.sousTitre, fontWeight: '700' },
   noteLettre: { fontSize: texte.minuscule, color: couleurs.texteSecondaire },
   vide: { fontSize: texte.petit, color: couleurs.texteSecondaire },
+  lien: {
+    minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: couleurs.bord,
+    backgroundColor: couleurs.surface, alignItems: 'center', justifyContent: 'center',
+    marginTop: espaces.m,
+  },
+  lienTexte: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600' },
   pied: { fontSize: texte.minuscule, color: couleurs.texteSecondaire, marginTop: espaces.m },
 });

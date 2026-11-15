@@ -118,3 +118,47 @@ export type EquipeVue = {
   silencieux: AgentVu[];
   visites: VisiteEnregistree[];
 };
+
+/** Une categorie de reclamation, gardee hors ligne par le telephone. */
+export type CategorieReclamation = {
+  code: string;
+  libelle: string;
+  ordre: number;
+};
+
+/** Une reclamation telle que l'agent la relit, avec la reponse recue. */
+export type ReclamationVue = {
+  id: number;
+  identifiantClient: string;
+  categorie: string;
+  categorieLibelle: string;
+  objet: string;
+  message: string;
+  codAgencia: string | null;
+  numCredito: number | null;
+  codCliente: string | null;
+  auteur: string | null;
+  auteurPointVente: string | null;
+  saisieAt: string;
+  recueAt: string;
+  statut: 'OUVERTE' | 'EN_COURS' | 'TRAITEE';
+  priseEnChargePar: string | null;
+  priseEnChargeAt: string | null;
+  reponse: string | null;
+  reponduPar: string | null;
+  reponduAt: string | null;
+  notifiee: boolean;
+  nbPieces: number;
+};
+
+/** Une reclamation telle qu'elle part du telephone. */
+export type ReclamationAEnvoyer = {
+  identifiantClient: string;
+  categorie: string;
+  objet: string;
+  message: string;
+  codAgencia: string | null;
+  numCredito: number | null;
+  codCliente: string | null;
+  saisieAt: string;
+};

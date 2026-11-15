@@ -146,6 +146,24 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS idx_visite_etat ON visite (etat, saisie_at);
 
+    -- Les reclamations du terrain : meme file, meme etats que les visites. Une reclamation
+    -- se saisit sans reseau comme tout le reste.
+    CREATE TABLE IF NOT EXISTS reclamation (
+      identifiant_client TEXT PRIMARY KEY,
+      categorie TEXT NOT NULL,
+      objet TEXT NOT NULL,
+      message TEXT NOT NULL,
+      cod_agencia TEXT,
+      num_credito INTEGER,
+      cod_cliente TEXT,
+      saisie_at TEXT NOT NULL,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      motif_refus TEXT,
+      transmise_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_reclamation_etat ON reclamation (etat, saisie_at);
+
     CREATE TABLE IF NOT EXISTS photo (
       identifiant_client TEXT PRIMARY KEY,
       visite_identifiant TEXT NOT NULL REFERENCES visite (identifiant_client) ON DELETE CASCADE,
@@ -170,8 +188,9 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
  *
  * 2 : le telephone du membre et la date des montants (13/11/2026).
  * 3 : le credit absent de SAF, distingue de SAF muet (13/11/2026).
+ * 4 : la file des reclamations du terrain (15/11/2026).
  */
-const FORMAT_BASE = 3;
+const FORMAT_BASE = 4;
 
 /**
  * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des

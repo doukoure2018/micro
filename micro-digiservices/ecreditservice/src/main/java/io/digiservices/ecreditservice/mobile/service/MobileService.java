@@ -496,6 +496,11 @@ public class MobileService {
         return repository.declarerAppareil(user.getUserId(), jeton, plateforme, modele, versionApp);
     }
 
+    /** L'appareil qui parle, s'il s'est déclaré : sert à rattacher ce qu'il transmet. */
+    public Long idAppareil(String jeton) {
+        return repository.idAppareil(jeton).orElse(null);
+    }
+
     public void retirerAppareil(String uuid, String jeton) {
         exigerCompteMobile(uuid);
         repository.desactiverAppareil(jeton, "DECONNEXION");
