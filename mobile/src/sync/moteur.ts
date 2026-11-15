@@ -3,9 +3,10 @@ import { api, ErreurReseau, ErreurServeur } from '@/api/client';
 import { jetonValide } from '@/auth/session';
 import type { CreditPortefeuille, EntreeReferentiel, LotTraite } from '@/api/types';
 import {
-  aTransmettre, appliquerSort, compterParEtat, majReferentiels, marquerEnvoi,
-  purger, remplacerPortefeuille, rendreALaFile,
+  aTransmettre, appliquerSort, compterParEtat, majReferentiels, marquerEnvoi, marquerPhoto,
+  photosATransmettre, purger, remplacerPortefeuille, rendreALaFile,
 } from '@/db/visites';
+import { ajouterPhotoAuFormulaire } from '@/sync/fichier';
 import { CLES, ecrireEtat, lireEtat } from '@/db/base';
 
 /**
@@ -26,6 +27,7 @@ export type ResultatSync = {
   transmises: number;
   refusees: number;
   doublons: number;
+  photos: number;
   creditsRecus: number;
   horsConnexion: boolean;
   erreur: string | null;
@@ -48,7 +50,7 @@ const INTERVALLE_MIN_MS = 120_000;
 
 export async function synchroniser(options: { force?: boolean } = {}): Promise<ResultatSync> {
   const vide: ResultatSync = {
-    transmises: 0, refusees: 0, doublons: 0, creditsRecus: 0,
+    transmises: 0, refusees: 0, doublons: 0, photos: 0, creditsRecus: 0,
     horsConnexion: false, erreur: null,
   };
   if (enCours) {
@@ -70,10 +72,13 @@ export async function synchroniser(options: { force?: boolean } = {}): Promise<R
   enCours = true;
   try {
     const envoi = await envoyerLesSaisies(jeton);
+    // Les photos suivent les saisies, jamais l'inverse : le serveur refuse une photo dont il
+    // ne connait pas encore la visite.
+    const photos = await envoyerLesPhotos(jeton);
     const recu = await rafraichirLaCopie(jeton);
     await purger();
     await ecrireEtat(CLES.derniereSyncReussie, new Date().toISOString());
-    return { ...envoi, creditsRecus: recu, horsConnexion: false, erreur: null };
+    return { ...envoi, photos, creditsRecus: recu, horsConnexion: false, erreur: null };
   } catch (e) {
     if (e instanceof ErreurReseau) {
       return { ...vide, horsConnexion: true };
@@ -122,6 +127,48 @@ async function envoyerLesSaisies(jeton: string) {
     }
   }
   return { transmises, refusees, doublons };
+}
+
+/**
+ * Les photos, une par une. Un fichier est lourd : groupees, la moindre coupure ferait tout
+ * recommencer. Chacune porte son identifiant, donc un renvoi est repondu « doublon ».
+ *
+ * <p>Une photo refusee pour de bon est rangee REFUSEE et ne repart plus ; une photo dont la
+ * visite n'est pas encore arrivee reste simplement en attente. Une coupure arrete l'envoi
+ * sans rien perdre : le reste repartira.</p>
+ */
+async function envoyerLesPhotos(jeton: string): Promise<number> {
+  let envoyees = 0;
+  for (const photo of await photosATransmettre()) {
+    const formulaire = new FormData();
+    formulaire.append('identifiant', photo.identifiantClient);
+    formulaire.append('visite', photo.visiteIdentifiant);
+    if (photo.priseAt) {
+      formulaire.append('priseAt', photo.priseAt);
+    }
+    ajouterPhotoAuFormulaire(formulaire, photo.chemin, photo.identifiantClient);
+    try {
+      const data = await api.envoiFichier<{ sort: { sort: string; motif: string | null } }>(
+        '/ecredit/mobile/photos', jeton, formulaire);
+      const sort = data?.sort?.sort;
+      if (sort === 'ACCEPTEE' || sort === 'DOUBLON') {
+        await marquerPhoto(photo.identifiantClient, 'TRANSMISE');
+        envoyees += 1;
+      } else if (data?.sort?.motif === 'Visite pas encore transmise') {
+        // Refus temporaire : on la laisse en attente, elle repartira.
+        continue;
+      } else {
+        await marquerPhoto(photo.identifiantClient, 'REFUSEE');
+      }
+    } catch (e) {
+      if (e instanceof ErreurReseau) {
+        // La connexion est tombee : les photos restantes attendront, rien n'est perdu.
+        break;
+      }
+      throw e;
+    }
+  }
+  return envoyees;
 }
 
 async function rafraichirLaCopie(jeton: string): Promise<number> {

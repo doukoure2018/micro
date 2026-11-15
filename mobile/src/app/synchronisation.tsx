@@ -29,7 +29,8 @@ export default function Synchronisation() {
     setMessage(
       r.horsConnexion ? 'Hors connexion : les saisies attendent.'
         : r.erreur ? r.erreur
-        : `${r.transmises} saisie(s) transmise(s), ${r.refusees} refusee(s).`);
+        : `${r.transmises} saisie(s) transmise(s), ${r.refusees} refusee(s)`
+          + (r.photos > 0 ? `, ${r.photos} photo(s) envoyee(s).` : '.'));
     await charger();
     setEnCours(false);
   }

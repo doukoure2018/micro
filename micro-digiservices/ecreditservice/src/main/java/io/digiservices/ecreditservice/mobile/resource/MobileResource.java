@@ -2,11 +2,13 @@ package io.digiservices.ecreditservice.mobile.resource;
 
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.LotRecu;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie;
 import io.digiservices.ecreditservice.mobile.service.MobileService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -101,6 +104,30 @@ public class MobileResource {
         var traite = service.synchroniser(authentication.getName(), lot);
         return ResponseEntity.ok(getResponse(request, Map.of("lot", traite),
                 traite.acceptees() + " saisie(s) transmise(s), " + traite.refusees() + " refusee(s)",
+                OK));
+    }
+
+    /**
+     * La photo d'une visite, envoyée APRÈS elle et une par une.
+     *
+     * <p>Elle porte son propre identifiant, créé sur le téléphone : renvoyée après une coupure,
+     * elle est répondue « doublon » et n'est pas rangée deux fois. La réponse est toujours 200,
+     * même pour un refus : c'est le sort rendu qui dit au téléphone s'il doit garder la photo
+     * ou la ranger, et une erreur HTTP lui ferait croire à une panne de réseau.</p>
+     */
+    @PostMapping(value = "/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Response> recevoirPhoto(
+            @NotNull Authentication authentication,
+            @RequestParam(name = "identifiant") String identifiantClient,
+            @RequestParam(name = "visite") String visiteIdentifiant,
+            @RequestParam(name = "priseAt", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime priseAt,
+            @RequestParam(name = "fichier") MultipartFile fichier,
+            HttpServletRequest request) {
+        var sort = service.recevoirPhoto(authentication.getName(), identifiantClient,
+                visiteIdentifiant, priseAt, fichier);
+        return ResponseEntity.ok(getResponse(request, Map.of("sort", sort),
+                SortSaisie.REFUSEE.equals(sort.sort()) ? sort.motif() : "Photo " + sort.sort().toLowerCase(),
                 OK));
     }
 

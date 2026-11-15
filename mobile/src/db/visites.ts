@@ -127,6 +127,73 @@ function versVisiteAEnvoyer(l: Record<string, unknown>): VisiteAEnvoyer {
   };
 }
 
+// ------------------------------------------------------------------------ les photos
+
+export type PhotoLocale = {
+  identifiantClient: string;
+  visiteIdentifiant: string;
+  chemin: string;
+  priseAt: string | null;
+  etat: EtatVisite;
+};
+
+/**
+ * Attache une photo a une visite DEJA enregistree : la file locale exige la visite (cle
+ * etrangere), et c'est voulu — une photo sans visite ne veut rien dire, et la suppression
+ * d'une saisie emporte ses photos.
+ */
+export async function ajouterPhoto(
+  visiteIdentifiant: string, chemin: string, priseAt?: string,
+): Promise<string> {
+  const identifiant = Crypto.randomUUID();
+  await baseOuverte().runAsync(
+    `INSERT INTO photo (identifiant_client, visite_identifiant, chemin, prise_at, etat)
+     VALUES (?, ?, ?, ?, 'EN_ATTENTE')`,
+    identifiant, visiteIdentifiant, chemin, priseAt ?? new Date().toISOString());
+  return identifiant;
+}
+
+/**
+ * Les photos a envoyer : seulement celles dont la VISITE est deja transmise. Le serveur
+ * refuse une photo dont il ne connait pas encore la visite — autant ne pas la lui proposer,
+ * et economiser la donnee de l'agent.
+ */
+export async function photosATransmettre(): Promise<PhotoLocale[]> {
+  const lignes = await baseOuverte().getAllAsync<Record<string, unknown>>(
+    `SELECT p.* FROM photo p
+       JOIN visite v ON v.identifiant_client = p.visite_identifiant
+      WHERE p.etat = 'EN_ATTENTE' AND v.etat = 'TRANSMISE'
+      ORDER BY p.prise_at LIMIT ?`, LIMITES.tailleLot);
+  return lignes.map(versPhoto);
+}
+
+export async function photosDeLaVisite(visiteIdentifiant: string): Promise<PhotoLocale[]> {
+  const lignes = await baseOuverte().getAllAsync<Record<string, unknown>>(
+    'SELECT * FROM photo WHERE visite_identifiant = ? ORDER BY prise_at', visiteIdentifiant);
+  return lignes.map(versPhoto);
+}
+
+export async function marquerPhoto(identifiant: string, etat: EtatVisite): Promise<void> {
+  await baseOuverte().runAsync('UPDATE photo SET etat = ? WHERE identifiant_client = ?',
+    etat, identifiant);
+}
+
+export async function compterPhotosEnAttente(): Promise<number> {
+  const ligne = await baseOuverte().getFirstAsync<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM photo WHERE etat = 'EN_ATTENTE'");
+  return ligne?.n ?? 0;
+}
+
+function versPhoto(l: Record<string, unknown>): PhotoLocale {
+  return {
+    identifiantClient: l.identifiant_client as string,
+    visiteIdentifiant: l.visite_identifiant as string,
+    chemin: l.chemin as string,
+    priseAt: (l.prise_at as string) ?? null,
+    etat: (l.etat as EtatVisite) ?? 'EN_ATTENTE',
+  };
+}
+
 // --------------------------------------------------------------- la copie du portefeuille
 
 export async function remplacerPortefeuille(credits: CreditPortefeuille[]): Promise<void> {

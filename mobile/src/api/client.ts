@@ -41,10 +41,13 @@ export class ErreurServeur extends Error {
 /** Au-dela, on considere que le reseau ne repondra pas : mieux vaut rendre la main. */
 const DELAI_MS = 30_000;
 
+/** Une photo de terrain part plus lentement qu'une saisie : le delai lui est propre. */
+const DELAI_PHOTO_MS = 120_000;
+
 async function appeler<T>(
   chemin: string,
   jeton: string | null,
-  options: { methode?: string; corps?: unknown; delaiMs?: number } = {},
+  options: { methode?: string; corps?: unknown; formulaire?: FormData; delaiMs?: number } = {},
 ): Promise<T | undefined> {
   const controleur = new AbortController();
   const minuteur = setTimeout(() => controleur.abort(), options.delaiMs ?? DELAI_MS);
@@ -54,10 +57,12 @@ async function appeler<T>(
       method: options.methode ?? 'GET',
       headers: {
         Accept: 'application/json',
+        // Un envoi multipart ne porte PAS de Content-Type pose a la main : la frontiere est
+        // tiree par fetch, et l'ecrire soi-meme donne un corps que le serveur ne sait pas lire.
         ...(options.corps ? { 'Content-Type': 'application/json' } : {}),
         ...(jeton ? { Authorization: `Bearer ${jeton}` } : {}),
       },
-      body: options.corps ? JSON.stringify(options.corps) : undefined,
+      body: options.formulaire ?? (options.corps ? JSON.stringify(options.corps) : undefined),
       signal: controleur.signal,
     });
   } catch (e) {
@@ -88,4 +93,7 @@ export const api = {
     appeler<T>(chemin, jeton, { methode: 'POST', corps, delaiMs }),
   delete: <T>(chemin: string, jeton: string | null) =>
     appeler<T>(chemin, jeton, { methode: 'DELETE' }),
+  /** Envoi d'un fichier : meme porte, meme traitement des pannes, delai plus long. */
+  envoiFichier: <T>(chemin: string, jeton: string | null, formulaire: FormData) =>
+    appeler<T>(chemin, jeton, { methode: 'POST', formulaire, delaiMs: DELAI_PHOTO_MS }),
 };

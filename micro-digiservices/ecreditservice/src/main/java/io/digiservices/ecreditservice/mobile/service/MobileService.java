@@ -15,13 +15,16 @@ import io.digiservices.ecreditservice.mobile.dto.MobileDtos.VisiteEnregistree;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.VisiteRecue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.IdentiteMembre;
+import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteConnue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteCredit;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
+import io.digiservices.ecreditservice.service.FileStorageService;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository.CreditConnu;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -58,6 +61,7 @@ public class MobileService {
     private final UserClient userClient;
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final PortefeuilleCreditPhotoRepository creditPhotoRepository;
+    private final FileStorageService stockage;
 
     /** Les rôles qui portent un téléphone : l'agent saisit, le directeur d'agence lit. */
     private static final Set<String> ROLES_MOBILES = Set.of("AGENT_CREDIT", "DA");
@@ -319,6 +323,84 @@ public class MobileService {
                 : repository.idVisite(v.corrigeIdentifiantClient()).orElse(null);
         return repository.enregistrerVisite(complete, user.getUserId(), appareilId, lotId,
                 horsPortefeuille, corrige);
+    }
+
+    // ---------------------------------------------------------------------- les photos
+
+    /** Au-delà, ce n'est plus une photo de terrain : le téléphone réduit avant d'envoyer. */
+    private static final long PHOTO_MAX_OCTETS = 8L * 1024 * 1024;
+
+    private static final Set<String> PHOTO_TYPES = Set.of("image/jpeg", "image/jpg", "image/png");
+
+    /**
+     * Reçoit la photo d'une visite. Elle part APRÈS la visite et se rejoue seule : le téléphone
+     * la garde tant qu'il n'a pas d'accusé.
+     *
+     * <p>Trois refus, et un seul est définitif. Une visite inconnue est un refus temporaire —
+     * le lot qui la portait n'est pas encore passé, le téléphone réessaiera ; un fichier trop
+     * gros ou d'un autre type est un refus définitif ; une visite qui appartient à un autre
+     * agent est refusée tout court, car l'identifiant vient du téléphone et ne prouve rien.</p>
+     */
+    public SortSaisie recevoirPhoto(String uuid, String identifiantClient, String visiteIdentifiant,
+                                    OffsetDateTime priseAt, MultipartFile fichier) {
+        User user = exigerCompteMobile(uuid);
+        if (!"AGENT_CREDIT".equals(user.getRole())) {
+            throw new ApiException("Seul un agent de credit transmet des photos");
+        }
+        if (identifiantClient == null || identifiantClient.isBlank()) {
+            return SortSaisie.refusee(identifiantClient, "Identifiant de photo absent");
+        }
+        Optional<Long> deja = repository.idPhoto(identifiantClient);
+        if (deja.isPresent()) {
+            return SortSaisie.doublon(identifiantClient, deja.get());
+        }
+        if (fichier == null || fichier.isEmpty()) {
+            return SortSaisie.refusee(identifiantClient, "Photo vide");
+        }
+        if (fichier.getSize() > PHOTO_MAX_OCTETS) {
+            return SortSaisie.refusee(identifiantClient, "Photo trop lourde : 8 Mo au plus");
+        }
+        String type = fichier.getContentType() == null ? "" : fichier.getContentType().toLowerCase();
+        if (!PHOTO_TYPES.contains(type)) {
+            return SortSaisie.refusee(identifiantClient, "Seules les photos JPEG et PNG sont acceptees");
+        }
+        Optional<VisiteConnue> visite = repository.visiteConnue(visiteIdentifiant);
+        if (visite.isEmpty()) {
+            // Temporaire : la visite n'est pas encore arrivee. Le telephone garde sa photo.
+            return SortSaisie.refusee(identifiantClient, "Visite pas encore transmise");
+        }
+        if (!user.getUserId().equals(visite.get().agentUserId())) {
+            return SortSaisie.refusee(identifiantClient, "Cette visite n'est pas la votre");
+        }
+        try {
+            String nom = nomDuFichier(stockage.storeFile(fichier));
+            Optional<Long> id = repository.enregistrerPhoto(identifiantClient, visite.get().id(),
+                    nom, fichier.getSize(), priseAt == null ? OffsetDateTime.now() : priseAt);
+            if (id.isEmpty()) {
+                // Deux envois simultanes : l'autre a gagne, et c'est tres bien.
+                return SortSaisie.doublon(identifiantClient,
+                        repository.idPhoto(identifiantClient).orElse(null));
+            }
+            log.info("[MOBILE] photo {} rangee pour la visite {} de l'agent {}",
+                    identifiantClient, visite.get().id(), user.getUserId());
+            return SortSaisie.acceptee(identifiantClient, id.get());
+        } catch (Exception e) {
+            log.warn("[MOBILE] photo {} non rangee : {}", identifiantClient, e.getMessage());
+            return SortSaisie.refusee(identifiantClient, "Enregistrement impossible : " + motifCourt(e));
+        }
+    }
+
+    /**
+     * Le NOM du fichier, pas son adresse. Le service de stockage rend une URL complète, avec
+     * l'hôte de la requête : rangée en base, elle ferait pointer une restauration de test vers
+     * les fichiers de production, et l'inverse. Les photos se servent par /ecredit/files/.
+     */
+    private static String nomDuFichier(String urlOuNom) {
+        if (urlOuNom == null) {
+            return null;
+        }
+        int barre = urlOuNom.lastIndexOf('/');
+        return barre < 0 ? urlOuNom : urlOuNom.substring(barre + 1);
     }
 
     // --------------------------------------------------------------------- les appareils

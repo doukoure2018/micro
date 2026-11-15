@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 import {
-  Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import type { EntreeReferentiel } from '@/api/types';
-import { enregistrerVisite, liste } from '@/db/visites';
+import { ajouterPhoto, enregistrerVisite, liste } from '@/db/visites';
+import { oublierLaPhoto, rangerLaPhoto } from '@/sync/fichier';
 import { synchroniser } from '@/sync/moteur';
 import { estOuverte } from '@/db/base';
 import { couleurs, espaces, texte } from '@/ui/theme';
@@ -37,6 +39,7 @@ export default function SaisieVisite() {
   const [promesseDate, setPromesseDate] = useState('');
   const [remarque, setRemarque] = useState('');
   const [position, setPosition] = useState<Location.LocationObject | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [enregistre, setEnregistre] = useState(false);
 
   useFocusEffect(useCallback(() => {
@@ -58,7 +61,50 @@ export default function SaisieVisite() {
     setPosition(await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
   }
 
+  /**
+   * Prend une photo, ou en choisit une. Elle est recopiee tout de suite a un endroit sur :
+   * l'appareil photo ecrit dans le cache du systeme, que le telephone vide quand la place
+   * manque — une photo qui attend le reseau trois jours n'y survivrait pas.
+   */
+  async function ajouterUnePhoto(parAppareil: boolean) {
+    const permission = parAppareil
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Photo', parAppareil
+        ? "L'acces a l'appareil photo est refuse."
+        : "L'acces aux photos est refuse.");
+      return;
+    }
+    const options: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ['images'],
+      quality: 0.7,
+      allowsEditing: false,
+    };
+    const choix = parAppareil
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync(options);
+    const prise = choix.canceled ? null : choix.assets[0];
+    if (!prise) {
+      return;
+    }
+    try {
+      setPhotos((avant) => [...avant, rangerLaPhoto(prise.uri, `${Date.now()}`)]);
+    } catch (e) {
+      Alert.alert('Photo', "La photo n'a pas pu etre gardee sur le telephone.");
+      console.warn('[visite] photo non rangee :', e);
+    }
+  }
+
+  function retirerLaPhoto(uri: string) {
+    oublierLaPhoto(uri);
+    setPhotos((avant) => avant.filter((p) => p !== uri));
+  }
+
   const remarqueExigee = appreciation === 'C' || appreciation === 'D';
+  // Un D propose le contentieux : il engage le membre, et une photo du constat est exigee.
+  const photoExigee = appreciation === 'D';
+  const photoManquante = photoExigee && photos.length === 0;
   const remarqueTropCourte = remarqueExigee && remarque.trim().length < 10;
   const promesseIncomplete = (promesseMontant.trim() !== '') !== (promesseDate.trim() !== '');
 
@@ -72,7 +118,12 @@ export default function SaisieVisite() {
       Alert.alert('Promesse', 'Une promesse demande un montant ET une date.');
       return;
     }
-    await enregistrerVisite({
+    if (photoManquante) {
+      Alert.alert('Photo',
+        "Une appreciation D propose le contentieux : une photo du constat est obligatoire.");
+      return;
+    }
+    const identifiant = await enregistrerVisite({
       codAgencia,
       numCredito: Number(numero),
       codCliente: null,
@@ -88,6 +139,11 @@ export default function SaisieVisite() {
       precisionM: position?.coords.accuracy ? Math.round(position.coords.accuracy) : null,
       corrigeIdentifiantClient: null,
     });
+    // Les photos sont attachees APRES la visite : la file locale les y rattache, et leur
+    // envoi suivra le sien.
+    for (const chemin of photos) {
+      await ajouterPhoto(identifiant, chemin);
+    }
     setEnregistre(true);
     // On tente la transmission tout de suite, sans l'attendre : si le reseau est la, la
     // visite part en quelques secondes ; sinon elle attend, et l'agent n'en sait rien.
@@ -100,7 +156,9 @@ export default function SaisieVisite() {
       <View style={s.confirmation}>
         <Text style={s.confirmationTitre}>Visite enregistree</Text>
         <Text style={s.confirmationTexte}>
-          Elle sera transmise a la prochaine connexion. Vous pouvez continuer votre tournee.
+          Elle sera transmise a la prochaine connexion
+          {photos.length > 0 ? ', ses photos juste apres' : ''}.
+          Vous pouvez continuer votre tournee.
         </Text>
       </View>
     );
@@ -156,6 +214,38 @@ export default function SaisieVisite() {
         ) : null}
       </Groupe>
 
+      <Groupe titre={photoExigee ? 'Photo (obligatoire)' : 'Photo'}>
+        {photos.length > 0 ? (
+          <View style={s.vignettes}>
+            {photos.map((uri) => (
+              <View key={uri} style={s.vignette}>
+                <Image source={{ uri }} style={s.image} accessibilityLabel="Photo du constat" />
+                <Pressable accessibilityRole="button"
+                           accessibilityLabel="Retirer cette photo"
+                           onPress={() => retirerLaPhoto(uri)} style={s.retirer}>
+                  <Text style={s.retirerTexte}>Retirer</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <View style={s.ligneDeux}>
+          <Pressable accessibilityRole="button" style={[s.boutonSecondaire, { flex: 1 }]}
+                     onPress={() => void ajouterUnePhoto(true)}>
+            <Text style={s.boutonSecondaireTexte}>Prendre une photo</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" style={[s.boutonSecondaire, { flex: 1 }]}
+                     onPress={() => void ajouterUnePhoto(false)}>
+            <Text style={s.boutonSecondaireTexte}>Choisir une photo</Text>
+          </Pressable>
+        </View>
+        {photoManquante ? (
+          <Text style={s.alerte}>
+            Une appreciation D propose le contentieux : une photo du constat est obligatoire.
+          </Text>
+        ) : null}
+      </Groupe>
+
       <Pressable accessibilityRole="button" onPress={prendrePosition} style={s.boutonSecondaire}>
         <Text style={s.boutonSecondaireTexte}>
           {position
@@ -167,6 +257,9 @@ export default function SaisieVisite() {
       <View style={s.pied}>
         <Text style={s.piedTexte}>
           La visite est enregistree sur le telephone et transmise a la prochaine connexion.
+          {photos.length > 0
+            ? ` ${photos.length} photo${photos.length > 1 ? 's' : ''} partiront avec elle.`
+            : ''}
         </Text>
         <Pressable accessibilityRole="button" onPress={enregistrer} style={s.bouton}>
           <Text style={s.boutonTexte}>Enregistrer la visite</Text>
@@ -224,6 +317,11 @@ const s = StyleSheet.create({
     fontSize: 16, color: couleurs.texte,
   },
   zoneTexte: { minHeight: 96, textAlignVertical: 'top', paddingTop: espaces.m },
+  vignettes: { flexDirection: 'row', flexWrap: 'wrap', gap: espaces.s, marginBottom: espaces.s },
+  vignette: { width: 96, gap: 4 },
+  image: { width: 96, height: 96, borderRadius: 8, backgroundColor: '#E4E8E1' },
+  retirer: { minHeight: 32, alignItems: 'center', justifyContent: 'center' },
+  retirerTexte: { fontSize: texte.minuscule, color: couleurs.rouge, fontWeight: '600' },
   alerte: { fontSize: texte.minuscule, color: couleurs.rouge },
   boutonSecondaire: {
     minHeight: 48, borderRadius: 10, borderWidth: 1, borderColor: couleurs.bord,

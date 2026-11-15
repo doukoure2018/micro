@@ -288,6 +288,58 @@ public class MobileRepository {
                 .param("id", identifiantClient).query(Long.class).optional();
     }
 
+    /**
+     * À qui appartient cette visite, et quelle appréciation elle porte. Sert à refuser la photo
+     * d'un agent sur la visite d'un autre : l'identifiant vient du téléphone, il ne prouve rien
+     * par lui-même.
+     */
+    public Optional<VisiteConnue> visiteConnue(String identifiantClient) {
+        if (identifiantClient == null || identifiantClient.isBlank()) {
+            return Optional.empty();
+        }
+        return jdbcClient.sql("""
+                        SELECT id, agent_user_id, appreciation
+                          FROM recouvrement_visite WHERE identifiant_client = :id
+                        """)
+                .param("id", identifiantClient)
+                .query((rs, n) -> new VisiteConnue(rs.getLong("id"),
+                        nombreLong(rs.getObject("agent_user_id")), rs.getString("appreciation")))
+                .optional();
+    }
+
+    /** Ce qu'il faut savoir d'une visite déjà reçue pour juger la photo qui la suit. */
+    public record VisiteConnue(Long id, Long agentUserId, String appreciation) {
+    }
+
+    // -------------------------------------------------------------------------- les photos
+
+    /** La photo déjà reçue sous cet identifiant, s'il y en a une : une reprise se rejoue. */
+    public Optional<Long> idPhoto(String identifiantClient) {
+        if (identifiantClient == null || identifiantClient.isBlank()) {
+            return Optional.empty();
+        }
+        return jdbcClient.sql("SELECT id FROM recouvrement_photo WHERE identifiant_client = :id")
+                .param("id", identifiantClient).query(Long.class).optional();
+    }
+
+    /**
+     * Range une photo. {@code ON CONFLICT DO NOTHING} plutôt qu'une erreur : deux envois de la
+     * même photo, c'est une transmission que le téléphone a cru perdue, pas une faute.
+     */
+    public Optional<Long> enregistrerPhoto(String identifiantClient, Long visiteId, String fichier,
+                                           long tailleOctets, OffsetDateTime priseAt) {
+        return jdbcClient.sql("""
+                        INSERT INTO recouvrement_photo (identifiant_client, visite_id, fichier,
+                                                        taille_octets, prise_at)
+                        VALUES (:identifiant, :visite, :fichier, :taille, :prise)
+                        ON CONFLICT (identifiant_client) DO NOTHING
+                        RETURNING id
+                        """)
+                .param("identifiant", identifiantClient).param("visite", visiteId)
+                .param("fichier", fichier).param("taille", tailleOctets).param("prise", priseAt)
+                .query(Long.class).optional();
+    }
+
     /** Les visites d'un crédit, la plus récente en tête. */
     public List<VisiteEnregistree> visitesDuCredit(String codAgencia, Long numCredito, int limite) {
         return jdbcClient.sql("""
@@ -314,19 +366,6 @@ public class MobileRepository {
                         rs.getString("agent"), rs.getBoolean("hors_portefeuille"),
                         nombreInt(rs.getObject("nb_photos"))))
                 .list();
-    }
-
-    public void enregistrerPhoto(String identifiantClient, Long visiteId, String fichier,
-                                 long taille, OffsetDateTime priseAt) {
-        jdbcClient.sql("""
-                        INSERT INTO recouvrement_photo (identifiant_client, visite_id, fichier,
-                                                        taille_octets, prise_at)
-                        VALUES (:identifiant, :visite, :fichier, :taille, :prise)
-                        ON CONFLICT (identifiant_client) DO NOTHING
-                        """)
-                .param("identifiant", identifiantClient).param("visite", visiteId)
-                .param("fichier", fichier).param("taille", taille).param("prise", priseAt)
-                .update();
     }
 
     /**
