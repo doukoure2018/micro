@@ -115,6 +115,15 @@ export default function Aujourdhui() {
         </Pressable>
       </Link>
 
+      <Link href="/agri" asChild>
+        <Pressable style={s.lienCarte}>
+          <Text style={s.lienCarteTexte}>Collecte agricole</Text>
+          <Text style={s.lienCarteAide}>
+            Parcelles, passages de campagne et recoltes. Tout se saisit hors ligne.
+          </Text>
+        </Pressable>
+      </Link>
+
       <Link href="/reclamations" asChild>
         <Pressable style={s.lienCarte}>
           <Text style={s.lienCarteTexte}>Signaler un probleme</Text>

@@ -87,6 +87,17 @@ export default function FicheCredit() {
           <Text style={s.actionSecondaireTexte}>Itineraire</Text>
         </Pressable>
         <Link href={{
+          pathname: '/agri',
+          params: {
+            credit: `${credit.codAgencia}-${credit.numCredito}`,
+            membre: credit.codCliente ?? '',
+          },
+        }} asChild>
+          <Pressable accessibilityRole="button" style={s.actionSecondaire}>
+            <Text style={s.actionSecondaireTexte}>Collecte agricole de ce membre</Text>
+          </Pressable>
+        </Link>
+        <Link href={{
           pathname: '/reclamations',
           params: {
             credit: `${credit.codAgencia}-${credit.numCredito}`,

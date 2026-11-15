@@ -99,6 +99,8 @@ export default function Ossature() {
         <Stack.Screen name="synchronisation" options={{ title: 'Synchronisation' }} />
         <Stack.Screen name="equipe" options={{ title: 'Mon equipe' }} />
         <Stack.Screen name="reclamations" options={{ title: 'Reclamations' }} />
+        <Stack.Screen name="agri/index" options={{ title: 'Collecte agricole' }} />
+        <Stack.Screen name="agri/[cle]" options={{ title: 'Parcelle' }} />
       </Stack>
     </SafeAreaProvider>
   );

@@ -3,6 +3,10 @@ package io.digiservices.ecreditservice.mobile.resource;
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.LotRecu;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie;
+import io.digiservices.ecreditservice.agri.dto.AgriDtos.ParcelleRecue;
+import io.digiservices.ecreditservice.agri.dto.AgriDtos.RecolteRecue;
+import io.digiservices.ecreditservice.agri.dto.AgriDtos.VisiteCampagneRecue;
+import io.digiservices.ecreditservice.agri.service.AgriCollecteService;
 import io.digiservices.ecreditservice.mobile.service.MobileService;
 import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.ReclamationRecue;
 import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.SortReclamation;
@@ -47,6 +51,7 @@ public class MobileResource {
 
     private final MobileService service;
     private final ReclamationService reclamations;
+    private final AgriCollecteService agri;
 
     /** Le profil affiché en tête de l'application, et gardé hors ligne. */
     @GetMapping("/moi")
@@ -179,6 +184,74 @@ public class MobileResource {
         var mes = reclamations.mes(authentication.getName(), 50);
         return ResponseEntity.ok(getResponse(request, Map.of("reclamations", mes),
                 mes.size() + " reclamation(s)", OK));
+    }
+
+    // --------------------------------------------------------------- la collecte agricole
+
+    /**
+     * Une parcelle déclarée sur le terrain. Comme tout ce qui vient du téléphone : identifiant
+     * créé là-bas, réponse 200, et c'est le sort qui dit quoi faire.
+     */
+    @PostMapping("/agri/parcelles")
+    public ResponseEntity<Response> declarerParcelle(
+            @NotNull Authentication authentication,
+            @RequestBody ParcelleRecue parcelle,
+            @RequestParam(name = "jetonAppareil", required = false) String jetonAppareil,
+            HttpServletRequest request) {
+        var sort = agri.declarerParcelle(authentication.getName(), parcelle,
+                service.idAppareil(jetonAppareil), null);
+        return ResponseEntity.ok(getResponse(request, Map.of("sort", sort), message(sort), OK));
+    }
+
+    /** Un passage sur une parcelle pendant la campagne. */
+    @PostMapping("/agri/visites")
+    public ResponseEntity<Response> visiterParcelle(
+            @NotNull Authentication authentication,
+            @RequestBody VisiteCampagneRecue visite,
+            @RequestParam(name = "jetonAppareil", required = false) String jetonAppareil,
+            HttpServletRequest request) {
+        var sort = agri.enregistrerVisite(authentication.getName(), visite,
+                service.idAppareil(jetonAppareil), null);
+        return ResponseEntity.ok(getResponse(request, Map.of("sort", sort), message(sort), OK));
+    }
+
+    /** Ce que la parcelle a donné. */
+    @PostMapping("/agri/recoltes")
+    public ResponseEntity<Response> declarerRecolte(
+            @NotNull Authentication authentication,
+            @RequestBody RecolteRecue recolte,
+            @RequestParam(name = "jetonAppareil", required = false) String jetonAppareil,
+            HttpServletRequest request) {
+        var sort = agri.enregistrerRecolte(authentication.getName(), recolte,
+                service.idAppareil(jetonAppareil), null);
+        return ResponseEntity.ok(getResponse(request, Map.of("sort", sort), message(sort), OK));
+    }
+
+    /** Les parcelles que l'agent suit. */
+    @GetMapping("/agri/parcelles")
+    public ResponseEntity<Response> mesParcelles(@NotNull Authentication authentication,
+                                                 @RequestParam(name = "membre", required = false) String membre,
+                                                 HttpServletRequest request) {
+        var parcelles = membre == null || membre.isBlank()
+                ? agri.mesParcelles(authentication.getName(), 100)
+                : agri.parcellesDuMembre(authentication.getName(), membre);
+        return ResponseEntity.ok(getResponse(request, Map.of("parcelles", parcelles),
+                parcelles.size() + " parcelle(s)", OK));
+    }
+
+    /** Une parcelle, son suivi et sa récolte — avec le prévisionnel du dossier en regard. */
+    @GetMapping("/agri/parcelles/{id}")
+    public ResponseEntity<Response> ficheParcelle(@NotNull Authentication authentication,
+                                                  @PathVariable(name = "id") Long id,
+                                                  HttpServletRequest request) {
+        var fiche = agri.fiche(authentication.getName(), id);
+        return ResponseEntity.ok(getResponse(request, Map.of("fiche", fiche), "Parcelle", OK));
+    }
+
+    /** Le même langage pour les trois : accepté, doublon, ou refusé avec son motif. */
+    private static String message(io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie sort) {
+        return SortSaisie.REFUSEE.equals(sort.sort()) ? sort.motif()
+                : "Saisie " + sort.sort().toLowerCase();
     }
 
     /** Déclare le téléphone, ou le réveille : c'est lui qui recevra les notifications. */

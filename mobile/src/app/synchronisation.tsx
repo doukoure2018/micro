@@ -30,7 +30,9 @@ export default function Synchronisation() {
       r.horsConnexion ? 'Hors connexion : les saisies attendent.'
         : r.erreur ? r.erreur
         : `${r.transmises} saisie(s) transmise(s), ${r.refusees} refusee(s)`
-          + (r.photos > 0 ? `, ${r.photos} photo(s) envoyee(s).` : '.'));
+          + (r.photos > 0 ? `, ${r.photos} photo(s)` : '')
+          + (r.reclamations > 0 ? `, ${r.reclamations} reclamation(s)` : '')
+          + (r.agri > 0 ? `, ${r.agri} saisie(s) agricole(s)` : '') + '.');
     await charger();
     setEnCours(false);
   }

@@ -9,6 +9,9 @@ import {
 } from '@/db/visites';
 import { ajouterPhotoAuFormulaire } from '@/sync/fichier';
 import { jetonDeLAppareil } from '@/sync/appareil';
+import {
+  appliquerSortAgri, parcellesATransmettre, recoltesATransmettre, visitesAgriATransmettre,
+} from '@/db/agri';
 import { CLES, ecrireEtat, lireEtat } from '@/db/base';
 
 /**
@@ -31,6 +34,7 @@ export type ResultatSync = {
   doublons: number;
   photos: number;
   reclamations: number;
+  agri: number;
   creditsRecus: number;
   horsConnexion: boolean;
   erreur: string | null;
@@ -53,8 +57,8 @@ const INTERVALLE_MIN_MS = 120_000;
 
 export async function synchroniser(options: { force?: boolean } = {}): Promise<ResultatSync> {
   const vide: ResultatSync = {
-    transmises: 0, refusees: 0, doublons: 0, photos: 0, reclamations: 0, creditsRecus: 0,
-    horsConnexion: false, erreur: null,
+    transmises: 0, refusees: 0, doublons: 0, photos: 0, reclamations: 0, agri: 0,
+    creditsRecus: 0, horsConnexion: false, erreur: null,
   };
   if (enCours) {
     return vide;
@@ -81,11 +85,13 @@ export async function synchroniser(options: { force?: boolean } = {}): Promise<R
     // ne connait pas encore la visite.
     const photos = await envoyerLesPhotos(jeton);
     const reclamations = await envoyerLesReclamations(jeton);
+    const agri = await envoyerLaCollecteAgricole(jeton);
     const recu = await rafraichirLaCopie(jeton);
     await purger();
     await ecrireEtat(CLES.derniereSyncReussie, new Date().toISOString());
     return {
-      ...envoi, photos, reclamations, creditsRecus: recu, horsConnexion: false, erreur: null,
+      ...envoi, photos, reclamations, agri, creditsRecus: recu,
+      horsConnexion: false, erreur: null,
     };
   } catch (e) {
     if (e instanceof ErreurReseau) {
@@ -203,6 +209,45 @@ async function envoyerLesReclamations(jeton: string): Promise<number> {
         break;
       }
       throw e;
+    }
+  }
+  return envoyees;
+}
+
+/**
+ * La collecte agricole, dans l'ordre : les parcelles d'abord, puis leurs passages et leurs
+ * recoltes. L'ordre n'est pas un detail — le serveur refuse un passage dont il ne connait pas
+ * encore la parcelle, et ce refus est temporaire : la saisie reste en attente et repartira.
+ */
+async function envoyerLaCollecteAgricole(jeton: string): Promise<number> {
+  let envoyees = 0;
+  const envois: [string, 'parcelle' | 'visite_agri' | 'recolte', unknown[]][] = [
+    ['/ecredit/mobile/agri/parcelles', 'parcelle', await parcellesATransmettre()],
+    ['/ecredit/mobile/agri/visites', 'visite_agri', await visitesAgriATransmettre()],
+    ['/ecredit/mobile/agri/recoltes', 'recolte', await recoltesATransmettre()],
+  ];
+  for (const [chemin, table, saisies] of envois) {
+    for (const saisie of saisies) {
+      const identifiant = (saisie as { identifiantClient: string }).identifiantClient;
+      try {
+        const data = await api.post<{ sort: { sort: string; motif: string | null } }>(
+          chemin, jeton, saisie);
+        const sort = data?.sort?.sort;
+        if (sort === 'ACCEPTEE' || sort === 'DOUBLON') {
+          await appliquerSortAgri(table, identifiant, sort, null);
+          envoyees += 1;
+        } else if (data?.sort?.motif === 'Parcelle pas encore transmise') {
+          // Temporaire : la parcelle suit, la saisie repartira avec elle.
+          continue;
+        } else if (sort === 'REFUSEE') {
+          await appliquerSortAgri(table, identifiant, 'REFUSEE', data?.sort?.motif ?? null);
+        }
+      } catch (e) {
+        if (e instanceof ErreurReseau) {
+          return envoyees;
+        }
+        throw e;
+      }
     }
   }
   return envoyees;
