@@ -883,6 +883,16 @@ export class AppMenu {
                 }
             );
         }
+        // Les reclamations du terrain (V207/V211) : six directions les recoivent par courriel,
+        // et c'est ici qu'elles se traitent. La rubrique decide des destinataires comme de
+        // l'acces a cet ecran — jamais le role.
+        if (this.peut('RECLAMATIONS')) {
+            items.push({
+                label: 'Réclamations du terrain',
+                icon: 'pi pi-fw pi-megaphone',
+                routerLink: ['/dashboards/reclamations']
+            });
+        }
         // Reglage des habilitations par departement (V179) : responsable de service et administrateur.
         if (this.habilitations.porteClesCourant?.peutReglerLaMatrice) {
             items.push({
