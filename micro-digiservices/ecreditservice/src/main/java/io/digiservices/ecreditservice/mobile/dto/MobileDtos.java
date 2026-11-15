@@ -108,6 +108,24 @@ public final class MobileDtos {
                          Integer note, String classe) {
     }
 
+    /**
+     * Ce que le directeur d'agence voit de son équipe. Il LIT : aucune décision ne passe par
+     * le téléphone, elles restent sur le poste de travail.
+     *
+     * <p>Les agents silencieux sont donnés à part, et non déduits à l'écran : c'est la première
+     * chose qu'un directeur doit voir, et le seuil de silence appartient au serveur.</p>
+     */
+    public record EquipeVue(int joursObserves, int joursSilence,
+                            List<AgentVu> agents, List<AgentVu> silencieux,
+                            List<VisiteEnregistree> visites) {
+    }
+
+    /** Un agent de l'équipe, et ce que ses visites disent de lui. */
+    public record AgentVu(Long userId, String nom, String codAgencia, String pointVente,
+                          int nbCredits, int nbVisites, OffsetDateTime derniereVisiteAt,
+                          int nbA, int nbB, int nbC, int nbD) {
+    }
+
     /** Une entrée de liste fermée, servie par différence depuis la dernière synchronisation. */
     public record EntreeReferentiel(String liste, String code, String libelle, int ordre,
                                     boolean actif) {

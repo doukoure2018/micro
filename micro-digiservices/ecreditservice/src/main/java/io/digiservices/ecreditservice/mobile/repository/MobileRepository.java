@@ -414,6 +414,92 @@ public class MobileRepository {
     }
 
     /** Les agents d'un périmètre qui n'ont rien transmis depuis N jours. */
+    /**
+     * L'équipe d'un directeur d'agence : un agent par ligne, avec ce qu'il a fait.
+     *
+     * <p>La répartition A–D est là pour une raison précise, arrêtée le 12/11 : elle montre
+     * l'agent qui note tout en A. Une colonne de A parfaite sur un portefeuille en retard est
+     * un signal, pas une performance.</p>
+     *
+     * <p>Les agents sans aucune visite sortent AUSSI de cette requête, avec des zéros : ce sont
+     * eux que le directeur doit voir en premier, et une jointure interne les aurait effacés.</p>
+     */
+    public List<AgentDuDirecteur> equipe(Set<String> codesSaf, int joursActivite) {
+        if (codesSaf == null || codesSaf.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                        SELECT u.user_id,
+                               TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS nom,
+                               pv.code AS cod_agencia, pv.libele AS point_vente,
+                               (SELECT COUNT(*) FROM portefeuille_affectation a
+                                 WHERE a.actif AND a.agent_user_id = u.user_id) AS nb_credits,
+                               COUNT(v.id) AS nb_visites,
+                               MAX(v.saisie_at) AS derniere_visite_at,
+                               COUNT(*) FILTER (WHERE v.appreciation = 'A') AS nb_a,
+                               COUNT(*) FILTER (WHERE v.appreciation = 'B') AS nb_b,
+                               COUNT(*) FILTER (WHERE v.appreciation = 'C') AS nb_c,
+                               COUNT(*) FILTER (WHERE v.appreciation = 'D') AS nb_d
+                          FROM users u
+                          JOIN user_roles ur ON ur.user_id = u.user_id
+                          JOIN roles r ON r.role_id = ur.role_id AND r.name = 'AGENT_CREDIT'
+                          JOIN pointvente pv ON pv.id = u.pointvente_id
+                          LEFT JOIN recouvrement_visite v
+                                 ON v.agent_user_id = u.user_id
+                                AND v.saisie_at >= CURRENT_TIMESTAMP - make_interval(days => :jours)
+                         WHERE COALESCE(u.enabled, FALSE) AND pv.code IN (:codes)
+                         GROUP BY u.user_id, nom, pv.code, pv.libele
+                         ORDER BY nb_visites, nom
+                        """)
+                .param("codes", List.copyOf(codesSaf)).param("jours", joursActivite)
+                .query((rs, n) -> new AgentDuDirecteur(
+                        nombreLong(rs.getObject("user_id")), rs.getString("nom"),
+                        rs.getString("cod_agencia"), rs.getString("point_vente"),
+                        compte(rs.getObject("nb_credits")), compte(rs.getObject("nb_visites")),
+                        rs.getObject("derniere_visite_at", OffsetDateTime.class),
+                        compte(rs.getObject("nb_a")), compte(rs.getObject("nb_b")),
+                        compte(rs.getObject("nb_c")), compte(rs.getObject("nb_d"))))
+                .list();
+    }
+
+    /** Un agent de l'équipe, vu du directeur. */
+    public record AgentDuDirecteur(Long userId, String nom, String codAgencia, String pointVente,
+                                   int nbCredits, int nbVisites, OffsetDateTime derniereVisiteAt,
+                                   int nbA, int nbB, int nbC, int nbD) {
+    }
+
+    /** Les dernières visites de l'équipe, la plus récente en tête. */
+    public List<VisiteEnregistree> visitesDeLEquipe(Set<String> codesSaf, int limite) {
+        if (codesSaf == null || codesSaf.isEmpty()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                        SELECT v.id, v.cod_agencia, v.num_credito, v.saisie_at, v.type_contact,
+                               v.resultat, v.motif_retard, v.promesse_montant, v.promesse_date,
+                               v.appreciation, v.remarque, v.hors_portefeuille,
+                               TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS agent,
+                               (SELECT COUNT(*) FROM recouvrement_photo p WHERE p.visite_id = v.id) AS nb_photos
+                          FROM recouvrement_visite v
+                          JOIN users u ON u.user_id = v.agent_user_id
+                          JOIN pointvente pv ON pv.id = u.pointvente_id
+                         WHERE pv.code IN (:codes)
+                         ORDER BY v.saisie_at DESC
+                         LIMIT :limite
+                        """)
+                .param("codes", List.copyOf(codesSaf)).param("limite", limite)
+                .query((rs, n) -> new VisiteEnregistree(
+                        nombreLong(rs.getObject("id")), rs.getString("cod_agencia"),
+                        nombreLong(rs.getObject("num_credito")),
+                        rs.getObject("saisie_at", OffsetDateTime.class),
+                        rs.getString("type_contact"), rs.getString("resultat"),
+                        rs.getString("motif_retard"), rs.getBigDecimal("promesse_montant"),
+                        rs.getDate("promesse_date") == null ? null : rs.getDate("promesse_date").toLocalDate(),
+                        rs.getString("appreciation"), rs.getString("remarque"),
+                        rs.getString("agent"), rs.getBoolean("hors_portefeuille"),
+                        nombreInt(rs.getObject("nb_photos"))))
+                .list();
+    }
+
     public List<Map<String, Object>> agentsSilencieux(Set<String> codesSaf, int jours) {
         if (codesSaf == null || codesSaf.isEmpty()) {
             return List.of();
@@ -446,6 +532,11 @@ public class MobileRepository {
 
     private static Integer nombreInt(Object o) {
         return o instanceof Number n ? n.intValue() : null;
+    }
+
+    /** Un comptage, qui vaut zero et jamais null : les records de l'equipe portent des int. */
+    private static int compte(Object o) {
+        return o instanceof Number n ? n.intValue() : 0;
     }
 
 }

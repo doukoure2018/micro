@@ -10,6 +10,7 @@ import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteC
 import io.digiservices.ecreditservice.mobile.service.MobileService;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
 import io.digiservices.ecreditservice.service.FileStorageService;
+import io.digiservices.ecreditservice.service.PerimetreSafService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,8 @@ class PhotoDeVisiteTest {
     }
 
     private MobileService service() {
-        return new MobileService(repository, userClient, saf, photoCredit, stockage);
+        return new MobileService(repository, userClient, saf, photoCredit, stockage,
+                mock(PerimetreSafService.class));
     }
 
     private static MultipartFile photo(byte[] contenu, String type) {

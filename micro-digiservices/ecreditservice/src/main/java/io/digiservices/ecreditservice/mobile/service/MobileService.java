@@ -6,7 +6,9 @@ import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.CreditPortefeuille;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.AgentVu;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.EntreeReferentiel;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.EquipeVue;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.LotRecu;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.LotTraite;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.Profil;
@@ -14,11 +16,14 @@ import io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.VisiteEnregistree;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.VisiteRecue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository;
+import io.digiservices.ecreditservice.mobile.repository.MobileRepository.AgentDuDirecteur;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.IdentiteMembre;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteConnue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteCredit;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
 import io.digiservices.ecreditservice.service.FileStorageService;
+import io.digiservices.ecreditservice.service.PerimetreSafService;
+import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository.CreditConnu;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +67,7 @@ public class MobileService {
     private final EbankingPortefeuilleClient portefeuilleClient;
     private final PortefeuilleCreditPhotoRepository creditPhotoRepository;
     private final FileStorageService stockage;
+    private final PerimetreSafService perimetreSafService;
 
     /** Les rôles qui portent un téléphone : l'agent saisit, le directeur d'agence lit. */
     private static final Set<String> ROLES_MOBILES = Set.of("AGENT_CREDIT", "DA");
@@ -233,6 +239,50 @@ public class MobileService {
 
     private static BigDecimal impaye(PortefeuilleCreditDto c) {
         return PortefeuilleCreditPhotoRepository.impaye(c);
+    }
+
+    // ----------------------------------------------------------- la vue du directeur
+
+    /** Fenêtre d'observation de l'activité d'un agent : un mois de tournées. */
+    private static final int JOURS_OBSERVES = 30;
+
+    /** Au-delà, l'agent n'a rien transmis depuis trop longtemps pour que ce soit normal. */
+    private static final int JOURS_SILENCE = 7;
+
+    /**
+     * Ce que le directeur d'agence voit de son équipe : qui travaille, qui s'est tu, et
+     * comment chacun note ses membres.
+     *
+     * <p>Il LIT. Aucune décision ne passe par le téléphone — réaffecter un crédit, valider un
+     * dossier, tout cela reste sur le poste de travail, où la trace et le contrôle existent.</p>
+     *
+     * <p>Le périmètre est celui de la plateforme, pas une liste reconstituée ici : le même
+     * service qui borne l'écran web borne cette vue, et un directeur ne peut pas voir les
+     * agents d'une autre agence.</p>
+     */
+    public EquipeVue equipe(String uuid) {
+        User user = exigerCompteMobile(uuid);
+        if (!"DA".equals(user.getRole())) {
+            throw new ApiException("Vue reservee aux directeurs d'agence");
+        }
+        Perimetre perimetre = perimetreSafService.perimetreDe(uuid);
+        Set<String> codes = perimetre.codes();
+        if (codes.isEmpty()) {
+            throw new ApiException("Votre rattachement ne designe aucun point de service");
+        }
+        List<AgentVu> agents = repository.equipe(codes, JOURS_OBSERVES).stream()
+                .map(MobileService::versAgentVu).toList();
+        OffsetDateTime limite = OffsetDateTime.now().minusDays(JOURS_SILENCE);
+        List<AgentVu> silencieux = agents.stream()
+                .filter(a -> a.derniereVisiteAt() == null || a.derniereVisiteAt().isBefore(limite))
+                .toList();
+        return new EquipeVue(JOURS_OBSERVES, JOURS_SILENCE, agents, silencieux,
+                repository.visitesDeLEquipe(codes, 50));
+    }
+
+    private static AgentVu versAgentVu(AgentDuDirecteur a) {
+        return new AgentVu(a.userId(), a.nom(), a.codAgencia(), a.pointVente(), a.nbCredits(),
+                a.nbVisites(), a.derniereVisiteAt(), a.nbA(), a.nbB(), a.nbC(), a.nbD());
     }
 
     // ------------------------------------------------------------------- les référentiels

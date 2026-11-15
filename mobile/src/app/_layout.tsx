@@ -92,6 +92,7 @@ export default function Ossature() {
         <Stack.Screen name="credit/[cle]" options={{ title: 'Credit' }} />
         <Stack.Screen name="visite/[cle]" options={{ title: 'Visite de recouvrement' }} />
         <Stack.Screen name="synchronisation" options={{ title: 'Synchronisation' }} />
+        <Stack.Screen name="equipe" options={{ title: 'Mon equipe' }} />
       </Stack>
     </SafeAreaProvider>
   );

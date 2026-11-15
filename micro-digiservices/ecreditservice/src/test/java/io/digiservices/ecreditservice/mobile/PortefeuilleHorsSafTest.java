@@ -76,7 +76,8 @@ class PortefeuilleHorsSafTest {
 
     private MobileService service() {
         return new MobileService(repository, userClient, saf, photo,
-                mock(io.digiservices.ecreditservice.service.FileStorageService.class));
+                mock(io.digiservices.ecreditservice.service.FileStorageService.class),
+                mock(io.digiservices.ecreditservice.service.PerimetreSafService.class));
     }
 
     @Test

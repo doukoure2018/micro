@@ -77,3 +77,44 @@ export type LotTraite = {
   doublons: number;
   sorts: SortSaisie[];
 };
+
+/** Un agent de l'equipe, vu du directeur d'agence. */
+export type AgentVu = {
+  userId: number;
+  nom: string;
+  codAgencia: string | null;
+  pointVente: string | null;
+  nbCredits: number;
+  nbVisites: number;
+  derniereVisiteAt: string | null;
+  nbA: number;
+  nbB: number;
+  nbC: number;
+  nbD: number;
+};
+
+/** Une visite deja enregistree, telle que le directeur la lit. */
+export type VisiteEnregistree = {
+  id: number;
+  codAgencia: string;
+  numCredito: number;
+  saisieAt: string;
+  typeContact: string;
+  resultat: string;
+  motifRetard: string | null;
+  promesseMontant: number | null;
+  promesseDate: string | null;
+  appreciation: string | null;
+  remarque: string | null;
+  agent: string | null;
+  horsPortefeuille: boolean;
+  nbPhotos: number;
+};
+
+export type EquipeVue = {
+  joursObserves: number;
+  joursSilence: number;
+  agents: AgentVu[];
+  silencieux: AgentVu[];
+  visites: VisiteEnregistree[];
+};

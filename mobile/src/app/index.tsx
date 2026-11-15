@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, Redirect, useFocusEffect } from 'expo-router';
 import { profilGarde } from '@/auth/session';
 import type { Profil } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
@@ -50,6 +50,12 @@ export default function Aujourdhui() {
   // Un encours inconnu n'est pas un encours nul : sans un seul montant lu, l'ecran le dit.
   const avecMontant = portefeuille.filter((c) => c.encours !== null && c.encours !== undefined);
   const encours = avecMontant.reduce((t, c) => t + (c.encours ?? 0), 0);
+
+  // Un directeur d'agence ne porte pas de portefeuille : les credits sont affectes a SES
+  // agents, pas a lui. Son ecran d'ouverture est son equipe.
+  if (profil?.role === 'DA') {
+    return <Redirect href="/equipe" />;
+  }
 
   return (
     <ScrollView

@@ -108,6 +108,19 @@ public class MobileResource {
     }
 
     /**
+     * Ce que le directeur d'agence voit de son équipe : ses agents, ceux qui se sont tus, et
+     * les dernières visites. Lecture seule — toute décision reste sur le poste de travail.
+     */
+    @GetMapping("/equipe")
+    public ResponseEntity<Response> equipe(@NotNull Authentication authentication,
+                                           HttpServletRequest request) {
+        var vue = service.equipe(authentication.getName());
+        return ResponseEntity.ok(getResponse(request, Map.of("equipe", vue),
+                vue.agents().size() + " agent(s), " + vue.silencieux().size() + " sans visite recente",
+                OK));
+    }
+
+    /**
      * La photo d'une visite, envoyée APRÈS elle et une par une.
      *
      * <p>Elle porte son propre identifiant, créé sur le téléphone : renvoyée après une coupure,
