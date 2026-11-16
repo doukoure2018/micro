@@ -63,6 +63,10 @@ class MobileClientRegistrationTest {
 
     /** Lance le runner avec les valeurs par defaut des proprietes, comme au demarrage du service. */
     private static void demarrer(FakeRepository repository) throws Exception {
+        demarrer(repository, "");
+    }
+
+    private static void demarrer(FakeRepository repository, String extra) throws Exception {
         var application = new AuthorizationServerApplication();
         Map<String, String> proprietes = Map.of(
                 "redirecturl", "https://digi-creditrural-io.com",
@@ -80,7 +84,7 @@ class MobileClientRegistrationTest {
         ReflectionTestUtils.setField(application, "rapprochementRedirectUri", "http://127.0.0.1:8766/callback");
         ReflectionTestUtils.setField(application, "mobileClientId", MOBILE_CLIENT_ID);
         ReflectionTestUtils.setField(application, "mobileRedirectUri", REDIRECT);
-        ReflectionTestUtils.setField(application, "mobileExtraRedirectUri", "");
+        ReflectionTestUtils.setField(application, "mobileExtraRedirectUri", extra);
         application.runner(repository, new BCryptPasswordEncoder()).run(null);
     }
 
@@ -106,6 +110,23 @@ class MobileClientRegistrationTest {
         assertEquals(Duration.ofHours(1), mobile.getTokenSettings().getAccessTokenTimeToLive());
         assertEquals(Duration.ofDays(30), mobile.getTokenSettings().getRefreshTokenTimeToLive());
         assertFalse(mobile.getTokenSettings().isReuseRefreshTokens(), "rotation des refresh tokens");
+    }
+
+    @Test
+    void plusieurs_redirections_d_essai_sont_acceptees_separees_par_des_virgules() throws Exception {
+        var repository = new FakeRepository();
+
+        // Expo Go redirige vers une adresse qui porte celle du poste de developpement : elle
+        // change avec le reseau, et il faut pouvoir en declarer plusieurs a la fois.
+        demarrer(repository, " exp://10.43.3.222:8082/--/oauth2redirect , exp://172.20.10.14:8082/--/oauth2redirect ,");
+
+        RegisteredClient mobile = repository.findByClientId(MOBILE_CLIENT_ID);
+        assertEquals(3, mobile.getRedirectUris().size(),
+                "le schema de l'application plus les deux adresses d'essai, sans entree vide");
+        assertTrue(mobile.getRedirectUris().contains(REDIRECT));
+        assertTrue(mobile.getRedirectUris().contains("exp://10.43.3.222:8082/--/oauth2redirect"),
+                "les espaces autour d'une valeur ne doivent pas la rendre inconnue du serveur");
+        assertTrue(mobile.getRedirectUris().contains("exp://172.20.10.14:8082/--/oauth2redirect"));
     }
 
     @Test

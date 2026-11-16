@@ -17,6 +17,39 @@ services:
     ports:
       # Confiné en loopback (remédiation sécurité) : accès distant via tunnel SSH uniquement
       - "127.0.0.1:5432:5432"
+    # Reglages mesures le 16/11/2026 sur la machine a 16 Go (base de 242 Mo, 34 connexions
+    # sur 100, 630 Mo de fichiers temporaires en 3 jours, 18 tables jamais analysees).
+    # Avant : les valeurs d'usine de Postgres, dimensionnees pour une machine de 1 Go.
+    #   shared_buffers 1 Go        : la base entiere tient en memoire, avec quatre fois sa taille
+    #                                 de marge ; 128 Mo etaient plus petits que la base elle-meme.
+    #   work_mem 32 Mo             : 4 Mo faisaient deborder tris et jointures sur disque
+    #                                 (102 fichiers temporaires, 630 Mo, depuis le 13/11).
+    #   max_connections 200        : les pools declares des services approchent 90 ; a 100,
+    #                                 le prochain service ajoute refuse des connexions.
+    #   random_page_cost 1.1       : le disque est un SSD ; a 4, le planificateur croit lire un
+    #                                 disque mecanique et evite les index a tort.
+    #   autovacuum scale 0.05/0.02 : les statistiques du planificateur suivaient de trop loin
+    #                                 (portefeuille_affectation : 739 lignes estimees pour 38 624).
+    #   pg_stat_statements + journal des requetes > 1 s : on ne dimensionne pas ce qu'on ne
+    #                                 mesure pas. L'extension est creee par la migration V213.
+    # Changer ces valeurs demande un redemarrage du conteneur (~15 s) : les services se
+    # reconnectent seuls.
+    command: >
+      postgres
+      -c shared_buffers=1GB
+      -c effective_cache_size=6GB
+      -c work_mem=32MB
+      -c maintenance_work_mem=256MB
+      -c max_connections=200
+      -c random_page_cost=1.1
+      -c autovacuum_vacuum_scale_factor=0.05
+      -c autovacuum_analyze_scale_factor=0.02
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c log_min_duration_statement=1000
+      -c log_checkpoints=on
+      -c log_autovacuum_min_duration=10s
+    shm_size: 1g
     volumes:
       - microservices_postgres_data_v16:/var/lib/postgresql/data
     networks:

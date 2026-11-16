@@ -112,6 +112,12 @@ export default [
         loadComponent: () => import('./portefeuille/portefeuille-saf.component').then((c) => c.PortefeuilleSafComponent)
     },
     {
+        path: 'reclamations',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Réclamations du terrain', rubrique: 'RECLAMATIONS' },
+        loadComponent: () => import('./reclamations/reclamations.component').then((c) => c.ReclamationsComponent)
+    },
+    {
         path: 'audit/decisions',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Journal des décisions', rubrique: 'AUDIT_CREDIT' },

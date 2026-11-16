@@ -1,0 +1,310 @@
+import * as SQLite from 'expo-sqlite';
+
+/**
+ * La base locale du telephone : la copie du portefeuille, les listes fermees, et la file
+ * des saisies qui attendent le reseau.
+ *
+ * <p>Chiffree : un telephone se perd, et il porte ici des noms de membres, des montants et
+ * des positions. La cle n'est pas dans le code — elle vient du trousseau du systeme
+ * (expo-secure-store), ou seul ce telephone peut la lire.</p>
+ *
+ * <p>Une base par compte : si deux agents se succedent sur le meme appareil, le second ne
+ * voit rien du premier, et la deconnexion efface la base plutot que de la vider table par
+ * table.</p>
+ */
+
+let base: SQLite.SQLiteDatabase | null = null;
+let compteOuvert: string | null = null;
+
+export function nomBase(userId: number | string): string {
+  return `digicrg-${userId}.db`;
+}
+
+export async function ouvrir(userId: number | string, cle: string): Promise<SQLite.SQLiteDatabase> {
+  const nom = nomBase(userId);
+  if (base && compteOuvert === nom) {
+    return base;
+  }
+  if (base) {
+    await base.closeAsync();
+  }
+  base = await SQLite.openDatabaseAsync(nom);
+  await deverrouiller(base, cle);
+  compteOuvert = nom;
+  await creerSchema(base);
+  return base;
+}
+
+/**
+ * Pose la cle de chiffrement. SQLCipher l'exige AVANT toute autre instruction : une seule
+ * lecture faite avant, et la base reste illisible pour le reste de la session.
+ *
+ * <p>La cle est verifiee avant d'etre posee. Elle vient du trousseau, donc d'une source sure,
+ * mais elle entre dans une instruction SQL : la seule forme acceptee est celle que nous
+ * produisons, soixante-quatre caracteres hexadecimaux, posee en cle brute (la forme `x'...'`,
+ * qui evite la derivation et ne laisse pas passer autre chose qu'un nombre).</p>
+ */
+async function deverrouiller(db: SQLite.SQLiteDatabase, cle: string): Promise<void> {
+  if (!/^[0-9a-f]{64}$/.test(cle)) {
+    throw new Error('Cle de base locale invalide');
+  }
+  await db.execAsync(`PRAGMA key = "x'${cle}'"`);
+}
+
+/**
+ * La base est-elle ouverte ? Les ecrans s'en servent pour ne pas lire pendant l'ouverture :
+ * au demarrage, l'ossature ouvre la base de maniere asynchrone, et un ecran monte avant la
+ * fin lisait une base absente — une promesse rejetee, et l'ecran restait vide.
+ */
+export function estOuverte(): boolean {
+  return base !== null;
+}
+
+export function baseOuverte(): SQLite.SQLiteDatabase {
+  if (!base) {
+    throw new Error("La base locale n'est pas ouverte : connexion requise");
+  }
+  return base;
+}
+
+export async function fermerEtEffacer(userId: number | string): Promise<void> {
+  if (base) {
+    await base.closeAsync();
+    base = null;
+    compteOuvert = null;
+  }
+  await SQLite.deleteDatabaseAsync(nomBase(userId));
+}
+
+/**
+ * Le schema local. Deliberement proche de celui du serveur pour que les deux se lisent
+ * ensemble, mais pas identique : le telephone garde en plus l'etat d'envoi de chaque saisie,
+ * qui n'existe que chez lui.
+ */
+async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
+  await rebatirLaCopieSiLeFormatAChange(db);
+  await db.execAsync(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
+
+    -- Le portefeuille tel que la derniere synchronisation l'a rendu. Remplace a chaque fois :
+    -- c'est une copie, pas une source.
+    CREATE TABLE IF NOT EXISTS credit (
+      cod_agencia TEXT NOT NULL,
+      num_credito INTEGER NOT NULL,
+      cod_cliente TEXT,
+      nom_client TEXT,
+      telephone TEXT,
+      produit TEXT,
+      encours REAL,
+      montant_impaye REAL,
+      jours_retard INTEGER,
+      prochaine_echeance TEXT,
+      prochaine_echeance_montant REAL,
+      derniere_appreciation TEXT,
+      derniere_visite_at TEXT,
+      promesse_date TEXT,
+      promesse_montant REAL,
+      montants_at TEXT,
+      hors_credits_vivants INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (cod_agencia, num_credito)
+    );
+
+    -- La copie des dossiers de l'agent, remplacee a chaque synchronisation. Comme le
+    -- portefeuille : c'est une copie, pas une source.
+    CREATE TABLE IF NOT EXISTS dossier (
+      id INTEGER PRIMARY KEY,
+      nom TEXT,
+      prenom TEXT,
+      numero_membre TEXT,
+      telephone TEXT,
+      montant_demande REAL,
+      montant_propose REAL,
+      objet_credit TEXT,
+      created_at TEXT,
+      statut_demande TEXT NOT NULL,
+      validation_state TEXT NOT NULL,
+      etape TEXT NOT NULL,
+      libelle_etat TEXT NOT NULL,
+      attend_l_agent INTEGER NOT NULL DEFAULT 0,
+      a_corriger TEXT,
+      motif_renvoi TEXT,
+      derniere_decision_at TEXT,
+      jours_dans_l_etape INTEGER NOT NULL DEFAULT 0,
+      cloture INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS referentiel (
+      liste TEXT NOT NULL,
+      code TEXT NOT NULL,
+      libelle TEXT NOT NULL,
+      ordre INTEGER NOT NULL DEFAULT 0,
+      actif INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (liste, code)
+    );
+
+    -- La file d'attente. « etat » est la seule colonne qui n'existe pas cote serveur :
+    -- EN_ATTENTE, ENVOI, TRANSMISE, REFUSEE.
+    CREATE TABLE IF NOT EXISTS visite (
+      identifiant_client TEXT PRIMARY KEY,
+      cod_agencia TEXT NOT NULL,
+      num_credito INTEGER NOT NULL,
+      cod_cliente TEXT,
+      saisie_at TEXT NOT NULL,
+      type_contact TEXT NOT NULL,
+      resultat TEXT NOT NULL,
+      motif_retard TEXT,
+      promesse_montant REAL,
+      promesse_date TEXT,
+      appreciation TEXT,
+      remarque TEXT,
+      latitude REAL,
+      longitude REAL,
+      precision_m INTEGER,
+      corrige_identifiant_client TEXT,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      motif_refus TEXT,
+      tentatives INTEGER NOT NULL DEFAULT 0,
+      transmise_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_visite_etat ON visite (etat, saisie_at);
+
+    -- Les reclamations du terrain : meme file, meme etats que les visites. Une reclamation
+    -- se saisit sans reseau comme tout le reste.
+    CREATE TABLE IF NOT EXISTS reclamation (
+      identifiant_client TEXT PRIMARY KEY,
+      categorie TEXT NOT NULL,
+      objet TEXT NOT NULL,
+      message TEXT NOT NULL,
+      cod_agencia TEXT,
+      num_credito INTEGER,
+      cod_cliente TEXT,
+      saisie_at TEXT NOT NULL,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      motif_refus TEXT,
+      transmise_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_reclamation_etat ON reclamation (etat, saisie_at);
+
+    -- La collecte agricole : parcelle, passages de campagne, recolte. Trois files, le meme
+    -- principe que les visites — la saisie se fait sur le terrain, loin de tout reseau.
+    CREATE TABLE IF NOT EXISTS parcelle (
+      identifiant_client TEXT PRIMARY KEY,
+      cod_cliente TEXT NOT NULL,
+      cod_agencia TEXT,
+      num_credito INTEGER,
+      culture TEXT NOT NULL,
+      surface_ha REAL,
+      localite TEXT,
+      latitude REAL,
+      longitude REAL,
+      precision_m INTEGER,
+      date_semis TEXT,
+      saisie_at TEXT NOT NULL,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      motif_refus TEXT,
+      transmise_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS visite_agri (
+      identifiant_client TEXT PRIMARY KEY,
+      parcelle_identifiant TEXT NOT NULL REFERENCES parcelle (identifiant_client) ON DELETE CASCADE,
+      stade TEXT NOT NULL,
+      etat_culture TEXT NOT NULL,
+      sinistre TEXT,
+      surface_touchee_ha REAL,
+      intrants TEXT,
+      remarque TEXT,
+      latitude REAL,
+      longitude REAL,
+      precision_m INTEGER,
+      saisie_at TEXT NOT NULL,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      motif_refus TEXT,
+      transmise_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS recolte (
+      identifiant_client TEXT PRIMARY KEY,
+      parcelle_identifiant TEXT NOT NULL REFERENCES parcelle (identifiant_client) ON DELETE CASCADE,
+      quantite REAL NOT NULL,
+      unite TEXT NOT NULL,
+      prix_unitaire REAL,
+      part_vendue_pct INTEGER,
+      date_recolte TEXT NOT NULL,
+      acheteur TEXT,
+      remarque TEXT,
+      saisie_at TEXT NOT NULL,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      motif_refus TEXT,
+      transmise_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agri_etat ON parcelle (etat, saisie_at);
+
+    CREATE TABLE IF NOT EXISTS photo (
+      identifiant_client TEXT PRIMARY KEY,
+      visite_identifiant TEXT NOT NULL REFERENCES visite (identifiant_client) ON DELETE CASCADE,
+      chemin TEXT NOT NULL,
+      prise_at TEXT,
+      etat TEXT NOT NULL DEFAULT 'EN_ATTENTE'
+    );
+
+    -- Une seule ligne : ce que l'application doit retenir d'une synchronisation a l'autre.
+    CREATE TABLE IF NOT EXISTS etat_local (
+      cle TEXT PRIMARY KEY,
+      valeur TEXT
+    );
+  `);
+}
+
+/**
+ * Le numero de format de la base locale. A changer des qu'une table CHANGE DE FORME : une
+ * colonne ajoutee n'arrive jamais dans la base d'un telephone deja installe, parce que
+ * `CREATE TABLE IF NOT EXISTS` ne modifie pas une table existante — l'agent garderait l'ancien
+ * format en silence, et l'ecran afficherait des vides pour toujours.
+ *
+ * 2 : le telephone du membre et la date des montants (13/11/2026).
+ * 3 : le credit absent de SAF, distingue de SAF muet (13/11/2026).
+ * 4 : la file des reclamations du terrain (15/11/2026).
+ * 5 : la collecte agricole — parcelle, passages, recolte (15/11/2026).
+ * 6 : la copie des dossiers de credit de l'agent (15/11/2026).
+ */
+const FORMAT_BASE = 6;
+
+/**
+ * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des
+ * saisies, elle, n'est jamais touchee : c'est le travail de l'agent, il n'existe nulle part
+ * ailleurs tant qu'il n'est pas transmis. Le portefeuille se refait a la synchronisation
+ * suivante.
+ */
+async function rebatirLaCopieSiLeFormatAChange(db: SQLite.SQLiteDatabase): Promise<void> {
+  const ligne = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  const format = ligne?.user_version ?? 0;
+  if (format >= FORMAT_BASE) return;
+  await db.execAsync(`
+    DROP TABLE IF EXISTS credit;
+    DROP TABLE IF EXISTS dossier;
+    PRAGMA user_version = ${FORMAT_BASE};
+  `);
+}
+
+export async function lireEtat(cle: string): Promise<string | null> {
+  const ligne = await baseOuverte().getFirstAsync<{ valeur: string | null }>(
+    'SELECT valeur FROM etat_local WHERE cle = ?', cle);
+  return ligne?.valeur ?? null;
+}
+
+export async function ecrireEtat(cle: string, valeur: string | null): Promise<void> {
+  await baseOuverte().runAsync(
+    'INSERT INTO etat_local (cle, valeur) VALUES (?, ?) ON CONFLICT (cle) DO UPDATE SET valeur = excluded.valeur',
+    cle, valeur);
+}
+
+export const CLES = {
+  derniereSyncReferentiels: 'referentiels.depuis',
+  dernierePhotoPortefeuille: 'portefeuille.date',
+  derniereSyncReussie: 'sync.derniere',
+} as const;

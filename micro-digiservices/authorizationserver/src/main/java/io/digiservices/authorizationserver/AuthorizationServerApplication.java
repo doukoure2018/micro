@@ -80,8 +80,14 @@ public class AuthorizationServerApplication {
 	private String mobileClientId;
 	@Value("${mobile.oidc.redirect-uri:com.digiservices.digicrg://oauth2redirect}")
 	private String mobileRedirectUri;
-	// Redirection supplementaire pour les essais (client de developpement Expo, par exemple).
-	// Vide => non ajoutee. Reversible : retirer la valeur et redemarrer.
+	// Redirections supplementaires pour les essais, SEPAREES PAR DES VIRGULES.
+	//
+	// Expo Go ne redirige pas vers le schema de l'application mais vers une adresse « exp:// »
+	// qui porte celle du poste de developpement : elle change donc avec le reseau, et le 13/11
+	// il a fallu la redeclarer deux fois en une heure (Wi-Fi, puis partage de connexion du
+	// telephone). Une liste evite de choisir entre les reseaux ou connaitre le bon d'avance.
+	//
+	// Vide => aucune ajoutee. Reversible : retirer les valeurs et redemarrer.
 	@Value("${mobile.oidc.extra-redirect-uri:}")
 	private String mobileExtraRedirectUri;
 
@@ -146,7 +152,11 @@ public class AuthorizationServerApplication {
 			Set<String> mobileRedirectUris = new LinkedHashSet<>();
 			mobileRedirectUris.add(mobileRedirectUri);
 			if (mobileExtraRedirectUri != null && !mobileExtraRedirectUri.isBlank()) {
-				mobileRedirectUris.add(mobileExtraRedirectUri.trim());
+				for (String extra : mobileExtraRedirectUri.split(",")) {
+					if (!extra.isBlank()) {
+						mobileRedirectUris.add(extra.trim());
+					}
+				}
 			}
 			registerMobileClient(registeredClientRepository, mobileClientId, mobileRedirectUris);
 		};
