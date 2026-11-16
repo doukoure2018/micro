@@ -134,7 +134,7 @@ import { TooltipModule } from 'primeng/tooltip';
                                     pButton
                                     icon="pi pi-times"
                                     class="p-button-sm p-button-danger p-button-outlined"
-                                    pTooltip="Annuler (retour accueil)"
+                                    pTooltip="Renvoyer à l'accueil pour correction (la demande reste en cours)"
                                     (click)="$event.stopPropagation(); ouvrirAnnulation(d)"
                                 ></button>
                             </div>
@@ -180,15 +180,15 @@ import { TooltipModule } from 'primeng/tooltip';
         </p-dialog>
 
         <!-- Dialog annulation -->
-        <p-dialog header="Annuler la demande (retour accueil)" [visible]="state().showAnnuler" [modal]="true" [style]="{ width: '480px' }" (onHide)="fermerDialogs()" [closable]="true">
+        <p-dialog header="Renvoyer la demande à l'accueil pour correction" [visible]="state().showAnnuler" [modal]="true" [style]="{ width: '480px' }" (onHide)="fermerDialogs()" [closable]="true">
             <div class="flex flex-col gap-3" *ngIf="state().selected as d">
                 <p class="m-0 text-sm text-gray-600">La demande retournera à l'agent d'accueil qui l'a saisie, avec votre motif, pour correction puis rediligence.</p>
-                <label class="text-sm font-semibold">Motif de l'annulation <span class="text-red-500">*</span></label>
+                <label class="text-sm font-semibold">Motif du renvoi (ce que l'accueil doit corriger) <span class="text-red-500">*</span></label>
                 <textarea pTextarea [(ngModel)]="motifAnnulation" rows="3" class="w-full" placeholder="Ex. informations du membre incomplètes"></textarea>
             </div>
             <ng-template pTemplate="footer">
                 <button pButton label="Fermer" icon="pi pi-times" class="p-button-text" (click)="fermerDialogs()"></button>
-                <button pButton label="Confirmer l'annulation" icon="pi pi-check" severity="danger" [disabled]="!motifAnnulation.trim()" (click)="confirmerAnnulation()"></button>
+                <button pButton label="Renvoyer pour correction" icon="pi pi-undo" severity="warn" [disabled]="!motifAnnulation.trim()" (click)="confirmerAnnulation()"></button>
             </ng-template>
         </p-dialog>
     `
@@ -403,11 +403,11 @@ export class ReceptionsAAffecterComponent implements OnInit {
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: () => {
-                    this.messageService.add({ severity: 'info', summary: 'Annulée', detail: "Demande renvoyée à l'agent d'accueil", life: 4000 });
+                    this.messageService.add({ severity: 'info', summary: 'Renvoyée', detail: "Demande renvoyée à l'accueil pour correction ; elle reste en cours jusqu'à sa rediligence", life: 5000 });
                     this.fermerDialogs();
                     this.load();
                 },
-                error: (err) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Échec de l'annulation", life: 5000 })
+                error: (err) => this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Échec du renvoi", life: 5000 })
             });
     }
 }
