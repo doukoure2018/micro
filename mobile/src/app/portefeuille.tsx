@@ -6,7 +6,7 @@ import { portefeuilleLocal } from '@/db/visites';
 import { estOuverte } from '@/db/base';
 import { cleDeRecherche, couleurRetard, couleurs, espaces, montant, texte } from '@/ui/theme';
 
-type Filtre = 'RETARD' | 'ECHEANCE' | 'TOUS' | 'CLOS';
+type Filtre = 'RETARD' | 'ECHEANCE' | 'SANS_ECHEANCE' | 'TOUS' | 'CLOS';
 
 /** Le portefeuille de l'agent, lu dans la copie locale : il s'ouvre sans reseau. */
 export default function Portefeuille() {
@@ -26,6 +26,14 @@ export default function Portefeuille() {
   const enRetard = useMemo(() => portefeuille.filter((c) => (c.joursRetard ?? 0) > 0), [portefeuille]);
   const aEcheance = useMemo(
     () => portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance), [portefeuille]);
+  /**
+   * Ni en retard, ni d'echeance connue. Ces credits existent : leur echeancier est solde
+   * ligne a ligne alors qu'un solde subsiste, ou SAF n'en porte qu'une partie. Ils echappent
+   * donc a TOUTE relance fondee sur l'echeancier — raison de plus pour qu'ils se voient.
+   */
+  const sansEcheance = useMemo(
+    () => portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && !c.prochaineEcheance),
+    [portefeuille]);
 
   const cherche = recherche.trim().length > 0;
 
@@ -41,9 +49,10 @@ export default function Portefeuille() {
     }
     if (filtre === 'RETARD') return enRetard;
     if (filtre === 'ECHEANCE') return aEcheance;
+    if (filtre === 'SANS_ECHEANCE') return sansEcheance;
     if (filtre === 'CLOS') return clos;
     return portefeuille;
-  }, [cherche, filtre, recherche, credits, portefeuille, clos, enRetard, aEcheance]);
+  }, [cherche, filtre, recherche, credits, portefeuille, clos, enRetard, aEcheance, sansEcheance]);
 
   return (
     <View style={s.page}>
@@ -60,6 +69,23 @@ export default function Portefeuille() {
                   surAppui={() => setFiltre('CLOS')} />
         ) : null}
       </View>
+
+      {/*
+        Le total doit se retrouver dans ses parties. « Retard » et « A venir » ne couvrent pas
+        tout : cette ligne montre le reste plutot que de laisser un ecart inexplique.
+      */}
+      {!cherche && sansEcheance.length > 0 ? (
+        <Pressable accessibilityRole="button"
+                   accessibilityState={{ selected: filtre === 'SANS_ECHEANCE' }}
+                   onPress={() => setFiltre(filtre === 'SANS_ECHEANCE' ? 'TOUS' : 'SANS_ECHEANCE')}
+                   style={[s.reste, filtre === 'SANS_ECHEANCE' && s.resteActif]}>
+          <Text style={s.resteTexte}>
+            {sansEcheance.length === 1
+              ? '1 credit sans echeance connue dans SAF'
+              : `${sansEcheance.length} credits sans echeance connue dans SAF`}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <View style={s.barre}>
         <TextInput
@@ -92,7 +118,9 @@ export default function Portefeuille() {
               ? `Aucun societaire ne correspond a « ${recherche.trim()} » dans votre portefeuille.`
               : filtre === 'CLOS'
                 ? 'Aucune affectation a fermer.'
-                : 'Aucun credit dans cette vue.'}
+                : filtre === 'SANS_ECHEANCE'
+                  ? 'Tous vos credits portent une echeance.'
+                  : 'Aucun credit dans cette vue.'}
           </Text>
         }
         renderItem={({ item: c }) => (
@@ -160,6 +188,12 @@ const s = StyleSheet.create({
   ongletActif: { backgroundColor: couleurs.surface },
   ongletTexte: { fontSize: texte.petit, color: '#3D4B44' },
   ongletTexteActif: { fontWeight: '600', color: couleurs.texte },
+  reste: {
+    backgroundColor: couleurs.ambreClair, borderRadius: 10, paddingHorizontal: espaces.m,
+    minHeight: 40, justifyContent: 'center', borderWidth: 1, borderColor: couleurs.ambreClair,
+  },
+  resteActif: { borderColor: couleurs.ambre },
+  resteTexte: { fontSize: texte.minuscule, color: couleurs.ambre, fontWeight: '600' },
   barre: { gap: espaces.xs },
   recherche: {
     minHeight: 44, borderRadius: 10, borderWidth: 1, borderColor: couleurs.bord,
