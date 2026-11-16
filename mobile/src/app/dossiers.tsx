@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
+  Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import type { DossierVue } from '@/api/types';
 import { dossiersLocaux } from '@/db/visites';
 import { estOuverte } from '@/db/base';
 import { synchroniser } from '@/sync/moteur';
+import { appeler } from '@/ui/carte';
 import { cleDeRecherche, couleurs, dateCourte, espaces, montant, texte } from '@/ui/theme';
 
 /** La couleur d'une etape : ce que l'agent doit faire se voit avant ce qu'il attend. */
@@ -130,7 +131,7 @@ export default function Dossiers() {
           {d.telephone ? (
             <Pressable accessibilityRole="button"
                        accessibilityLabel={`Appeler le ${d.telephone}`}
-                       onPress={() => void Linking.openURL(`tel:${premierNumero(d.telephone)}`)}>
+                       onPress={() => void appeler(d.telephone)}>
               <Text style={s.telephone}>Appeler {d.telephone}</Text>
             </Pressable>
           ) : null}
@@ -142,11 +143,6 @@ export default function Dossiers() {
       </Text>
     </ScrollView>
   );
-}
-
-function premierNumero(telephone: string | null): string {
-  const numeros = (telephone ?? '').split(/[^0-9+]+/).filter((n) => n.length >= 6);
-  return numeros[0] ?? '';
 }
 
 function Onglet({ actif, libelle, surAppui }:

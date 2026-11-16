@@ -224,6 +224,56 @@ public class MobileRepository {
     public record IdentiteMembre(String nom, String telephone) {
     }
 
+    /**
+     * Les cautions que digi connaît de ce membre, dossier par dossier.
+     *
+     * <p>Une caution est attachée à un DOSSIER, jamais à un crédit SAF : rien en base ne dit
+     * lequel des dossiers d'un membre a donné le crédit qu'on regarde. On rend donc les
+     * derniers dossiers cautionnés, avec leur date et leur montant, et l'agent reconnaît le
+     * sien — plutôt qu'une devinette présentée comme un fait.</p>
+     */
+    public List<Map<String, Object>> cautionsDuMembre(String codCliente, int maxDossiers) {
+        if (codCliente == null || codCliente.isBlank()) {
+            return List.of();
+        }
+        return jdbcClient.sql("""
+                        SELECT c.demandeindividuel_id, d.createdat, d.montant_demande,
+                               COALESCE(d.validation_state, 'NOUVEAU') AS validation_state,
+                               COALESCE(d.statut_demande, 'EN_ATTENTE') AS statut_demande,
+                               c.nom, c.prenom, c.telephone, c.profession, c.adresse_complete
+                          FROM personnecaution c
+                          JOIN demandeindividuel d ON d.demandeindividuel_id = c.demandeindividuel_id
+                         WHERE d.numero_membre = :membre
+                           AND c.demandeindividuel_id IN (
+                               SELECT d2.demandeindividuel_id
+                                 FROM demandeindividuel d2
+                                 JOIN personnecaution c2 ON c2.demandeindividuel_id = d2.demandeindividuel_id
+                                WHERE d2.numero_membre = :membre
+                                GROUP BY d2.demandeindividuel_id, d2.createdat
+                                ORDER BY d2.createdat DESC
+                                LIMIT :max)
+                         ORDER BY d.createdat DESC, c.nom, c.prenom
+                        """)
+                .param("membre", codCliente.trim()).param("max", maxDossiers)
+                .query().listOfRows();
+    }
+
+    /** Le dernier endroit où une visite a situé ce crédit. */
+    public Optional<Map<String, Object>> dernierePosition(String codAgencia, Long numCredito) {
+        return jdbcClient.sql("""
+                        SELECT v.latitude, v.longitude, v.precision_m, v.saisie_at,
+                               TRIM(COALESCE(u.first_name,'') || ' ' || COALESCE(u.last_name,'')) AS agent
+                          FROM recouvrement_visite v
+                          JOIN users u ON u.user_id = v.agent_user_id
+                         WHERE v.cod_agencia = :cod AND v.num_credito = :num
+                           AND v.latitude IS NOT NULL AND v.longitude IS NOT NULL
+                         ORDER BY v.saisie_at DESC
+                         LIMIT 1
+                        """)
+                .param("cod", codAgencia).param("num", numCredito)
+                .query().listOfRows().stream().findFirst();
+    }
+
     // ------------------------------------------------------------------------ les visites
 
     /** Les identifiants déjà connus parmi ceux qu'un téléphone renvoie. */

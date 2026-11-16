@@ -144,6 +144,50 @@ public final class MobileDtos {
                                     boolean actif) {
     }
 
+    /**
+     * Le détail d'un crédit : son échéancier SAF, les cautions que digi connaît, et le dernier
+     * endroit où l'agent a trouvé le membre.
+     *
+     * <p>Un seul aller-retour : sur un forfait de terrain, trois appels pour une fiche sont
+     * trois fois le risque de n'en voir aucun aboutir.</p>
+     */
+    public record FicheCredit(List<EcheanceVue> echeancier,
+                              List<DossierCautions> cautions,
+                              PositionVue dernierePosition,
+                              boolean echeancierIncomplet) {
+    }
+
+    /** Une ligne d'échéancier, telle que SAF la porte. */
+    public record EcheanceVue(Long numero, LocalDate date, BigDecimal montant,
+                              BigDecimal capitalRestant, BigDecimal interetsRestants,
+                              LocalDate payeeLe) {
+
+        public boolean payee() {
+            return payeeLe != null;
+        }
+    }
+
+    /**
+     * Les cautions d'UN dossier digi du membre.
+     *
+     * <p>Les cautions sont attachées à un dossier, pas à un crédit SAF : rien dans la base ne
+     * dit lequel des dossiers d'un membre a donné ce crédit-là. Plutôt que de deviner, on rend
+     * les dossiers du membre avec leur date et leur montant — l'agent reconnaît le sien.</p>
+     */
+    public record DossierCautions(Long demandeindividuelId, LocalDate deposeLe,
+                                  BigDecimal montantDemande, String etat,
+                                  List<Caution> personnes) {
+    }
+
+    public record Caution(String nom, String prenom, String telephone, String profession,
+                          String adresse) {
+    }
+
+    /** Le dernier endroit où une visite a situé ce crédit. */
+    public record PositionVue(BigDecimal latitude, BigDecimal longitude, Integer precisionM,
+                              OffsetDateTime saisieAt, String agent) {
+    }
+
     /** Une visite déjà enregistrée, telle que la fiche du crédit la montre. */
     public record VisiteEnregistree(Long id, String codAgencia, Long numCredito,
                                     OffsetDateTime saisieAt, String typeContact, String resultat,

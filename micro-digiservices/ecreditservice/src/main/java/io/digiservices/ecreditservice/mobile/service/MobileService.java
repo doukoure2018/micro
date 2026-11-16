@@ -5,7 +5,13 @@ import io.digiservices.clients.EbankingPortefeuilleClient;
 import io.digiservices.clients.domain.User;
 import io.digiservices.clients.portefeuille.PortefeuilleCreditDto;
 import io.digiservices.ecreditservice.exception.ApiException;
+import io.digiservices.ecreditservice.dossier.EtatDossier;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.Caution;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.CreditPortefeuille;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.DossierCautions;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.EcheanceVue;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.FicheCredit;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.PositionVue;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.AgentVu;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.EntreeReferentiel;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.EquipeVue;
@@ -34,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -319,6 +326,104 @@ public class MobileService {
     public List<VisiteEnregistree> visitesDuCredit(String uuid, String codAgencia, Long numCredito) {
         exigerCompteMobile(uuid);
         return repository.visitesDuCredit(codAgencia, numCredito, 20);
+    }
+
+    // ------------------------------------------------------------------ la fiche d'un crédit
+
+    /** Au-delà, ce n'est plus une fiche : l'agent cherche son dossier, pas l'historique du membre. */
+    private static final int DOSSIERS_CAUTIONNES_MAX = 3;
+
+    /**
+     * Le détail d'un crédit : son échéancier SAF, les cautions connues de digi, et le dernier
+     * endroit où une visite a situé le membre.
+     *
+     * <p>Un seul aller-retour, parce que trois appels sur un forfait de terrain sont trois
+     * fois le risque de n'en voir aucun aboutir. Et chaque morceau tombe seul : un échéancier
+     * illisible ne doit pas emporter les cautions, qui ne dépendent pas de SAF.</p>
+     */
+    public FicheCredit ficheCredit(String uuid, String codAgencia, Long numCredito) {
+        exigerCompteMobile(uuid);
+        List<EcheanceVue> echeancier = echeancier(codAgencia, numCredito);
+        String membre = repository.clientDuCredit(codAgencia, numCredito).orElse(null);
+        return new FicheCredit(echeancier, cautions(membre), position(codAgencia, numCredito),
+                echeancierIncomplet(echeancier));
+    }
+
+    private List<EcheanceVue> echeancier(String codAgencia, Long numCredito) {
+        try {
+            return portefeuilleClient.getEcheancier(codAgencia, numCredito).stream()
+                    .map(e -> new EcheanceVue(e.getNumCuota(), e.getFecCuota(), e.getMonCuota(),
+                            e.getSalPrincipal(), e.getSalInt(), e.getFecCancelacion()))
+                    .toList();
+        } catch (Exception e) {
+            log.warn("[MOBILE] echeancier {}/{} illisible : {}", codAgencia, numCredito, e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
+     * L'échéancier ne porte-t-il QUE des lignes soldées alors que le crédit court encore ?
+     *
+     * <p>Mesuré le 16/11 au point de service 952 : 22 des 220 crédits ouverts en 2026 et
+     * vivants ont moins de lignes que d'échéances annoncées, et 4 n'en ont aucune à venir ni
+     * impayée. Ces crédits échappent à toute relance fondée sur l'échéancier — l'agent doit
+     * au moins le voir sur la fiche.</p>
+     */
+    private static boolean echeancierIncomplet(List<EcheanceVue> echeancier) {
+        return !echeancier.isEmpty() && echeancier.stream().allMatch(EcheanceVue::payee);
+    }
+
+    private List<DossierCautions> cautions(String membre) {
+        if (membre == null) {
+            return List.of();
+        }
+        Map<Long, List<Caution>> parDossier = new LinkedHashMap<>();
+        Map<Long, Object[]> enteteDossier = new LinkedHashMap<>();
+        for (Map<String, Object> l : repository.cautionsDuMembre(membre, DOSSIERS_CAUTIONNES_MAX)) {
+            Long dossier = nombre(l.get("demandeindividuel_id"));
+            enteteDossier.putIfAbsent(dossier, new Object[] {
+                    l.get("createdat"), l.get("montant_demande"),
+                    EtatDossier.libelle((String) l.get("statut_demande"),
+                            (String) l.get("validation_state"), null, null)});
+            parDossier.computeIfAbsent(dossier, d -> new ArrayList<>())
+                    .add(new Caution((String) l.get("nom"), (String) l.get("prenom"),
+                            (String) l.get("telephone"), (String) l.get("profession"),
+                            (String) l.get("adresse_complete")));
+        }
+        List<DossierCautions> dossiers = new ArrayList<>();
+        parDossier.forEach((id, personnes) -> {
+            Object[] entete = enteteDossier.get(id);
+            dossiers.add(new DossierCautions(id, dateDe(entete[0]),
+                    entete[1] instanceof BigDecimal m ? m : null, (String) entete[2], personnes));
+        });
+        return dossiers;
+    }
+
+    private PositionVue position(String codAgencia, Long numCredito) {
+        return repository.dernierePosition(codAgencia, numCredito)
+                .map(l -> new PositionVue(
+                        (BigDecimal) l.get("latitude"), (BigDecimal) l.get("longitude"),
+                        entier(l.get("precision_m")),
+                        l.get("saisie_at") instanceof OffsetDateTime t ? t : null,
+                        (String) l.get("agent")))
+                .orElse(null);
+    }
+
+    private static LocalDate dateDe(Object o) {
+        if (o instanceof java.sql.Timestamp t) {
+            return t.toLocalDateTime().toLocalDate();
+        }
+        if (o instanceof OffsetDateTime t) {
+            return t.toLocalDate();
+        }
+        if (o instanceof LocalDate d) {
+            return d;
+        }
+        return null;
+    }
+
+    private static Long nombre(Object o) {
+        return o instanceof Number n ? n.longValue() : null;
     }
 
     // ----------------------------------------------------------------- la synchronisation

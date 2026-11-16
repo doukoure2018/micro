@@ -199,6 +199,20 @@ public class MobileResource {
                 liste.size() + " dossier(s)", OK));
     }
 
+    /**
+     * Le détail d'un crédit : échéancier SAF, cautions connues de digi, dernière position.
+     * Un seul appel — trois, sur un forfait de terrain, c'est trois risques d'échec.
+     */
+    @GetMapping("/credits/{codAgencia}/{numCredito}/fiche")
+    public ResponseEntity<Response> ficheCredit(@NotNull Authentication authentication,
+                                                @PathVariable(name = "codAgencia") String codAgencia,
+                                                @PathVariable(name = "numCredito") Long numCredito,
+                                                HttpServletRequest request) {
+        var fiche = service.ficheCredit(authentication.getName(), codAgencia, numCredito);
+        return ResponseEntity.ok(getResponse(request, Map.of("fiche", fiche),
+                fiche.echeancier().size() + " echeance(s)", OK));
+    }
+
     // --------------------------------------------------------------- la collecte agricole
 
     /**

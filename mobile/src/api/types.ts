@@ -185,3 +185,46 @@ export type DossierVue = {
   derniereDecisionAt: string | null;
   joursDansLEtape: number;
 };
+
+/** Une ligne de l'echeancier SAF. */
+export type EcheanceVue = {
+  numero: number | null;
+  date: string | null;
+  montant: number | null;
+  capitalRestant: number | null;
+  interetsRestants: number | null;
+  payeeLe: string | null;
+};
+
+export type Caution = {
+  nom: string | null;
+  prenom: string | null;
+  telephone: string | null;
+  profession: string | null;
+  adresse: string | null;
+};
+
+/** Les cautions d'UN dossier digi du membre : c'est au dossier qu'elles sont attachees. */
+export type DossierCautions = {
+  demandeindividuelId: number;
+  deposeLe: string | null;
+  montantDemande: number | null;
+  etat: string | null;
+  personnes: Caution[];
+};
+
+export type PositionVue = {
+  latitude: number;
+  longitude: number;
+  precisionM: number | null;
+  saisieAt: string | null;
+  agent: string | null;
+};
+
+export type FicheCredit = {
+  echeancier: EcheanceVue[];
+  cautions: DossierCautions[];
+  dernierePosition: PositionVue | null;
+  /** Toutes les lignes sont soldees alors que le credit court : il echappe aux relances. */
+  echeancierIncomplet: boolean;
+};

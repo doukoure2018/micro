@@ -1,7 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View,
+} from 'react-native';
 import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import type { CreditPortefeuille } from '@/api/types';
+import type { CreditPortefeuille, FicheCredit } from '@/api/types';
+import { api, ErreurReseau } from '@/api/client';
+import { jetonValide } from '@/auth/session';
+import { appeler, ouvrirSurLaCarte, premierNumero } from '@/ui/carte';
 import { portefeuilleLocal } from '@/db/visites';
 import { estOuverte } from '@/db/base';
 import { couleurRetard, couleurs, dateCourte, espaces, heureCourte, montant, texte } from '@/ui/theme';
@@ -13,12 +18,34 @@ export default function FicheCredit() {
   const codAgencia = morceaux[0] ?? '';
   const numero = Number(morceaux[1] ?? '0');
   const [credit, setCredit] = useState<CreditPortefeuille | null>(null);
+  const [fiche, setFiche] = useState<FicheCredit | null>(null);
+  const [chargeFiche, setChargeFiche] = useState(false);
+  const [horsConnexion, setHorsConnexion] = useState(false);
+  const [echeancierOuvert, setEcheancierOuvert] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (!estOuverte()) return;
     void (async () => {
       const tous = await portefeuilleLocal();
       setCredit(tous.find((c) => c.codAgencia === codAgencia && c.numCredito === numero) ?? null);
+    })();
+    // L'echeancier, les cautions et la derniere position se lisent EN LIGNE : ils changent
+    // sans l'agent, et une copie locale montrerait l'etat d'hier. L'essentiel du credit,
+    // lui, vient de la copie locale et s'affiche sans reseau.
+    void (async () => {
+      setChargeFiche(true);
+      try {
+        const jeton = await jetonValide();
+        if (!jeton) return;
+        const data = await api.get<{ fiche: FicheCredit }>(
+          `/ecredit/mobile/credits/${codAgencia}/${numero}/fiche`, jeton);
+        setFiche(data?.fiche ?? null);
+        setHorsConnexion(false);
+      } catch (e) {
+        setHorsConnexion(e instanceof ErreurReseau);
+      } finally {
+        setChargeFiche(false);
+      }
     })();
   }, [codAgencia, numero]));
 
@@ -42,7 +69,7 @@ export default function FicheCredit() {
         {aAppeler ? (
           <Pressable accessibilityRole="button"
                      accessibilityLabel={`Appeler le ${aAppeler}`}
-                     onPress={() => void Linking.openURL(`tel:${aAppeler}`)}>
+                     onPress={() => void appeler(aAppeler)}>
             <Text style={s.telephone}>Appeler {credit.telephone}</Text>
           </Pressable>
         ) : null}
@@ -81,11 +108,105 @@ export default function FicheCredit() {
         </Text>
       </View>
 
+      {chargeFiche && !fiche ? (
+        <View style={s.attente}><ActivityIndicator color={couleurs.vert} /></View>
+      ) : null}
+
+      {horsConnexion ? (
+        <Text style={s.horsConnexion}>
+          Hors connexion : l'echeancier et les cautions ne sont pas affiches.
+        </Text>
+      ) : null}
+
+      {fiche && fiche.echeancier.length > 0 ? (
+        <View style={s.carte}>
+          <Pressable accessibilityRole="button"
+                     accessibilityState={{ expanded: echeancierOuvert }}
+                     onPress={() => setEcheancierOuvert(!echeancierOuvert)}
+                     style={s.ligneHaut}>
+            <Text style={s.produit}>
+              Echeancier · {fiche.echeancier.length} ligne{fiche.echeancier.length > 1 ? 's' : ''}
+            </Text>
+            <Text style={s.deplier}>{echeancierOuvert ? 'Replier' : 'Voir'}</Text>
+          </Pressable>
+
+          {fiche.echeancierIncomplet ? (
+            <Text style={s.avertissement}>
+              Toutes les lignes sont soldees alors que le credit court encore : aucune echeance
+              a venir dans SAF. Ce credit n'apparaitra dans aucune relance.
+            </Text>
+          ) : null}
+
+          {echeancierOuvert ? fiche.echeancier.map((e, i) => (
+            <View key={`${e.numero ?? i}`} style={s.echeance}>
+              <Text style={[s.echeanceTexte, { flex: 0.6 }]}>{e.numero ?? i + 1}</Text>
+              <Text style={[s.echeanceTexte, { flex: 2 }]}>{dateCourte(e.date)}</Text>
+              <Text style={[s.echeanceTexte, { flex: 3, textAlign: 'right' }]}>
+                {montant(e.montant)}
+              </Text>
+              <Text style={[s.echeanceEtat, { flex: 2 },
+                            e.payeeLe ? s.echeancePayee : s.echeanceDue]}>
+                {e.payeeLe ? `payee ${dateCourte(e.payeeLe)}` : 'due'}
+              </Text>
+            </View>
+          )) : null}
+        </View>
+      ) : null}
+
+      {fiche && fiche.cautions.length > 0 ? (
+        <View style={s.carte}>
+          <Text style={s.produit}>Cautions connues de digi</Text>
+          <Text style={s.note}>
+            Les cautions sont attachees a un DOSSIER, pas a un credit SAF :
+            {fiche.cautions.length > 1
+              ? ` ce membre en porte ${fiche.cautions.length}, reconnaissez le votre.`
+              : ' voici celui de ce membre.'}
+          </Text>
+          {fiche.cautions.map((d) => (
+            <View key={d.demandeindividuelId} style={s.dossier}>
+              <Text style={s.dossierTitre}>
+                Dossier {d.demandeindividuelId}
+                {d.deposeLe ? ` · depose le ${dateCourte(d.deposeLe)}` : ''}
+                {d.montantDemande ? ` · ${montant(d.montantDemande)}` : ''}
+              </Text>
+              <Text style={s.note}>{d.etat}</Text>
+              {d.personnes.map((c, i) => (
+                <View key={`${d.demandeindividuelId}-${i}`} style={s.caution}>
+                  <Text style={s.cautionNom}>
+                    {[c.nom, c.prenom].filter((x) => x).join(' ') || 'Caution'}
+                    {c.profession ? ` · ${c.profession}` : ''}
+                  </Text>
+                  {c.telephone ? (
+                    <Pressable accessibilityRole="button"
+                               accessibilityLabel={`Appeler ${c.nom} au ${c.telephone}`}
+                               onPress={() => void appeler(c.telephone)}>
+                      <Text style={s.telephone}>Appeler {c.telephone}</Text>
+                    </Pressable>
+                  ) : null}
+                  {c.adresse ? <Text style={s.note}>{c.adresse}</Text> : null}
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <View style={s.actions}>
-        <Pressable accessibilityRole="button" style={s.actionSecondaire}
-                   onPress={() => void Linking.openURL(`geo:0,0?q=${encodeURIComponent(credit.nomClient ?? '')}`)}>
-          <Text style={s.actionSecondaireTexte}>Itineraire</Text>
-        </Pressable>
+        {/*
+          « Itineraire » n'a de sens qu'avec des coordonnees. On n'en a que si une visite a
+          releve la position : sinon le bouton n'existe pas, plutot que d'ouvrir une carte sur
+          le nom du membre — ce qui ne menait nulle part et faisait echouer l'ouverture.
+        */}
+        {fiche?.dernierePosition ? (
+          <Pressable accessibilityRole="button" style={s.actionSecondaire}
+                     onPress={() => void ouvrirSurLaCarte(
+                       fiche.dernierePosition!.latitude, fiche.dernierePosition!.longitude,
+                       credit.nomClient ?? `Credit ${credit.codAgencia}/${credit.numCredito}`)}>
+            <Text style={s.actionSecondaireTexte}>
+              Itineraire — position relevee le {dateCourte(fiche.dernierePosition.saisieAt)}
+            </Text>
+          </Pressable>
+        ) : null}
         <Link href={{
           pathname: '/agri',
           params: {
@@ -119,11 +240,6 @@ export default function FicheCredit() {
   );
 }
 
-function premierNumero(telephone: string | null): string {
-  const numeros = (telephone ?? '').split(/[^0-9+]+/).filter((n) => n.length >= 6);
-  return numeros[0] ?? '';
-}
-
 function Donnee({ libelle, valeur, couleur }:
   { libelle: string; valeur: string; couleur?: string }) {
   return (
@@ -140,6 +256,25 @@ const s = StyleSheet.create({
   nom: { fontSize: texte.titre - 2, fontWeight: '600', color: couleurs.texte },
   reference: { fontSize: texte.petit, color: couleurs.texteSecondaire },
   telephone: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600', marginTop: espaces.xs },
+  attente: { paddingVertical: espaces.m, alignItems: 'center' },
+  horsConnexion: { fontSize: texte.petit, color: couleurs.ambre },
+  deplier: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600' },
+  avertissement: {
+    fontSize: texte.minuscule, color: couleurs.ambre, fontWeight: '600', marginTop: espaces.xs,
+  },
+  echeance: {
+    flexDirection: 'row', alignItems: 'center', gap: espaces.s,
+    paddingVertical: 4, borderTopWidth: 1, borderTopColor: couleurs.bord,
+  },
+  echeanceTexte: { fontSize: texte.minuscule, color: couleurs.texte },
+  echeanceEtat: { fontSize: texte.minuscule, textAlign: 'right' },
+  echeancePayee: { color: couleurs.vert },
+  echeanceDue: { color: couleurs.ambre, fontWeight: '600' },
+  note: { fontSize: texte.minuscule, color: couleurs.texteSecondaire },
+  dossier: { marginTop: espaces.s, paddingTop: espaces.s, borderTopWidth: 1, borderTopColor: couleurs.bord },
+  dossierTitre: { fontSize: texte.petit, fontWeight: '600', color: couleurs.texte },
+  caution: { marginTop: espaces.xs },
+  cautionNom: { fontSize: texte.petit, color: couleurs.texte },
   source: {
     fontSize: texte.minuscule, color: couleurs.texteSecondaire,
     marginTop: espaces.xs, fontStyle: 'italic',
