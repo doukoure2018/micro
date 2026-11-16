@@ -40,6 +40,23 @@ services:
     ports:
       # Loopback seulement : la restauration d'une copie se fait par tunnel SSH.
       - "127.0.0.1:15432:5432"
+    # Memes reglages qu'en production, a l'echelle du conteneur de test (384 Mo) : ce qui
+    # compte ici est d'eprouver le MECANISME (command, preload, extension V213), pas la taille.
+    command: >
+      postgres
+      -c shared_buffers=96MB
+      -c effective_cache_size=256MB
+      -c work_mem=8MB
+      -c maintenance_work_mem=64MB
+      -c max_connections=120
+      -c random_page_cost=1.1
+      -c autovacuum_vacuum_scale_factor=0.05
+      -c autovacuum_analyze_scale_factor=0.02
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c log_min_duration_statement=1000
+      -c log_checkpoints=on
+    shm_size: 256m
     volumes:
       - digi_test_postgres_data:/var/lib/postgresql/data
     networks:
