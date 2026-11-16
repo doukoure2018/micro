@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 import type { CreditPortefeuille } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
@@ -13,6 +13,7 @@ export default function Portefeuille() {
   const [credits, setCredits] = useState<CreditPortefeuille[]>([]);
   const [filtre, setFiltre] = useState<Filtre>('RETARD');
   const [recherche, setRecherche] = useState('');
+  const [typeCredit, setTypeCredit] = useState<string | null>(null);
 
   useFocusEffect(useCallback(() => {
     if (!estOuverte()) return;
@@ -38,21 +39,38 @@ export default function Portefeuille() {
   const cherche = recherche.trim().length > 0;
 
   /**
+   * Les types de credit presents dans le portefeuille, du plus porte au moins porte. La
+   * liste vient des donnees, pas d'un referentiel : un type que l'agent ne porte pas n'a
+   * rien a faire dans ses filtres.
+   */
+  const typesCredit = useMemo(() => {
+    const compte = new Map<string, number>();
+    for (const c of portefeuille) {
+      if (c.produit) compte.set(c.produit, (compte.get(c.produit) ?? 0) + 1);
+    }
+    return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [portefeuille]);
+
+  /**
    * Une recherche porte sur TOUT le portefeuille, quel que soit l'onglet ouvert. L'agent qui
    * tape le nom d'un societaire le cherche, pas « dans les retards » : ne rien lui rendre
    * parce que ce membre est a jour serait lui dire qu'il n'existe pas.
    */
   const visibles = useMemo(() => {
+    // Le type de credit s'applique PAR-DESSUS l'onglet et la recherche : « mes credits
+    // agricoles en retard » est une question que l'agent se pose vraiment.
+    const parType = (liste: CreditPortefeuille[]) =>
+      typeCredit ? liste.filter((c) => c.produit === typeCredit) : liste;
     if (cherche) {
       const q = cleDeRecherche(recherche);
-      return credits.filter((c) => cleDeRecherche(aChercher(c)).includes(q));
+      return parType(credits.filter((c) => cleDeRecherche(aChercher(c)).includes(q)));
     }
-    if (filtre === 'RETARD') return enRetard;
-    if (filtre === 'ECHEANCE') return aEcheance;
-    if (filtre === 'SANS_ECHEANCE') return sansEcheance;
-    if (filtre === 'CLOS') return clos;
-    return portefeuille;
-  }, [cherche, filtre, recherche, credits, portefeuille, clos, enRetard, aEcheance, sansEcheance]);
+    if (filtre === 'RETARD') return parType(enRetard);
+    if (filtre === 'ECHEANCE') return parType(aEcheance);
+    if (filtre === 'SANS_ECHEANCE') return parType(sansEcheance);
+    if (filtre === 'CLOS') return parType(clos);
+    return parType(portefeuille);
+  }, [cherche, filtre, recherche, typeCredit, credits, portefeuille, clos, enRetard, aEcheance, sansEcheance]);
 
   return (
     <View style={s.page}>
@@ -69,6 +87,18 @@ export default function Portefeuille() {
                   surAppui={() => setFiltre('CLOS')} />
         ) : null}
       </View>
+
+      {typesCredit.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.types} keyboardShouldPersistTaps="handled">
+          <Puce actif={typeCredit === null} libelle={`Tous les types · ${portefeuille.length}`}
+                surAppui={() => setTypeCredit(null)} />
+          {typesCredit.map(([type, n]) => (
+            <Puce key={type} actif={typeCredit === type} libelle={`${libelleType(type)} · ${n}`}
+                  surAppui={() => setTypeCredit(typeCredit === type ? null : type)} />
+          ))}
+        </ScrollView>
+      ) : null}
 
       {/*
         Le total doit se retrouver dans ses parties. « Retard » et « A venir » ne couvrent pas
@@ -114,7 +144,9 @@ export default function Portefeuille() {
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <Text style={s.vide}>
-            {cherche
+            {typeCredit && !cherche
+              ? `Aucun credit de type « ${libelleType(typeCredit)} » dans cette vue.`
+              : cherche
               ? `Aucun societaire ne correspond a « ${recherche.trim()} » dans votre portefeuille.`
               : filtre === 'CLOS'
                 ? 'Aucune affectation a fermer.'
@@ -135,7 +167,8 @@ export default function Portefeuille() {
                   credit {c.codAgencia}/{c.numCredito}
                 </Text>
                 <Text style={s.detail} numberOfLines={1}>
-                  {[c.produit, c.encours === null ? null : montant(c.encours)]
+                  {[c.produit ? libelleType(c.produit) : null,
+                    c.encours === null ? null : montant(c.encours)]
                     .filter((x) => x).join(' · ') || etatSansMontant(c)}
                 </Text>
               </View>
@@ -165,6 +198,25 @@ function etatSansMontant(c: CreditPortefeuille): string {
   return c.horsCreditsVivants ? 'Rembourse ou clos dans SAF' : 'Montants indisponibles';
 }
 
+/**
+ * Le libelle SAF d'un type de credit, rendu lisible : « CREDIT COMMERCIALE SOLIDAIRE » devient
+ * « Commerciale solidaire ». Le mot « credit » est retire, il est partout.
+ */
+function libelleType(type: string): string {
+  const mots = type.replace(/^CREDIT\s+/i, '').toLowerCase().trim();
+  return mots.charAt(0).toUpperCase() + mots.slice(1);
+}
+
+function Puce({ actif, libelle, surAppui }:
+  { actif: boolean; libelle: string; surAppui: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: actif }}
+               onPress={surAppui} style={[s.puce, actif && s.puceActive]}>
+      <Text style={[s.puceTexte, actif && s.puceTexteActif]} numberOfLines={1}>{libelle}</Text>
+    </Pressable>
+  );
+}
+
 /** Ce dans quoi la recherche cherche : le nom d'abord, mais aussi les deux numeros. */
 function aChercher(c: CreditPortefeuille): string {
   return [c.nomClient, c.codCliente, String(c.numCredito), c.produit]
@@ -188,6 +240,14 @@ const s = StyleSheet.create({
   ongletActif: { backgroundColor: couleurs.surface },
   ongletTexte: { fontSize: texte.petit, color: '#3D4B44' },
   ongletTexteActif: { fontWeight: '600', color: couleurs.texte },
+  types: { gap: espaces.s, paddingVertical: 2 },
+  puce: {
+    minHeight: 36, paddingHorizontal: espaces.m, justifyContent: 'center', borderRadius: 18,
+    borderWidth: 1, borderColor: couleurs.bord, backgroundColor: couleurs.surface,
+  },
+  puceActive: { backgroundColor: couleurs.vert, borderColor: couleurs.vert },
+  puceTexte: { fontSize: texte.minuscule, color: couleurs.texte },
+  puceTexteActif: { color: '#FFFFFF', fontWeight: '600' },
   reste: {
     backgroundColor: couleurs.ambreClair, borderRadius: 10, paddingHorizontal: espaces.m,
     minHeight: 40, justifyContent: 'center', borderWidth: 1, borderColor: couleurs.ambreClair,

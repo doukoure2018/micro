@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, Redirect, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { profilGarde } from '@/auth/session';
 import type { Profil } from '@/api/types';
-import { portefeuilleLocal } from '@/db/visites';
+import { compterReclamationsEnAttente, dossiersLocaux, portefeuilleLocal } from '@/db/visites';
+import { compterAgriEnAttente } from '@/db/agri';
 import { estOuverte } from '@/db/base';
 import type { CreditPortefeuille } from '@/api/types';
 import { etatDeLaFile, synchroniser } from '@/sync/moteur';
@@ -21,11 +23,19 @@ export default function Aujourdhui() {
   const [enAttente, setEnAttente] = useState(0);
   const [derniere, setDerniere] = useState<string | null>(null);
   const [rafraichit, setRafraichit] = useState(false);
+  const [dossiersAFaire, setDossiersAFaire] = useState(0);
+  const [agriEnAttente, setAgriEnAttente] = useState(0);
+  const [reclamationsEnAttente, setReclamationsEnAttente] = useState(0);
 
   const charger = useCallback(async () => {
     setProfil(await profilGarde());
     if (!estOuverte()) return;
     setCredits(await portefeuilleLocal());
+    // Les tuiles portent un chiffre quand il y a quelque chose a faire : c'est ce chiffre,
+    // pas l'intitule, qui fait ouvrir l'ecran.
+    setDossiersAFaire((await dossiersLocaux(false)).filter((d) => d.attendLAgent).length);
+    setAgriEnAttente(await compterAgriEnAttente());
+    setReclamationsEnAttente(await compterReclamationsEnAttente());
     const { compte, derniere: d } = await etatDeLaFile();
     setEnAttente(compte.EN_ATTENTE + compte.ENVOI);
     setDerniere(d);
@@ -115,32 +125,23 @@ export default function Aujourdhui() {
         </Pressable>
       </Link>
 
-      <Link href="/dossiers" asChild>
-        <Pressable style={s.lienCarte}>
-          <Text style={s.lienCarteTexte}>Mes dossiers de credit</Text>
-          <Text style={s.lienCarteAide}>
-            Ou en est chacun, et lesquels vous attendent.
-          </Text>
-        </Pressable>
-      </Link>
-
-      <Link href="/agri" asChild>
-        <Pressable style={s.lienCarte}>
-          <Text style={s.lienCarteTexte}>Collecte agricole</Text>
-          <Text style={s.lienCarteAide}>
-            Parcelles, passages de campagne et recoltes. Tout se saisit hors ligne.
-          </Text>
-        </Pressable>
-      </Link>
-
-      <Link href="/reclamations" asChild>
-        <Pressable style={s.lienCarte}>
-          <Text style={s.lienCarteTexte}>Signaler un probleme</Text>
-          <Text style={s.lienCarteAide}>
-            Aux directions concernees. La reponse revient sur ce telephone.
-          </Text>
-        </Pressable>
-      </Link>
+      {/*
+        Les actions tiennent sur une grille : trois tuiles par rangee, une icone, un mot, et un
+        chiffre quand quelque chose attend. Trois cartes empilees prenaient la moitie de
+        l'ecran et se lisaient comme du texte ; une grille se reconnait d'un coup d'oeil.
+      */}
+      <View style={s.grille}>
+        <Tuile href="/portefeuille" icone="wallet-outline" libelle="Portefeuille"
+               compte={enRetard.length} teinte={couleurs.vert} />
+        <Tuile href="/dossiers" icone="folder-open-outline" libelle="Mes dossiers"
+               compte={dossiersAFaire} teinte={couleurs.bleu} />
+        <Tuile href="/agri" icone="leaf-outline" libelle="Collecte agricole"
+               compte={agriEnAttente} teinte="#4F7F2A" />
+        <Tuile href="/reclamations" icone="megaphone-outline" libelle="Signaler"
+               compte={reclamationsEnAttente} teinte={couleurs.ambre} />
+        <Tuile href="/synchronisation" icone="cloud-upload-outline" libelle="Synchronisation"
+               compte={enAttente} teinte="#2A4F9E" />
+      </View>
 
       <Text style={s.titreSection}>A faire aujourd'hui</Text>
       {enRetard.length === 0 && promesses.length === 0 ? (
@@ -171,6 +172,35 @@ export default function Aujourdhui() {
           ))
       )}
     </ScrollView>
+  );
+}
+
+/**
+ * Une tuile d'action. Le chiffre n'apparait que s'il est strictement positif : zero n'est pas
+ * une information, c'est du bruit a cote de l'icone.
+ */
+function Tuile({ href, icone, libelle, compte, teinte }: {
+  href: '/portefeuille' | '/dossiers' | '/agri' | '/reclamations' | '/synchronisation';
+  icone: React.ComponentProps<typeof Ionicons>['name'];
+  libelle: string;
+  compte: number;
+  teinte: string;
+}) {
+  return (
+    <Link href={href} asChild>
+      <Pressable style={s.tuile} accessibilityRole="button"
+                 accessibilityLabel={compte > 0 ? `${libelle}, ${compte} en attente` : libelle}>
+        <View style={[s.tuileIcone, { backgroundColor: `${teinte}1A` }]}>
+          <Ionicons name={icone} size={24} color={teinte} />
+          {compte > 0 ? (
+            <View style={[s.tuileBadge, { backgroundColor: teinte }]}>
+              <Text style={s.tuileBadgeTexte}>{compte > 99 ? '99+' : compte}</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={s.tuileLibelle} numberOfLines={2}>{libelle}</Text>
+      </Pressable>
+    </Link>
   );
 }
 
@@ -215,12 +245,23 @@ const s = StyleSheet.create({
   carteValeur: { fontSize: texte.sousTitre + 1, fontWeight: '600', color: couleurs.texte },
   score: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600', marginTop: espaces.xs },
   aFermer: { fontSize: texte.minuscule, color: couleurs.ambre, fontWeight: '600', marginTop: espaces.xs },
-  lienCarte: {
-    backgroundColor: couleurs.surface, borderRadius: 14, padding: espaces.l,
-    borderWidth: 1, borderColor: couleurs.bord, gap: 2, minHeight: 48,
+  grille: { flexDirection: 'row', flexWrap: 'wrap', gap: espaces.s },
+  tuile: {
+    // Trois par rangee a 390 points, avec les deux interstices de 8 : (358 - 16) / 3.
+    width: '31.5%', flexGrow: 1, minHeight: 104,
+    backgroundColor: couleurs.surface, borderRadius: 14, padding: espaces.m,
+    borderWidth: 1, borderColor: couleurs.bord, alignItems: 'center', gap: espaces.s,
   },
-  lienCarteTexte: { fontSize: texte.corps, fontWeight: '600', color: couleurs.vert },
-  lienCarteAide: { fontSize: texte.minuscule, color: couleurs.texteSecondaire },
+  tuileIcone: {
+    width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center',
+  },
+  tuileBadge: {
+    position: 'absolute', top: -4, right: -6, minWidth: 20, height: 20, borderRadius: 10,
+    paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: couleurs.surface,
+  },
+  tuileBadgeTexte: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+  tuileLibelle: { fontSize: texte.petit, fontWeight: '600', color: couleurs.texte, textAlign: 'center' },
   titreSection: { fontSize: texte.sousTitre, fontWeight: '600', color: couleurs.texte, marginTop: espaces.s },
   vide: { fontSize: texte.corps, color: couleurs.texteSecondaire },
   ligne: {

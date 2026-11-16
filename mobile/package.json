@@ -12,6 +12,7 @@
     "empaqueter": "expo export --platform android"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-community/netinfo": "~12.0.1",
     "expo": "~58.0.25",
     "expo-auth-session": "~58.0.18",
