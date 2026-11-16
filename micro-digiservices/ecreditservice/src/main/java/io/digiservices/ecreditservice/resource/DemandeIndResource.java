@@ -108,11 +108,18 @@ public class DemandeIndResource {
             // EN_ATTENTE_DA -> affectation par le DA -> prise en charge par l'agent.
             // Le circuit est impose ici (cote serveur), quel que soit le payload.
             boolean isGroupe = CreditGroupeValidator.isGroupe(demandeIndividuel);
+            // Circuit accueil : groupe (toujours) ou particulier saisi par l'accueil (le front
+            // envoie validationState = EN_ATTENTE_DA). Le saisissant est identifie ICI, cote
+            // serveur, et non plus par un second appel du front (PUT marquer-reception) lance
+            // sans attente juste avant la navigation : quand ce second appel se perdait, la
+            // demande partait chez le DA sans saisie_par, et apres un renvoi en correction
+            // personne ne pouvait plus la corriger ni la rediligenter (dossier 10610, 16/11/2026).
+            boolean circuitAccueil = isGroupe || "EN_ATTENTE_DA".equals(demandeIndividuel.getValidationState());
             User saisissant = null;
-            if (isGroupe) {
-                // Meme securite que le particulier : la saisie d'une demande groupe est
-                // reservee a la fonction accueil (role AGENT_ACCUEIL, ou AGENT_CREDIT
-                // avec fonction ACCUEIL activee par le DA)
+            if (circuitAccueil) {
+                // La reception d'une demande est reservee a la fonction accueil (role AGENT_ACCUEIL,
+                // ou AGENT_CREDIT avec fonction ACCUEIL activee par le DA) : mieux vaut refuser la
+                // saisie que de creer une demande orpheline.
                 saisissant = authentication != null ? userClient.getUserByUuid(authentication.getName()) : null;
                 requireFonctionAccueil(saisissant);
                 demandeIndividuel.setValidationState("EN_ATTENTE_DA");
@@ -136,9 +143,10 @@ public class DemandeIndResource {
 
             membreSaf.marquer(result.getDemandeId(), verifications);
 
-            if (isGroupe && saisissant != null) {
+            if (circuitAccueil && saisissant != null) {
                 // Trace du saisissant (saisie_par) : indispensable au retour accueil
-                // (annulation DA -> CORRECTION_ACCUEIL -> rediligence par le saisissant)
+                // (annulation DA -> CORRECTION_ACCUEIL -> rediligence par le saisissant).
+                // Le PUT marquer-reception que le front envoie encore ensuite est idempotent.
                 workflowService.marquerReception(result.getDemandeId(), saisissant.getUserId(),
                         saisissant.getFirstName() + " " + saisissant.getLastName());
             }
@@ -204,7 +212,7 @@ public class DemandeIndResource {
                 && workflowService.getMesFonctions(user.getUserId()).contains("ACCUEIL")) {
             return;
         }
-        throw new ApiException("La saisie d'une demande groupe est reservee aux agents d'accueil");
+        throw new ApiException("La reception d'une demande (circuit accueil) est reservee aux agents d'accueil");
     }
 
     private void validateNatureClient(DemandeIndividuel demande) {
