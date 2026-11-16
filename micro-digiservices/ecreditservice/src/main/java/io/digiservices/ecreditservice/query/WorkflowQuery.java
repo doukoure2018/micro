@@ -1029,7 +1029,10 @@ public class WorkflowQuery {
             UPDATE demandeindividuel
             SET validation_state = 'CORRECTION_ACCUEIL',
                 motif_annulation_da = :motif,
-                date_annulation_da = CURRENT_TIMESTAMP
+                date_annulation_da = CURRENT_TIMESTAMP,
+                saisie_par = COALESCE(saisie_par, agent_credit_affecte),
+                saisie_par_role = CASE WHEN saisie_par IS NULL AND agent_credit_affecte IS NOT NULL
+                                       THEN 'AGENT_CREDIT' ELSE saisie_par_role END
             WHERE demandeindividuel_id = :demandeId
               AND validation_state IN ('EN_ATTENTE_DA', 'AFFECTEE')
             """;
