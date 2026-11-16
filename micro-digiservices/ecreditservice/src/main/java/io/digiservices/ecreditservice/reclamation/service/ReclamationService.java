@@ -15,6 +15,7 @@ import io.digiservices.ecreditservice.reclamation.repository.ReclamationReposito
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
 import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
+import io.digiservices.ecreditservice.service.HabilitationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -64,6 +65,7 @@ public class ReclamationService {
     private final AlerteJournalRepository journal;
     private final ApplicationEventPublisher publisher;
     private final UserClient userClient;
+    private final HabilitationService habilitations;
 
     // ------------------------------------------------------------------ les catégories
 
@@ -266,20 +268,19 @@ public class ReclamationService {
     }
 
     /**
-     * Qui peut traiter : exactement ceux que la rubrique désigne. On interroge la liste des
-     * porteurs plutôt que de deviner à partir du rôle — c'est la même source que les
-     * destinataires du courriel, donc jamais un destinataire qui ne pourrait pas répondre.
+     * Qui peut traiter : ceux à qui la matrice d'habilitation accorde la rubrique.
+     *
+     * <p>C'est la barrière serveur habituelle, et non la liste des destinataires du courriel.
+     * La différence compte : cette liste exige une adresse e-mail, et un directeur dont la
+     * fiche n'en porte pas doit quand même pouvoir répondre. Les deux restent commandées par
+     * la même rubrique — qui reçoit et qui répond ne divergent pas pour autant.</p>
      */
     private User exigerPorteurDeLaRubrique(String uuid) {
         User user = userClient.getUserByUuid(uuid);
         if (user == null) {
             throw new ApiException("Utilisateur non identifie");
         }
-        boolean porteur = destinataires.porteursParRoleOuDepartement(RUBRIQUE).stream()
-                .anyMatch(d -> user.getUserId().equals(d.userId()));
-        if (!porteur) {
-            throw new ApiException("Acces reserve aux directions destinataires des reclamations");
-        }
+        habilitations.exiger(uuid, RUBRIQUE);
         return user;
     }
 

@@ -13,6 +13,7 @@ import io.digiservices.ecreditservice.reclamation.service.ReclamationService;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
 import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
+import io.digiservices.ecreditservice.service.HabilitationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,9 +29,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -54,9 +57,11 @@ class ReclamationTerrainTest {
     private final AlerteJournalRepository journal = mock(AlerteJournalRepository.class);
     private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
     private final UserClient userClient = mock(UserClient.class);
+    private final HabilitationService habilitations = mock(HabilitationService.class);
 
     private final ReclamationService service =
-            new ReclamationService(repository, destinataires, journal, publisher, userClient);
+            new ReclamationService(repository, destinataires, journal, publisher, userClient,
+                    habilitations);
 
     @BeforeEach
     void unAgentEtSixDirections() {
@@ -165,9 +170,11 @@ class ReclamationTerrainTest {
     }
 
     @Test
-    @DisplayName("qui n'est pas destinataire de la rubrique ne traite pas")
+    @DisplayName("qui ne porte pas la rubrique ne traite pas, quel que soit son role")
     void seulsLesPorteursTraitent() {
-        compte(92L, "AGENT_CREDIT");   // l'agent n'est pas dans la liste des porteurs
+        // La matrice d'habilitation decide, et elle seule : c'est la barriere serveur habituelle.
+        doThrow(new ApiException("Vous n'avez pas accès à cet écran"))
+                .when(habilitations).exiger(anyString(), eq(ReclamationService.RUBRIQUE));
 
         assertThrows(ApiException.class, () -> service.prendreEnCharge(UUID_AGENT, 77L));
         assertThrows(ApiException.class, () -> service.repondre(UUID_AGENT, 77L, "C'est regle"));
@@ -175,9 +182,23 @@ class ReclamationTerrainTest {
     }
 
     @Test
+    @DisplayName("un porteur SANS adresse e-mail peut repondre : il ne recoit pas, il traite")
+    void unPorteurSansAdresseRepond() {
+        compte(2L, "MANAGER");
+        // Volontairement absent de la liste des destinataires (elle exige une adresse) :
+        // l'autorisation ne doit PAS en dependre.
+        when(destinataires.porteursParRoleOuDepartement(anyString())).thenReturn(List.of());
+        when(repository.repondre(anyLong(), anyLong(), anyString())).thenReturn(1);
+
+        service.repondre(UUID_AGENT, 77L, "Le guichet a rouvert mardi");
+
+        verify(repository).repondre(eq(77L), eq(2L), anyString());
+    }
+
+    @Test
     @DisplayName("une reponse vide est refusee : l'agent doit savoir ce qui lui est repondu")
     void uneReponseVideEstRefusee() {
-        compte(2L, "MANAGER");   // present dans la liste des porteurs
+        compte(2L, "MANAGER");
 
         assertThrows(ApiException.class, () -> service.repondre(UUID_AGENT, 77L, "  "));
         verify(repository, never()).repondre(anyLong(), anyLong(), anyString());
