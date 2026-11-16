@@ -60,6 +60,14 @@
         {
           "color": "#1F6B45"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "# WorkManager tient son etat dans une base Room generee a la compilation.\n# R8 supprimait le constructeur sans argument de WorkDatabase_Impl, et l'application\n# mourait au demarrage avant meme son premier ecran :\n#   NoSuchMethodException: androidx.work.impl.WorkDatabase_Impl.<init> []\n# expo-background-task repose sur WorkManager : la regle est donc vitale ici.\n-keepclassmembers class * extends androidx.room.RoomDatabase { public <init>(); }\n-keep class androidx.work.impl.WorkDatabase_Impl { *; }\n-keep,allowobfuscation class * extends androidx.work.Worker\n-keep,allowobfuscation class * extends androidx.work.InputMerger"
+          }
+        }
       ]
     ],
     "experiments": {
