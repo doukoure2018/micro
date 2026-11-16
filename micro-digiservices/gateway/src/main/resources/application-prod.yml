@@ -61,3 +61,23 @@ server:
 
 jwks:
   uri: http://authorizationserver:8080/auth/oauth2/jwks
+
+# Bilan de sante : la sonde Docker interroge /actuator/health/liveness (etat de vie de l'application,
+# independant des bases et des services distants) ; /actuator/health agrege tout et peut etre DOWN
+# sans que le service soit en panne (base SAF derriere le VPN, Kafka...).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
