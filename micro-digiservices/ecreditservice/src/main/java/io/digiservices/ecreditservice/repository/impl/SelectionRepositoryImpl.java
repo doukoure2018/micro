@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.repository.impl;
 import io.digiservices.ecreditservice.dto.Selection;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.SelectionRepository;
+import io.digiservices.ecreditservice.service.FileStorageService;
 import io.digiservices.ecreditservice.utils.FileStorageConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ import static org.springframework.web.servlet.support.ServletUriComponentsBuilde
 public class SelectionRepositoryImpl implements SelectionRepository {
     private final JdbcClient jdbcClient;
     private final FileStorageConfig fileStorageConfig;
+    private final FileStorageService stockage;
 
 
     @Override
@@ -213,9 +215,16 @@ public class SelectionRepositoryImpl implements SelectionRepository {
 
             log.info("🎯 SAVING FILE TO: {}", targetLocation.toAbsolutePath());
 
-            // Save with REPLACE_EXISTING
-            try (InputStream inputStream = file.getInputStream()) {
-                Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            // La piece passe par la regle de depot (V160), comme toutes les autres voies :
+            // photo ramenee a 1600 px, PDF dont les images sont reduites, le reste intact.
+            // Jusqu'au 16/11/2026 cette voie ecrivait a cru, et portait 94 % des octets deposes.
+            byte[] allege = stockage.alleger(file, fileExtension);
+            if (allege != null) {
+                Files.write(targetLocation, allege);
+            } else {
+                try (InputStream inputStream = file.getInputStream()) {
+                    Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+                }
             }
 
             // Verify the file was saved

@@ -76,15 +76,8 @@ public class FileStorageService {
 
         try {
             Path targetLocation = this.fileStorageLocation.resolve(uniqueFileName);
-            // V160 : les photos sont redimensionnées au dépôt (voir ImageOptimizer). Les autres
-            // formats, et toute image que l'optimiseur n'a pas su traiter, sont copiés tels quels.
-            byte[] contenu = imageOptimizer.optimiser(file, fileExtension);
+            byte[] contenu = alleger(file, fileExtension);
             if (contenu != null) {
-                // Les PDF deposes sont des photographies encapsulees : leurs images internes
-                // sont reduites de la meme facon (voir PdfOptimizer).
-                if ("pdf".equalsIgnoreCase(fileExtension)) {
-                    contenu = pdfOptimizer.optimiser(contenu, originalFileName);
-                }
                 Files.write(targetLocation, contenu);
             } else {
                 Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
@@ -96,6 +89,34 @@ public class FileStorageService {
         } catch (IOException e) {
             throw new RuntimeException("Erreur lors du stockage du fichier: " + originalFileName, e);
         }
+    }
+
+    /**
+     * Ce qu'il faut ecrire sur le disque pour ce fichier : la version allegee, ou {@code null}
+     * pour « copie telle quelle ».
+     *
+     * <p>C'est la SEULE definition de la regle de depot (V160) : photos ramenees a 1600 px par
+     * {@link ImageOptimizer}, PDF dont les images encapsulees sont reduites par
+     * {@link PdfOptimizer}, tout le reste intact. Le 16/11/2026, on a mesure que la voie de
+     * depot des pieces du dossier ({@code SelectionRepositoryImpl}) ecrivait les fichiers a cru,
+     * a cote de cette regle : 94 % des octets deposes en trente jours y echappaient, PDF de
+     * 4,7 Mo et JPG de 2,3 Mo la ou la regle donne des JPG de 440 Ko. Toute voie de depot doit
+     * passer par ici — c'est la raison d'etre de cette methode publique.</p>
+     *
+     * @param extension sans le point, en minuscules ou non ; vide si inconnue
+     */
+    public byte[] alleger(MultipartFile fichier, String extension) {
+        String ext = extension == null ? "" : extension.replaceFirst("^\\.", "").toLowerCase();
+        byte[] contenu = imageOptimizer.optimiser(fichier, ext);
+        if (contenu == null) {
+            return null;
+        }
+        // Les PDF deposes sont des photographies encapsulees : leurs images internes sont
+        // reduites de la meme facon (voir PdfOptimizer).
+        if ("pdf".equals(ext)) {
+            return pdfOptimizer.optimiser(contenu, fichier.getOriginalFilename());
+        }
+        return contenu;
     }
 
     public List<Map<String, Object>> storeFiles(MultipartFile[] files) {
