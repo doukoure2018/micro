@@ -29,6 +29,9 @@ class PdfOptimizerTest {
         ReflectionTestUtils.setField(o, "tailleMin", 800_000L);
         ReflectionTestUtils.setField(o, "tailleMax", 30_000_000L);
         ReflectionTestUtils.setField(o, "pagesMax", 30);
+        // Le garde-fou memoire est un int : non initialise il vaut 0, et toute image depasse
+        // « 0 Mpx » — le test etait rouge depuis l'ajout du garde-fou, pour cette seule raison.
+        ReflectionTestUtils.setField(o, "megapixelsMax", 50);
         return o;
     }
 
