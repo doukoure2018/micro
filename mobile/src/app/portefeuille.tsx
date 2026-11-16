@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Link, useFocusEffect } from 'expo-router';
 import type { CreditPortefeuille } from '@/api/types';
 import { portefeuilleLocal } from '@/db/visites';
@@ -13,7 +14,9 @@ export default function Portefeuille() {
   const [credits, setCredits] = useState<CreditPortefeuille[]>([]);
   const [filtre, setFiltre] = useState<Filtre>('RETARD');
   const [recherche, setRecherche] = useState('');
-  const [typeCredit, setTypeCredit] = useState<string | null>(null);
+  // Plusieurs types a la fois : « agricole ET maraichage » est une tournee, pas deux.
+  const [typesChoisis, setTypesChoisis] = useState<string[]>([]);
+  const [choixOuvert, setChoixOuvert] = useState(false);
 
   useFocusEffect(useCallback(() => {
     if (!estOuverte()) return;
@@ -22,8 +25,13 @@ export default function Portefeuille() {
 
   // Le portefeuille, c'est ce que SAF porte ; les affectations dont SAF n'a plus le credit
   // vivent dans leur propre onglet, visibles mais hors des comptes.
-  const portefeuille = useMemo(() => credits.filter((c) => !c.horsCreditsVivants), [credits]);
-  const clos = useMemo(() => credits.filter((c) => c.horsCreditsVivants), [credits]);
+  const tousVivants = useMemo(() => credits.filter((c) => !c.horsCreditsVivants), [credits]);
+  const duType = (c: CreditPortefeuille) =>
+    typesChoisis.length === 0 || (c.produit !== null && typesChoisis.includes(c.produit));
+  // Le type s'applique AVANT les onglets : « Retard · 12 » doit compter les retards DU TYPE
+  // choisi, sinon le chiffre de l'onglet et la liste en dessous ne parlent pas du meme chose.
+  const portefeuille = useMemo(() => tousVivants.filter(duType), [tousVivants, typesChoisis]);
+  const clos = useMemo(() => credits.filter((c) => c.horsCreditsVivants && duType(c)), [credits, typesChoisis]);
   const enRetard = useMemo(() => portefeuille.filter((c) => (c.joursRetard ?? 0) > 0), [portefeuille]);
   const aEcheance = useMemo(
     () => portefeuille.filter((c) => (c.joursRetard ?? 0) <= 0 && c.prochaineEcheance), [portefeuille]);
@@ -44,12 +52,19 @@ export default function Portefeuille() {
    * rien a faire dans ses filtres.
    */
   const typesCredit = useMemo(() => {
-    const compte = new Map<string, number>();
-    for (const c of portefeuille) {
-      if (c.produit) compte.set(c.produit, (compte.get(c.produit) ?? 0) + 1);
+    const parType = new Map<string, { n: number; retard: number; encours: number }>();
+    for (const c of tousVivants) {
+      if (!c.produit) continue;
+      const t = parType.get(c.produit) ?? { n: 0, retard: 0, encours: 0 };
+      t.n += 1;
+      if ((c.joursRetard ?? 0) > 0) t.retard += 1;
+      t.encours += c.encours ?? 0;
+      parType.set(c.produit, t);
     }
-    return [...compte.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [portefeuille]);
+    return [...parType.entries()]
+      .map(([type, t]) => ({ type, ...t }))
+      .sort((a, b) => b.n - a.n || a.type.localeCompare(b.type));
+  }, [tousVivants]);
 
   /**
    * Une recherche porte sur TOUT le portefeuille, quel que soit l'onglet ouvert. L'agent qui
@@ -57,20 +72,29 @@ export default function Portefeuille() {
    * parce que ce membre est a jour serait lui dire qu'il n'existe pas.
    */
   const visibles = useMemo(() => {
-    // Le type de credit s'applique PAR-DESSUS l'onglet et la recherche : « mes credits
-    // agricoles en retard » est une question que l'agent se pose vraiment.
-    const parType = (liste: CreditPortefeuille[]) =>
-      typeCredit ? liste.filter((c) => c.produit === typeCredit) : liste;
+    // La recherche ignore l'onglet mais respecte le type : chercher « Camara » dans ses
+    // credits agricoles est une question precise, l'ecran y repond precisement.
     if (cherche) {
       const q = cleDeRecherche(recherche);
-      return parType(credits.filter((c) => cleDeRecherche(aChercher(c)).includes(q)));
+      return credits.filter((c) => duType(c) && cleDeRecherche(aChercher(c)).includes(q));
     }
-    if (filtre === 'RETARD') return parType(enRetard);
-    if (filtre === 'ECHEANCE') return parType(aEcheance);
-    if (filtre === 'SANS_ECHEANCE') return parType(sansEcheance);
-    if (filtre === 'CLOS') return parType(clos);
-    return parType(portefeuille);
-  }, [cherche, filtre, recherche, typeCredit, credits, portefeuille, clos, enRetard, aEcheance, sansEcheance]);
+    if (filtre === 'RETARD') return enRetard;
+    if (filtre === 'ECHEANCE') return aEcheance;
+    if (filtre === 'SANS_ECHEANCE') return sansEcheance;
+    if (filtre === 'CLOS') return clos;
+    return portefeuille;
+  }, [cherche, filtre, recherche, typesChoisis, credits, portefeuille, clos, enRetard, aEcheance, sansEcheance]);
+
+  function basculerType(type: string) {
+    setTypesChoisis((avant) =>
+      avant.includes(type) ? avant.filter((t) => t !== type) : [...avant, type]);
+  }
+
+  const resumeTypes = typesChoisis.length === 0
+    ? 'Tous les types'
+    : typesChoisis.length === 1
+      ? libelleType(typesChoisis[0] ?? '')
+      : `${typesChoisis.length} types`;
 
   return (
     <View style={s.page}>
@@ -89,16 +113,73 @@ export default function Portefeuille() {
       </View>
 
       {typesCredit.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={s.types} keyboardShouldPersistTaps="handled">
-          <Puce actif={typeCredit === null} libelle={`Tous les types · ${portefeuille.length}`}
-                surAppui={() => setTypeCredit(null)} />
-          {typesCredit.map(([type, n]) => (
-            <Puce key={type} actif={typeCredit === type} libelle={`${libelleType(type)} · ${n}`}
-                  surAppui={() => setTypeCredit(typeCredit === type ? null : type)} />
-          ))}
-        </ScrollView>
+        <View style={s.typeLigne}>
+          <Pressable accessibilityRole="button" onPress={() => setChoixOuvert(true)}
+                     style={[s.typeBouton, typesChoisis.length > 0 && s.typeBoutonActif]}>
+            <Ionicons name="filter-outline" size={16}
+                      color={typesChoisis.length > 0 ? '#FFFFFF' : couleurs.vert} />
+            <Text style={[s.typeBoutonTexte, typesChoisis.length > 0 && s.typeBoutonTexteActif]}
+                  numberOfLines={1}>
+              {resumeTypes}
+            </Text>
+            <Ionicons name="chevron-down" size={16}
+                      color={typesChoisis.length > 0 ? '#FFFFFF' : couleurs.vert} />
+          </Pressable>
+          {typesChoisis.length > 0 ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Retirer le filtre de type"
+                       onPress={() => setTypesChoisis([])} style={s.typeEffacer}>
+              <Ionicons name="close" size={18} color={couleurs.texteSecondaire} />
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
+
+      <Modal visible={choixOuvert} transparent animationType="slide"
+             onRequestClose={() => setChoixOuvert(false)}>
+        <Pressable style={s.voile} onPress={() => setChoixOuvert(false)} />
+        <View style={s.feuille}>
+          <View style={s.feuilleEntete}>
+            <Text style={s.feuilleTitre}>Types de credit</Text>
+            <Text style={s.feuilleAide}>Plusieurs choix possibles</Text>
+          </View>
+          {typesCredit.map((t) => {
+            const choisi = typesChoisis.includes(t.type);
+            return (
+              <Pressable key={t.type} accessibilityRole="checkbox"
+                         accessibilityState={{ checked: choisi }}
+                         onPress={() => basculerType(t.type)} style={s.typeOption}>
+                <Ionicons name={choisi ? 'checkbox' : 'square-outline'} size={24}
+                          color={choisi ? couleurs.vert : couleurs.texteSecondaire} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.typeOptionNom}>{libelleType(t.type)}</Text>
+                  <Text style={s.typeOptionDetail}>
+                    {t.n} credit{t.n > 1 ? 's' : ''}
+                    {t.retard > 0 ? ` · ${t.retard} en retard` : ''}
+                    {t.encours > 0 ? ` · ${montant(t.encours)}` : ''}
+                  </Text>
+                </View>
+                {t.retard > 0 ? (
+                  <Text style={[s.typeOptionRetard, { color: couleurRetard(30) }]}>
+                    {Math.round((t.retard / t.n) * 100)} %
+                  </Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+          <View style={s.feuillePied}>
+            <Pressable accessibilityRole="button" onPress={() => setTypesChoisis([])}
+                       style={s.feuilleSecondaire}>
+              <Text style={s.feuilleSecondaireTexte}>Tout effacer</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => setChoixOuvert(false)}
+                       style={s.feuillePrincipal}>
+              <Text style={s.feuillePrincipalTexte}>
+                Voir {portefeuille.length} credit{portefeuille.length > 1 ? 's' : ''}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       {/*
         Le total doit se retrouver dans ses parties. « Retard » et « A venir » ne couvrent pas
@@ -144,8 +225,8 @@ export default function Portefeuille() {
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <Text style={s.vide}>
-            {typeCredit && !cherche
-              ? `Aucun credit de type « ${libelleType(typeCredit)} » dans cette vue.`
+            {typesChoisis.length > 0 && !cherche
+              ? `Aucun credit de ce type dans cette vue (${resumeTypes}).`
               : cherche
               ? `Aucun societaire ne correspond a « ${recherche.trim()} » dans votre portefeuille.`
               : filtre === 'CLOS'
@@ -207,15 +288,6 @@ function libelleType(type: string): string {
   return mots.charAt(0).toUpperCase() + mots.slice(1);
 }
 
-function Puce({ actif, libelle, surAppui }:
-  { actif: boolean; libelle: string; surAppui: () => void }) {
-  return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: actif }}
-               onPress={surAppui} style={[s.puce, actif && s.puceActive]}>
-      <Text style={[s.puceTexte, actif && s.puceTexteActif]} numberOfLines={1}>{libelle}</Text>
-    </Pressable>
-  );
-}
 
 /** Ce dans quoi la recherche cherche : le nom d'abord, mais aussi les deux numeros. */
 function aChercher(c: CreditPortefeuille): string {
@@ -240,14 +312,42 @@ const s = StyleSheet.create({
   ongletActif: { backgroundColor: couleurs.surface },
   ongletTexte: { fontSize: texte.petit, color: '#3D4B44' },
   ongletTexteActif: { fontWeight: '600', color: couleurs.texte },
-  types: { gap: espaces.s, paddingVertical: 2 },
-  puce: {
-    minHeight: 36, paddingHorizontal: espaces.m, justifyContent: 'center', borderRadius: 18,
-    borderWidth: 1, borderColor: couleurs.bord, backgroundColor: couleurs.surface,
+  typeLigne: { flexDirection: 'row', alignItems: 'center', gap: espaces.s },
+  typeBouton: {
+    flexDirection: 'row', alignItems: 'center', gap: espaces.s, minHeight: 40,
+    paddingHorizontal: espaces.m, borderRadius: 20, borderWidth: 1, borderColor: couleurs.bord,
+    backgroundColor: couleurs.surface, flexShrink: 1,
   },
-  puceActive: { backgroundColor: couleurs.vert, borderColor: couleurs.vert },
-  puceTexte: { fontSize: texte.minuscule, color: couleurs.texte },
-  puceTexteActif: { color: '#FFFFFF', fontWeight: '600' },
+  typeBoutonActif: { backgroundColor: couleurs.vert, borderColor: couleurs.vert },
+  typeBoutonTexte: { fontSize: texte.petit, color: couleurs.vert, fontWeight: '600', flexShrink: 1 },
+  typeBoutonTexteActif: { color: '#FFFFFF' },
+  typeEffacer: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  voile: { flex: 1, backgroundColor: 'rgba(21, 32, 27, 0.45)' },
+  feuille: {
+    backgroundColor: couleurs.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    padding: espaces.l, paddingBottom: espaces.xxl, gap: espaces.xs,
+  },
+  feuilleEntete: { marginBottom: espaces.s },
+  feuilleTitre: { fontSize: texte.sousTitre, fontWeight: '600', color: couleurs.texte },
+  feuilleAide: { fontSize: texte.minuscule, color: couleurs.texteSecondaire },
+  typeOption: {
+    flexDirection: 'row', alignItems: 'center', gap: espaces.m, minHeight: 56,
+    paddingVertical: espaces.xs, borderBottomWidth: 1, borderBottomColor: couleurs.bord,
+  },
+  typeOptionNom: { fontSize: texte.corps, fontWeight: '600', color: couleurs.texte },
+  typeOptionDetail: { fontSize: texte.minuscule, color: couleurs.texteSecondaire, marginTop: 1 },
+  typeOptionRetard: { fontSize: texte.petit, fontWeight: '700' },
+  feuillePied: { flexDirection: 'row', gap: espaces.s, marginTop: espaces.m },
+  feuilleSecondaire: {
+    flex: 1, minHeight: 48, borderRadius: 12, borderWidth: 1, borderColor: couleurs.bord,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  feuilleSecondaireTexte: { fontSize: texte.petit, color: couleurs.texte, fontWeight: '600' },
+  feuillePrincipal: {
+    flex: 1.4, minHeight: 48, borderRadius: 12, backgroundColor: couleurs.vert,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  feuillePrincipalTexte: { fontSize: texte.petit, color: '#FFFFFF', fontWeight: '600' },
   reste: {
     backgroundColor: couleurs.ambreClair, borderRadius: 10, paddingHorizontal: espaces.m,
     minHeight: 40, justifyContent: 'center', borderWidth: 1, borderColor: couleurs.ambreClair,
