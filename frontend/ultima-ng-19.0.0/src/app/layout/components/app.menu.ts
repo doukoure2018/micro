@@ -921,11 +921,6 @@ export class AppMenu {
                     routerLink: ['/dashboards/repertoires-sms']
                 },
                 {
-                    label: 'Désinscriptions SMS',
-                    icon: 'pi pi-fw pi-ban',
-                    routerLink: ['/dashboards/desinscriptions-sms']
-                },
-                {
                     label: 'Actualiser décodeur',
                     icon: 'pi pi-fw pi-sync',
                     routerLink: ['/dashboards/actualiser-decodeur']
