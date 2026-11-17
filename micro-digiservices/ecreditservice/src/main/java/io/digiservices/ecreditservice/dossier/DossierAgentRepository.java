@@ -81,6 +81,20 @@ public class DossierAgentRepository {
     }
 
     /**
+     * À qui ce dossier appartient-il ? Une décision du DA doit arriver à l'agent qui a saisi
+     * le dossier, et c'est l'affectation qui le dit — pas l'auteur de la ligne, qui peut être
+     * l'accueil.
+     */
+    public java.util.Optional<Long> agentDe(Long demandeId) {
+        return jdbcClient.sql("""
+                        SELECT agent_credit_affecte FROM demandeindividuel
+                         WHERE demandeindividuel_id = :id AND agent_credit_affecte IS NOT NULL
+                        """)
+                .param("id", demandeId)
+                .query(Long.class).optional();
+    }
+
+    /**
      * Depuis combien de jours le dossier n'a pas bougé. C'est ce chiffre, et non l'état, qui
      * dit à l'agent lequel de ses dossiers s'est enlisé.
      */

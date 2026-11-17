@@ -29,7 +29,8 @@
         "RECEIVE_BOOT_COMPLETED"
       ],
       "adaptiveIcon": {
-        "backgroundColor": "#1F6B45"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       }
     },
     "plugins": [
@@ -68,6 +69,15 @@
             "extraProguardRules": "# WorkManager tient son etat dans une base Room generee a la compilation.\n# R8 supprimait le constructeur sans argument de WorkDatabase_Impl, et l'application\n# mourait au demarrage avant meme son premier ecran :\n#   NoSuchMethodException: androidx.work.impl.WorkDatabase_Impl.<init> []\n# expo-background-task repose sur WorkManager : la regle est donc vitale ici.\n-keepclassmembers class * extends androidx.room.RoomDatabase { public <init>(); }\n-keep class androidx.work.impl.WorkDatabase_Impl { *; }\n-keep,allowobfuscation class * extends androidx.work.Worker\n-keep,allowobfuscation class * extends androidx.work.InputMerger"
           }
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
       ]
     ],
     "experiments": {
@@ -75,6 +85,10 @@
     },
     "extra": {
       "router": {}
+    },
+    "icon": "./assets/icon.png",
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }

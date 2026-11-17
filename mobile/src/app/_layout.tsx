@@ -7,9 +7,10 @@ import { AppState } from 'react-native';
 import { cleDeLaBase, jetonValide, profilGarde } from '@/auth/session';
 import { ouvrir } from '@/db/base';
 import { enregistrerTacheDeFond } from '@/sync/tacheDeFond';
-import { declarerLAppareil } from '@/sync/notifications';
+import { declarerLAppareil, surToucheDUneNotification } from '@/sync/notifications';
 import { memoriserLeJetonDeLAppareil } from '@/sync/appareil';
 import { synchroniser } from '@/sync/moteur';
+import { cheminDeLEcran } from '@/ui/ecrans';
 import { couleurs } from '@/ui/theme';
 
 /**
@@ -56,6 +57,21 @@ export default function Ossature() {
     }
   }, [pret, connecte, segments, router]);
 
+  /**
+   * Toucher une notification doit mener a l'ecran dont elle parle, sinon elle ne sert a rien :
+   * l'agent qui lit « 7 echeances dans 3 jours » sur son ecran verrouille veut la liste, pas
+   * l'accueil. L'ecran voyage dans la notification ; s'il est inconnu, on ne bouge pas.
+   */
+  useEffect(() => {
+    // Apres la connexion seulement : ouvrir un ecran qu'on ne peut pas encore lire ferait
+    // un aller-retour par l'ecran de connexion sous les yeux de l'agent.
+    if (!connecte) return;
+    return surToucheDUneNotification((ecran) => {
+      const chemin = cheminDeLEcran(ecran);
+      if (chemin) router.push(chemin as never);
+    });
+  }, [connecte, router]);
+
   useEffect(() => {
     if (!connecte) return;
     const surReseau = NetInfo.addEventListener((etat) => {
@@ -100,6 +116,7 @@ export default function Ossature() {
         <Stack.Screen name="equipe" options={{ title: 'Mon equipe' }} />
         <Stack.Screen name="dossiers" options={{ title: 'Mes dossiers' }} />
         <Stack.Screen name="reclamations" options={{ title: 'Reclamations' }} />
+        <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="agri/index" options={{ title: 'Collecte agricole' }} />
         <Stack.Screen name="agri/[cle]" options={{ title: 'Parcelle' }} />
       </Stack>

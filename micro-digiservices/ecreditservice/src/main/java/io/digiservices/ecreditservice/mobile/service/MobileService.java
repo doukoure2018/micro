@@ -27,6 +27,10 @@ import io.digiservices.ecreditservice.mobile.repository.MobileRepository.Identit
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteConnue;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository.VisiteCredit;
 import io.digiservices.ecreditservice.dossier.DossierAgentRepository;
+import io.digiservices.ecreditservice.notification.NotificationMobile;
+import io.digiservices.ecreditservice.notification.NotificationMobile.Journal;
+import io.digiservices.ecreditservice.notification.NotificationMobile.APublier;
+import io.digiservices.ecreditservice.notification.NotificationMobileService;
 import io.digiservices.ecreditservice.dossier.DossierAgentRepository.DossierVue;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
 import io.digiservices.ecreditservice.service.FileStorageService;
@@ -77,7 +81,7 @@ public class MobileService {
     private final PortefeuilleCreditPhotoRepository creditPhotoRepository;
     private final FileStorageService stockage;
     private final PerimetreSafService perimetreSafService;
-    private final ExpoPushService push;
+    private final NotificationMobileService notifications;
     private final DossierAgentRepository dossiers;
 
     /** Les rôles qui portent un téléphone : l'agent saisit, le directeur d'agence lit. */
@@ -296,6 +300,20 @@ public class MobileService {
                 a.nbVisites(), a.derniereVisiteAt(), a.nbA(), a.nbB(), a.nbC(), a.nbD());
     }
 
+    // --------------------------------------------------------------- mes notifications
+
+    /** Le centre de notifications : ce que l'agent a reçu, lu ou non. */
+    public Journal notifications(String uuid, int limite) {
+        User user = exigerCompteMobile(uuid);
+        return notifications.journal(user.getUserId(), limite);
+    }
+
+    /** Sans identifiants, tout le journal : c'est le bouton « Tout marquer lu ». */
+    public int marquerNotificationsLues(String uuid, List<Long> ids) {
+        User user = exigerCompteMobile(uuid);
+        return notifications.marquerLues(user.getUserId(), ids);
+    }
+
     // ------------------------------------------------------------------- mes dossiers
 
     /**
@@ -500,23 +518,16 @@ public class MobileService {
      * verrouillé. Et une notification perdue ne perd rien — la saisie, elle, est rangée.</p>
      */
     private void annoncerLaTransmission(User user, LotRecu lot, int acceptees, int refusees) {
-        if (lot == null || !lot.partiToutSeul() || acceptees + refusees == 0 || !push.estActif()) {
+        if (lot == null || !lot.partiToutSeul() || acceptees + refusees == 0) {
             return;
         }
-        try {
-            List<String> jetons = repository.jetonsActifs(user.getUserId());
-            if (jetons.isEmpty()) {
-                return;
-            }
-            String corps = acceptees + (acceptees > 1 ? " saisies transmises" : " saisie transmise")
-                    + (refusees > 0 ? ", " + refusees + " a corriger" : "");
-            var resultat = push.envoyer(jetons, "DIGI-CRG", corps,
-                    Map.of("ecran", refusees > 0 ? "synchronisation" : "accueil"));
-            resultat.jetonsMorts().forEach(j -> repository.desactiverAppareil(j, "JETON_PERIME"));
-        } catch (Exception e) {
-            // Une notification n'est jamais une raison de faire echouer une transmission.
-            log.warn("[MOBILE] notification non envoyee a l'agent {} : {}", user.getUserId(), e.getMessage());
-        }
+        String corps = acceptees + (acceptees > 1 ? " saisies transmises" : " saisie transmise")
+                + (refusees > 0 ? ", " + refusees + " a corriger" : "");
+        // Rangee dans le journal puis poussee : l'agent qui balaie la notification la
+        // retrouvera dans son centre de notifications.
+        notifications.publier(APublier.de(user.getUserId(), NotificationMobile.SYNCHRONISATION,
+                "Synchronisation terminee", corps,
+                refusees > 0 ? "synchronisation" : "accueil"));
     }
 
     private Long ecrire(VisiteRecue v, User user, Long appareilId, Long lotId, Set<String> affectes) {

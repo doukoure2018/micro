@@ -8,6 +8,9 @@ import io.digiservices.ecreditservice.enumeration.EventType;
 import io.digiservices.ecreditservice.event.Event;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository.Destinataire;
+import io.digiservices.ecreditservice.notification.NotificationMobile;
+import io.digiservices.ecreditservice.notification.NotificationMobile.APublier;
+import io.digiservices.ecreditservice.notification.NotificationMobileService;
 import io.digiservices.ecreditservice.repository.AlerteJournalRepository;
 import io.digiservices.ecreditservice.repository.CautionDigiRepository;
 import io.digiservices.ecreditservice.repository.CautionDigiRepository.CautionsClient;
@@ -72,6 +75,7 @@ public class PortefeuilleAlerteScheduler {
     /** La photo quotidienne du portefeuille a risque : les quatre tranches, et la memoire. */
     private final io.digiservices.ecreditservice.repository.PortefeuilleRisqueRepository risqueRepository;
     private final CautionDigiRepository cautions;
+    private final NotificationMobileService notifications;
 
     @Value("${portefeuille.alertes.actives:false}")
     private boolean actives;
@@ -82,6 +86,40 @@ public class PortefeuilleAlerteScheduler {
     /** Jours ouvres avant de relancer un signalement de numero reste sans prise en charge. */
     @Value("${signalement.telephone.jours.relance:5}")
     private int joursRelanceSignalement;
+
+    /**
+     * Au-dela, une promesse echue n'est plus rappelee : sans cette borne, l'agent lirait
+     * chaque matin le meme chiffre qui ne descend jamais, et finirait par ne plus le voir.
+     */
+    @Value("${portefeuille.alertes.promesses.fenetre-jours:30}")
+    private int fenetrePromesses;
+
+    // ============== Promesses echues, au telephone de l'agent (V215) ==============
+
+    /**
+     * Chaque jour a 08h50 GMT : les promesses dont la date est passee sans reglement constate.
+     *
+     * <p><b>Apres la photo de 08h40</b>, et c'est tout l'interet de l'heure : le « reglement
+     * constate » est lu dans la derniere mesure du credit (V210), que cette photo vient de
+     * rafraichir. Lance plus tot, le travail compterait comme impayee une echeance deja
+     * reglee la veille.</p>
+     *
+     * <p>Aucune lecture SAF ici : tout vient de digi. La notification part donc meme un jour
+     * ou le VPN bancaire est tombe — c'est la seule alerte du matin dans ce cas.</p>
+     */
+    @Scheduled(cron = "${portefeuille.alertes.cron-promesses:0 50 8 * * *}", zone = "GMT")
+    public void promessesAVerifier() {
+        if (!actives) {
+            return;
+        }
+        try {
+            int pousses = notifications.annoncerLesPromessesAVerifier(fenetrePromesses);
+            log.info("[ALERTES] Promesses a verifier : {} agents notifies", pousses);
+        } catch (Exception e) {
+            // Rien de vital : l'ecran du portefeuille montre les promesses de toute facon.
+            log.warn("[ALERTES] Promesses a verifier en echec : {}", e.getMessage());
+        }
+    }
 
     // ==================== Relance des signalements de numero (V156) ====================
 
@@ -143,10 +181,16 @@ public class PortefeuilleAlerteScheduler {
             impayes.forEach(i -> ajouter(clients, i.getCodCliente()));
             Map<String, CautionsClient> cautionsDuJour = lireCautions(clients);
             int envoyes = 0;
+            int pousses = 0;
             for (Destinataire d : destinataires.agentsCredit()) {
-                envoyes += envoyerDigest(d, "Votre point de service", echeances, impayes, cautionsDuJour) ? 1 : 0;
+                boolean concerne = envoyerDigest(d, "Votre point de service", echeances, impayes, cautionsDuJour);
+                envoyes += concerne ? 1 : 0;
+                // Le telephone recoit le MEME signal que le courriel, mais sans son detail :
+                // combien d'echeances, combien d'impayes, et rien d'autre (maquette du 12/11).
+                pousses += concerne && annoncerAuTelephone(d, echeances, impayes) ? 1 : 0;
             }
-            log.info("[ALERTES] Digest quotidien : {} e-mails publies aux agents", envoyes);
+            log.info("[ALERTES] Digest quotidien : {} e-mails publies aux agents, {} notifications mobiles",
+                    envoyes, pousses);
             int[] directeurs = envoyerSynthesesDirecteurs(echeances, impayes);
             journal.execution("DIGEST_QUOTIDIEN", "SUCCES", 1, echeances.size(), impayes.size(),
                     envoyes, directeurs[0], directeurs[1], directeurs[2],
@@ -236,6 +280,42 @@ public class PortefeuilleAlerteScheduler {
             log.warn("[ALERTES] Cautions digi indisponibles, digest envoye sans elles : {}", e.getMessage());
             return Map.of();
         }
+    }
+
+    /**
+     * L'alerte du matin sur le téléphone de l'agent.
+     *
+     * <p>Le courriel porte la liste nominative ; la notification ne porte que des nombres.
+     * Elle s'affiche sur un écran verrouillé, que n'importe qui lit par-dessus l'épaule de
+     * l'agent : ni nom de membre, ni montant, ni numéro de crédit. Le détail s'ouvre dans
+     * l'application, après déverrouillage — c'est la règle écrite sur la maquette du 12/11.</p>
+     *
+     * <p>Rendue indépendante du courriel : un agent sans adresse valable doit quand même
+     * recevoir son alerte, et l'echec de l'une ne doit pas emporter l'autre.</p>
+     */
+    private boolean annoncerAuTelephone(Destinataire d, List<EcheanceAvenirDto> echeances,
+                                        List<NouvelImpayeDto> impayes) {
+        if (d.userId() == null) {
+            return false;
+        }
+        long mesEcheances = echeances.stream().filter(e -> d.codesSaf().contains(e.getCodAgencia())).count();
+        long mesImpayes = impayes.stream().filter(i -> d.codesSaf().contains(i.getCodAgencia())).count();
+        if (mesEcheances == 0 && mesImpayes == 0) {
+            return false;
+        }
+        StringBuilder corps = new StringBuilder();
+        if (mesEcheances > 0) {
+            corps.append(mesEcheances).append(mesEcheances > 1 ? " echeances" : " echeance")
+                    .append(" dans ").append(joursAvantEcheance).append(" jours");
+        }
+        if (mesImpayes > 0) {
+            if (corps.length() > 0) {
+                corps.append(" · ");
+            }
+            corps.append(mesImpayes).append(mesImpayes > 1 ? " nouveaux impayes" : " nouvel impaye");
+        }
+        return notifications.publier(APublier.de(d.userId(), NotificationMobile.PORTEFEUILLE,
+                "Alertes du jour", corps.toString(), "portefeuille")) != null;
     }
 
     private boolean envoyerDigest(Destinataire d, String perimetre,

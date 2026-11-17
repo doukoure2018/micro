@@ -10,6 +10,9 @@ import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.FileReclam
 import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.ReclamationRecue;
 import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.ReclamationVue;
 import io.digiservices.ecreditservice.reclamation.dto.ReclamationDtos.SortReclamation;
+import io.digiservices.ecreditservice.notification.NotificationMobile;
+import io.digiservices.ecreditservice.notification.NotificationMobile.APublier;
+import io.digiservices.ecreditservice.notification.NotificationMobileService;
 import io.digiservices.ecreditservice.reclamation.repository.ReclamationRepository;
 import io.digiservices.ecreditservice.reclamation.repository.ReclamationRepository.Responsable;
 import io.digiservices.ecreditservice.repository.AlerteDestinatairesRepository;
@@ -66,6 +69,7 @@ public class ReclamationService {
     private final ApplicationEventPublisher publisher;
     private final UserClient userClient;
     private final HabilitationService habilitations;
+    private final NotificationMobileService notifications;
 
     // ------------------------------------------------------------------ les catégories
 
@@ -235,7 +239,11 @@ public class ReclamationService {
                     : "Deja prise en charge par " + actuelle.priseEnChargePar());
         }
         log.info("[RECLAMATION] {} prise en charge par {}", id, user.getUserId());
-        return repository.parId(id).orElseThrow();
+        ReclamationVue vue = repository.parId(id).orElseThrow();
+        // L'agent qui a signale apprend que quelqu'un s'en occupe : sans cela, il relance.
+        notifier(vue, "Reclamation prise en charge",
+                "Par " + direction(user) + " · votre signalement est suivi");
+        return vue;
     }
 
     public ReclamationVue repondre(String uuid, Long id, String reponse) {
@@ -251,7 +259,36 @@ public class ReclamationService {
                     : "Reponse impossible");
         }
         log.info("[RECLAMATION] {} traitee par {}", id, user.getUserId());
-        return repository.parId(id).orElseThrow();
+        ReclamationVue vue = repository.parId(id).orElseThrow();
+        notifier(vue, "Reponse a votre reclamation",
+                "Ouvrez l'application pour la lire");
+        return vue;
+    }
+
+    /**
+     * Previent l'auteur du signalement sur son telephone.
+     *
+     * <p>Ni l'objet de la reclamation ni la reponse n'entrent dans la notification : elles
+     * s'affichent sur un ecran verrouille et peuvent nommer un membre ou une agence. La
+     * notification dit qu'il y a quelque chose a lire ; l'application le montre.</p>
+     */
+    private void notifier(ReclamationVue vue, String titre, String corps) {
+        try {
+            Long auteur = repository.auteurDe(vue.id()).orElse(null);
+            if (auteur != null) {
+                notifications.publier(APublier.de(auteur, NotificationMobile.RECLAMATION,
+                        titre, corps, "reclamations"));
+            }
+        } catch (Exception e) {
+            // Le traitement est deja enregistre : une notification perdue ne l'annule pas.
+            log.warn("[RECLAMATION] {} : auteur non prevenu : {}", vue.id(), e.getMessage());
+        }
+    }
+
+    /** La direction qui s'en occupe, telle que l'agent la comprend. */
+    private static String direction(User user) {
+        String service = user.getService();
+        return service == null || service.isBlank() ? "une direction" : service;
     }
 
     // --------------------------------------------------------------------- le commun

@@ -5,6 +5,10 @@ import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.WorkflowApprovalRequest;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.dto.WorkflowRejetRequest;
+import io.digiservices.ecreditservice.dossier.DossierAgentRepository;
+import io.digiservices.ecreditservice.notification.NotificationMobile;
+import io.digiservices.ecreditservice.notification.NotificationMobile.APublier;
+import io.digiservices.ecreditservice.notification.NotificationMobileService;
 import io.digiservices.ecreditservice.service.WorkflowService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
@@ -26,6 +30,9 @@ public class WorkflowResource {
 
     private final WorkflowService workflowService;
     private final UserClient userClient;
+    /** Le téléphone de l'agent : une décision du DA ne doit pas attendre qu'il ouvre le web. */
+    private final NotificationMobileService notifications;
+    private final DossierAgentRepository dossiers;
 
     // ==================== AC ====================
 
@@ -89,6 +96,7 @@ public class WorkflowResource {
         var user = userClient.getUserByUuid(authentication.getName());
         String validatedBy = user.getFirstName() + " " + user.getLastName();
         workflowService.validerDA(demandeId, request.getAvis(), validatedBy);
+        annoncerALAgent(demandeId, "validé par le DA", "Transmis à la DR pour décision.");
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Demande validée par DA"),
                         "Demande validée DA avec succès", OK));
@@ -103,6 +111,7 @@ public class WorkflowResource {
         var user = userClient.getUserByUuid(authentication.getName());
         String validatedBy = user.getFirstName() + " " + user.getLastName();
         workflowService.rejeterDA(demandeId, request, validatedBy);
+        annoncerALAgent(demandeId, "rejeté par le DA", "Le motif est dans le dossier.");
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Demande rejetée par DA"),
                         "Demande rejetée DA", OK));
@@ -120,6 +129,7 @@ public class WorkflowResource {
         String renvoyePar = user.getFirstName() + " " + user.getLastName();
         String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
         workflowService.renvoyerAgent(demandeId, motif, renvoyePar);
+        annoncerALAgent(demandeId, "vous est renvoyé", "A corriger, puis a renvoyer au DA.");
         return ResponseEntity.ok(
                 getResponse(httpRequest, Map.of("message", "Demande renvoyée à l'agent"), "Demande renvoyée", OK));
     }
@@ -750,5 +760,28 @@ public class WorkflowResource {
         var result = workflowService.getAnnulationsAC(user.getUserId(), codUsuarios, user.getUsername());
         return ResponseEntity.ok(getResponse(httpRequest,
                 Map.of("workflowDemandes", result), "Annulations récupérées", OK));
+    }
+
+    /**
+     * Annonce au téléphone de l'agent la décision du DA sur SON dossier.
+     *
+     * <p>Pourquoi ici et non dans le service : la décision est écrite dans une transaction, et
+     * un envoi réseau n'a rien à y faire — il tiendrait la connexion de base le temps
+     * d'atteindre Expo. Ici, la décision est déjà acquise.</p>
+     *
+     * <p>Ni nom de membre ni montant : la notification s'affiche sur un écran verrouillé que
+     * n'importe qui lit par-dessus l'épaule de l'agent. Le numéro du dossier suffit à le
+     * retrouver, et le détail s'ouvre dans l'application.</p>
+     */
+    private void annoncerALAgent(Long demandeId, String titre, String corps) {
+        try {
+            dossiers.agentDe(demandeId).ifPresent(agent -> notifications.publier(
+                    APublier.de(agent, NotificationMobile.DOSSIER,
+                            "Dossier n° " + demandeId + " " + titre, corps, "dossiers")));
+        } catch (Exception e) {
+            // La décision est prise : une notification perdue ne doit rien emporter.
+            log.warn("[NOTIF] decision du DA non annoncee pour le dossier {} : {}",
+                    demandeId, e.getMessage());
+        }
     }
 }

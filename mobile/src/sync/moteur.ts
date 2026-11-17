@@ -2,7 +2,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { api, ErreurReseau, ErreurServeur } from '@/api/client';
 import { jetonValide } from '@/auth/session';
 import type {
-  CreditPortefeuille, DossierVue, EntreeReferentiel, LotTraite,
+  CreditPortefeuille, DossierVue, EntreeReferentiel, JournalNotifications, LotTraite,
 } from '@/api/types';
 import {
   aTransmettre, appliquerSort, appliquerSortReclamation, compterParEtat, majReferentiels,
@@ -14,6 +14,9 @@ import { jetonDeLAppareil } from '@/sync/appareil';
 import {
   appliquerSortAgri, parcellesATransmettre, recoltesATransmettre, visitesAgriATransmettre,
 } from '@/db/agri';
+import {
+  lecturesARemonter, lecturesRemontees, remplacerNotifications,
+} from '@/db/notifications';
 import { CLES, ecrireEtat, lireEtat } from '@/db/base';
 
 /**
@@ -281,7 +284,31 @@ async function rafraichirLaCopie(jeton: string): Promise<number> {
   } catch (e) {
     console.warn('[sync] dossiers non rafraichis :', e instanceof Error ? e.message : e);
   }
+
+  await rafraichirLesNotifications(jeton);
   return credits.length;
+}
+
+/**
+ * Le journal des notifications : les lectures de l'agent montent, le journal descend.
+ *
+ * <p>Dans cet ordre, et pas l'inverse : sinon la descente ecraserait la lecture faite hors
+ * connexion par l'etat que le serveur avait encore. Et comme tout le reste de la copie, un
+ * echec ici ne doit rien emporter — le portefeuille est deja range.</p>
+ */
+async function rafraichirLesNotifications(jeton: string): Promise<void> {
+  try {
+    const lues = await lecturesARemonter();
+    if (lues.length > 0) {
+      await api.post('/ecredit/mobile/notifications/lues', jeton, { ids: lues });
+      await lecturesRemontees(lues);
+    }
+    const journal = await api.get<{ journal: JournalNotifications }>(
+      '/ecredit/mobile/notifications', jeton);
+    await remplacerNotifications(journal?.journal?.notifications ?? []);
+  } catch (e) {
+    console.warn('[sync] notifications non rafraichies :', e instanceof Error ? e.message : e);
+  }
 }
 
 /** Ce que l'ecran de synchronisation affiche sans rien envoyer. */

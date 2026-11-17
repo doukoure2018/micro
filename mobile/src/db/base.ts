@@ -134,6 +134,24 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       cloture INTEGER NOT NULL DEFAULT 0
     );
 
+    -- Le journal des notifications, recopie du serveur. Une notification poussee s'efface
+    -- d'un balayage : c'est cette copie que l'agent relit, et elle s'ouvre sans reseau.
+    -- « lue » peut etre vraie ici avant de l'etre sur le serveur : l'agent lit hors
+    -- connexion, et la marque part a la synchronisation suivante.
+    CREATE TABLE IF NOT EXISTS notification (
+      id INTEGER PRIMARY KEY,
+      categorie TEXT NOT NULL,
+      titre TEXT NOT NULL,
+      corps TEXT NOT NULL,
+      ecran TEXT,
+      creee_at TEXT NOT NULL,
+      envoyee INTEGER NOT NULL DEFAULT 0,
+      lue INTEGER NOT NULL DEFAULT 0,
+      lue_a_remonter INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notification_date ON notification (creee_at DESC);
+
     CREATE TABLE IF NOT EXISTS referentiel (
       liste TEXT NOT NULL,
       code TEXT NOT NULL,
@@ -271,8 +289,9 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
  * 4 : la file des reclamations du terrain (15/11/2026).
  * 5 : la collecte agricole — parcelle, passages, recolte (15/11/2026).
  * 6 : la copie des dossiers de credit de l'agent (15/11/2026).
+ * 7 : le journal des notifications (17/11/2026).
  */
-const FORMAT_BASE = 6;
+const FORMAT_BASE = 7;
 
 /**
  * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des
@@ -287,6 +306,7 @@ async function rebatirLaCopieSiLeFormatAChange(db: SQLite.SQLiteDatabase): Promi
   await db.execAsync(`
     DROP TABLE IF EXISTS credit;
     DROP TABLE IF EXISTS dossier;
+    DROP TABLE IF EXISTS notification;
     PRAGMA user_version = ${FORMAT_BASE};
   `);
 }

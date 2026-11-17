@@ -72,7 +72,7 @@ class PhotoDeVisiteTest {
     private MobileService service() {
         return new MobileService(repository, userClient, saf, photoCredit, stockage,
                 mock(PerimetreSafService.class),
-                mock(io.digiservices.ecreditservice.mobile.service.ExpoPushService.class),
+                mock(io.digiservices.ecreditservice.notification.NotificationMobileService.class),
                 mock(io.digiservices.ecreditservice.dossier.DossierAgentRepository.class));
     }
 
