@@ -9,6 +9,8 @@ import { api } from '@/api/client';
 import type { Profil } from '@/api/types';
 import { enregistrerTacheDeFond } from '@/sync/tacheDeFond';
 import { synchroniser } from '@/sync/moteur';
+import { declarerLAppareil } from '@/sync/notifications';
+import { memoriserLeJetonDeLAppareil } from '@/sync/appareil';
 import { CIBLE_MIN, couleurs, espaces, texte } from '@/ui/theme';
 
 /**
@@ -68,8 +70,15 @@ export default function Connexion() {
       await garderProfil(data.profil);
       await ouvrir(data.profil.userId, await cleDeLaBase());
       void enregistrerTacheDeFond();
-      void synchroniser();
       router.replace('/');
+      // Le telephone se declare DES la connexion. L'ossature ne le fait qu'au demarrage de
+      // l'application : sur une premiere installation, l'agent se connectait et son appareil
+      // restait inconnu du serveur jusqu'a ce qu'il ferme et rouvre — aucune notification ne
+      // pouvait lui parvenir d'ici la, et rien ne le disait. Mesure du 17/11, premiere
+      // installation reelle. On navigue AVANT : la demande d'autorisation systeme s'affiche
+      // alors sur l'accueil, et non derriere un ecran de connexion qui attendrait la reponse.
+      memoriserLeJetonDeLAppareil(await declarerLAppareil());
+      void synchroniser();
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Connexion impossible');
     } finally {
