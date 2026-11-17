@@ -81,7 +81,7 @@ public class NotificationMobileService {
                 donnees.put("ecran", n.ecran());
             }
             var resultat = push.envoyer(jetons, n.titre(), n.corps(), donnees);
-            resultat.jetonsMorts().forEach(j -> mobile.desactiverAppareil(j, "JETON_PERIME"));
+            resultat.jetonsMorts().forEach(j -> mobile.desactiverAppareil(j, "JETON_MORT"));
             if (resultat.envoyes() > 0) {
                 repository.marquerEnvoyee(id, resultat.envoyes());
             }

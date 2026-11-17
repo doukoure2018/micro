@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '@/api/client';
 import { jetonValide } from '@/auth/session';
+import { memoriserLEtatDuPush } from '@/sync/appareil';
 
 /**
  * Les notifications poussees : declarer le telephone, puis l'oublier a la deconnexion.
@@ -40,6 +41,9 @@ export async function declarerLAppareil(): Promise<string | null> {
   try {
     const projet = identifiantDeProjet();
     if (!projet) {
+      // Tant que `eas init` n'a pas ete lance, il n'y a pas d'identifiant de projet et Expo
+      // ne peut pas delivrer un jeton. L'ecran des notifications le dit, au lieu de se taire.
+      memoriserLEtatDuPush('PROJET_ABSENT');
       console.warn('[push] projet Expo non rattache : notifications indisponibles');
       return null;
     }
@@ -55,10 +59,12 @@ export async function declarerLAppareil(): Promise<string | null> {
       ? existante
       : await Notifications.requestPermissionsAsync();
     if (!accord.granted) {
+      memoriserLEtatDuPush('REFUSE');
       console.warn('[push] notifications refusees par l utilisateur');
       return null;
     }
     const { data: jetonPush } = await Notifications.getExpoPushTokenAsync({ projectId: projet });
+    memoriserLEtatDuPush('OK');
     const jeton = await jetonValide();
     if (!jeton) {
       return jetonPush;
@@ -74,6 +80,7 @@ export async function declarerLAppareil(): Promise<string | null> {
   } catch (e) {
     // Expo Go, emulateur sans services Google, refus systeme : rien de tout cela n'empeche
     // l'agent de travailler. La transmission des saisies ne depend pas des notifications.
+    memoriserLEtatDuPush('INDISPONIBLE');
     console.warn('[push] appareil non declare :', e instanceof Error ? e.message : e);
     return null;
   }

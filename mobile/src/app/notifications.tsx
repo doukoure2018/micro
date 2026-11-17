@@ -11,6 +11,7 @@ import {
   lecturesARemonter, lecturesRemontees, marquerLuesLocalement, notificationsLocales,
   remplacerNotifications,
 } from '@/db/notifications';
+import { etatDuPush } from '@/sync/appareil';
 import { cheminDeLEcran } from '@/ui/ecrans';
 import { couleurs, dateCourte, espaces, heureCourte, texte } from '@/ui/theme';
 
@@ -42,6 +43,21 @@ const LIBELLES: Record<string, string> = {
   SYNCHRONISATION: 'synchronisation',
   RECLAMATION: 'reclamations',
   DOSSIER: 'dossiers',
+};
+
+/**
+ * Ce qu'on affiche quand ce telephone ne peut pas recevoir de notification poussee. Rien pour
+ * « OK » : il n'y a alors rien a expliquer.
+ */
+const EXPLICATIONS: Record<string, string | null> = {
+  OK: null,
+  PROJET_ABSENT: "Les notifications ne sont pas encore activees sur cette version de "
+    + "l'application. Vos notifications restent listees ici a chaque synchronisation.",
+  REFUSE: 'Vous avez refuse les notifications : rien ne s\'affichera sur votre ecran '
+    + 'verrouille. Vous pouvez les rouvrir dans les reglages du telephone. La liste '
+    + 'ci-dessous reste a jour.',
+  INDISPONIBLE: "Ce telephone ne peut pas recevoir de notification poussee. La liste "
+    + "ci-dessous reste a jour a chaque synchronisation.",
 };
 
 export default function Notifications() {
@@ -104,6 +120,7 @@ export default function Notifications() {
   }
 
   const nonLues = notifications.filter((n) => !n.lue).length;
+  const sansPush = EXPLICATIONS[etatDuPush()];
   const groupes = grouper(notifications);
 
   return (
@@ -128,6 +145,16 @@ export default function Notifications() {
         <Text style={s.avis}>
           Hors connexion : voici les notifications de la derniere synchronisation.
         </Text>
+      ) : null}
+
+      {/*
+        Dire pourquoi rien n'arrive. Un ecran qui se tait se lit comme « tout va bien » : un
+        agent qui a refuse les notifications, ou un telephone sur lequel le push n'est pas
+        encore active, attendrait des alertes qui ne viendront jamais. Le journal, lui,
+        continue de se remplir — c'est pourquoi la phrase le dit.
+      */}
+      {sansPush ? (
+        <Text style={s.avis}>{sansPush}</Text>
       ) : null}
 
       {notifications.length === 0 ? (

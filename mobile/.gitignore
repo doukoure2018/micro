@@ -11,3 +11,11 @@ ios/
 
 expo-env.d.ts
 # @end expo-cli
+
+# Notifications poussees : identite de l'application cote Google/Apple.
+# Le depot est PUBLIC. google-services.json n'est pas un secret (il voyage dans l'APK) mais il
+# nomme le projet Firebase ; la cle de compte de service FCM, elle, EST un secret — elle
+# autorise a notifier tous les telephones de la flotte. Ni l'un ni l'autre n'entre ici.
+google-services.json
+GoogleService-Info.plist
+*-firebase-adminsdk-*.json

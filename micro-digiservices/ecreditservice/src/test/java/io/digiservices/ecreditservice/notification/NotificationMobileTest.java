@@ -100,7 +100,7 @@ class NotificationMobileTest {
 
         service.publier(alerte());
 
-        verify(mobile).desactiverAppareil("ExponentPushToken[abc]", "JETON_PERIME");
+        verify(mobile).desactiverAppareil("ExponentPushToken[abc]", "JETON_MORT");
         verify(repository, never()).marquerEnvoyee(anyLong(), anyInt());
     }
 
