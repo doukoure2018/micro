@@ -88,6 +88,11 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/comptes-hors-agence")
     List<io.digiservices.clients.portefeuille.CompteHorsAgenceDto> getComptesHorsAgence();
 
+    /** UN compte, tel que SAF le porte a l'instant (PRODUCTION forcee) ; 404 s'il n'existe plus. */
+    @GetMapping("/ebanking/portefeuille/comptes/{numCuenta}/hors-agence")
+    io.digiservices.clients.portefeuille.CompteHorsAgenceDto getCompteHorsAgence(
+            @org.springframework.web.bind.annotation.PathVariable("numCuenta") String numCuenta);
+
     @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/dossier-compte")
     io.digiservices.clients.portefeuille.DossierCompteSafDto getDossierCompte(
             @org.springframework.web.bind.annotation.PathVariable("codAgencia") String codAgencia,

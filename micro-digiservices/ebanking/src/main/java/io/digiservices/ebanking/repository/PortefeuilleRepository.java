@@ -1243,6 +1243,68 @@ public class PortefeuilleRepository {
             """;
 
     /**
+     * Le meme releve pour UN compte, sans la condition d'agence : c'est la verification a
+     * l'unite qui decide, en Java, si le compte est encore hors agence. Meme SELECT que la
+     * detection : si les deux divergeaient, un compte paraitrait regularise a l'unite et
+     * fautif au passage horaire.
+     */
+    static final String SQL_COMPTE_HORS_AGENCE_UNITAIRE = """
+            SELECT c.NUM_CUENTA,
+                   CASE WHEN LEN(ISNULL(c.NUM_CUENTA, '')) >= 6 THEN SUBSTRING(c.NUM_CUENTA, 4, 3) END AS TYPE_COMPTE,
+                   c.NOM_CHEQUERA AS INTITULE,
+                   c.COD_CLIENTE, cl.NOM_CLIENTE,
+                   LEFT(LTRIM(RTRIM(ISNULL(c.COD_CLIENTE, ''))), 3) AS AGENCE_CLIENT,
+                   cl.COD_AGENCIA AS AGENCE_CLIENT_FICHE,
+                   c.COD_AGENCIA AS AGENCE_COMPTE, ag.DES_AGENCIA AS DES_AGENCE_COMPTE,
+                   c.COD_USUARIO AS CREE_PAR,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = c.COD_EMPRESA AND u.COD_USUARIO = c.COD_USUARIO) AS NOM_CREE_PAR,
+                   aga.COD_AGENCIA AS AGENCE_AGENT,
+                   c.FEC_APERTURA AS DATE_OUVERTURE, c.IND_ESTADO AS ETAT_COMPTE, c.SAL_DISPONIBLE AS SOLDE
+            FROM CC.CC_CUENTA_EFECTIVO c
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = c.COD_EMPRESA AND cl.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            LEFT JOIN CF.CF_AGENCIAS aga
+                ON aga.COD_EMPRESA = c.COD_EMPRESA
+               AND aga.COD_AGENCIA = RIGHT(LTRIM(RTRIM(ISNULL(c.COD_USUARIO, ''))), 3)
+            WHERE LTRIM(RTRIM(c.NUM_CUENTA)) = :numCuenta
+            """;
+
+    /** Un compte tel que SAF le porte a l'instant, dans la PRODUCTION ; vide s'il n'existe plus. */
+    public java.util.Optional<io.digiservices.clients.portefeuille.CompteHorsAgenceDto> findCompteHorsAgence(
+            String numCuenta) {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            return execute("portefeuille.compteHorsAgence", () -> primary.query(SQL_COMPTE_HORS_AGENCE_UNITAIRE,
+                    new MapSqlParameterSource("numCuenta", numCuenta == null ? "" : numCuenta.trim()),
+                    (rs, n) -> compteHorsAgence(rs)).stream().findFirst());
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
+    private static io.digiservices.clients.portefeuille.CompteHorsAgenceDto compteHorsAgence(ResultSet rs)
+            throws SQLException {
+        return new io.digiservices.clients.portefeuille.CompteHorsAgenceDto(
+                str(rs, "NUM_CUENTA"), str(rs, "TYPE_COMPTE"), str(rs, "INTITULE"),
+                str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                str(rs, "AGENCE_CLIENT"), str(rs, "AGENCE_CLIENT_FICHE"),
+                str(rs, "AGENCE_COMPTE"), str(rs, "DES_AGENCE_COMPTE"),
+                str(rs, "CREE_PAR"), str(rs, "NOM_CREE_PAR"), str(rs, "AGENCE_AGENT"),
+                dt(rs, "DATE_OUVERTURE"), str(rs, "ETAT_COMPTE"), rs.getBigDecimal("SOLDE"),
+                null);
+    }
+
+    /**
      * Comptes ouverts hors de l'agence du client, lus dans la base de PRODUCTION. La cible est
      * forcee ici comme pour les deux autres surveillances : le passage horaire tourne sans
      * requete HTTP, et la sauvegarde de la veille ne verrait pas l'ouverture de ce matin.
@@ -1254,15 +1316,7 @@ public class PortefeuilleRepository {
                 io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
         try {
             return execute("portefeuille.comptesHorsAgence", () -> primary.query(SQL_COMPTES_HORS_AGENCE,
-                    new MapSqlParameterSource(),
-                    (rs, n) -> new io.digiservices.clients.portefeuille.CompteHorsAgenceDto(
-                            str(rs, "NUM_CUENTA"), str(rs, "TYPE_COMPTE"), str(rs, "INTITULE"),
-                            str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
-                            str(rs, "AGENCE_CLIENT"), str(rs, "AGENCE_CLIENT_FICHE"),
-                            str(rs, "AGENCE_COMPTE"), str(rs, "DES_AGENCE_COMPTE"),
-                            str(rs, "CREE_PAR"), str(rs, "NOM_CREE_PAR"), str(rs, "AGENCE_AGENT"),
-                            dt(rs, "DATE_OUVERTURE"), str(rs, "ETAT_COMPTE"), rs.getBigDecimal("SOLDE"),
-                            null)));
+                    new MapSqlParameterSource(), (rs, n) -> compteHorsAgence(rs)));
         } finally {
             if (avant == null) {
                 io.digiservices.ebanking.config.SafRoutage.effacer();

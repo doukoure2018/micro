@@ -271,6 +271,15 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.findComptesHorsAgence());
     }
 
+    /** Un compte tel que SAF le porte a l'instant, pour la verification a l'unite ; 404 s'il a disparu. */
+    @GetMapping("/comptes/{numCuenta}/hors-agence")
+    public ResponseEntity<io.digiservices.clients.portefeuille.CompteHorsAgenceDto> getCompteHorsAgence(
+            @PathVariable("numCuenta") String numCuenta) {
+        return repository.findCompteHorsAgence(numCuenta)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     /**
      * Le dossier d'un credit mal adosse : le compte saisi tel qu'il est reellement, et les
      * comptes du client qui conviendraient. Lecture de la PRODUCTION, forcee dans le depot.

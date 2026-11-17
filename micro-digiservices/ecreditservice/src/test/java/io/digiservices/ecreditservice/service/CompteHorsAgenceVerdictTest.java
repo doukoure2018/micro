@@ -8,7 +8,11 @@ import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.AGE
 import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.AGENT_DU_CLIENT;
 import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.AGENT_SANS_AGENCE;
 import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.TROIS_AGENCES;
+import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.CORRIGE;
+import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.TOUJOURS_HORS_AGENCE;
+import static io.digiservices.ecreditservice.service.CompteHorsAgenceVerdict.TRANSFERT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -82,6 +86,66 @@ class CompteHorsAgenceVerdictTest {
         for (String s : new String[]{AGENT_CHEZ_LUI, AGENT_DU_CLIENT, TROIS_AGENCES, AGENT_SANS_AGENCE}) {
             assertFalse(CompteHorsAgenceVerdict.libelle(s).isBlank(), s);
             assertFalse(CompteHorsAgenceVerdict.libelle(s).equals(s), s + " doit etre traduit");
+        }
+    }
+
+    // ==================== Verification a l'unite (lot 3) ====================
+
+    @Test
+    @DisplayName("un compte disparu de SAF ferme la ligne : corrige")
+    void compteDisparu() {
+        var v = CompteHorsAgenceVerdict.verdict(null);
+        assertEquals(CORRIGE, v.conclusion());
+        assertTrue(v.ferme());
+        assertNull(v.situation());
+    }
+
+    @Test
+    @DisplayName("un compte revenu dans l'agence du client ferme la ligne : corrige")
+    void compteRegularise() {
+        var v = CompteHorsAgenceVerdict.verdict(compte("334", "336", "336", null));
+        assertEquals(CORRIGE, v.conclusion());
+        assertTrue(v.ferme());
+    }
+
+    @Test
+    @DisplayName("une fiche client passee a l'agence du compte ferme la ligne : transfert")
+    void clientTransfere() {
+        var v = CompteHorsAgenceVerdict.verdict(compte("334", "334", "336", "334"));
+        assertEquals(TRANSFERT, v.conclusion());
+        assertTrue(v.ferme());
+        assertNull(v.situation());
+    }
+
+    @Test
+    @DisplayName("sinon l'anomalie tient, avec sa situation du moment")
+    void toujoursHorsAgence() {
+        var v = CompteHorsAgenceVerdict.verdict(compte("101", "334", "336", "336"));
+        assertEquals(TOUJOURS_HORS_AGENCE, v.conclusion());
+        assertFalse(v.ferme());
+        assertEquals(TROIS_AGENCES, v.situation());
+        assertTrue(v.explication().contains("334") && v.explication().contains("336"));
+    }
+
+    @Test
+    @DisplayName("la verification a l'unite et la detection horaire disent la meme chose")
+    void verificationEtDetectionConcordent() {
+        for (CompteHorsAgenceDto c : java.util.List.of(
+                compte("334", "334", "336", "334"), compte("334", "334", "336", "336"),
+                compte("334", "334", "336", null), compte("334", "336", "336", null),
+                compte(null, "101", "336", ""))) {
+            boolean detection = CompteHorsAgenceVerdict.estAnomalie(c);
+            boolean verification = !CompteHorsAgenceVerdict.verdict(c).ferme();
+            assertEquals(detection, verification, "divergence sur " + c.getAgenceCompte() + "/" + c.getAgenceClient()
+                    + "/" + c.getAgenceClientFiche());
+        }
+    }
+
+    @Test
+    @DisplayName("chaque conclusion a un libelle lisible")
+    void libellesVerification() {
+        for (String s : new String[]{CORRIGE, TRANSFERT, TOUJOURS_HORS_AGENCE}) {
+            assertFalse(CompteHorsAgenceVerdict.libelleVerification(s).equals(s), s + " doit etre traduit");
         }
     }
 }
