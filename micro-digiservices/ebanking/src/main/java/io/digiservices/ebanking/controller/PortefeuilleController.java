@@ -265,6 +265,12 @@ public class PortefeuilleController {
         return ResponseEntity.ok(repository.findComptesMalAdosses());
     }
 
+    /** Comptes ouverts hors de l'agence du client : lecture de la PRODUCTION, forcee dans le depot. */
+    @GetMapping("/comptes-hors-agence")
+    public ResponseEntity<List<io.digiservices.clients.portefeuille.CompteHorsAgenceDto>> getComptesHorsAgence() {
+        return ResponseEntity.ok(repository.findComptesHorsAgence());
+    }
+
     /**
      * Le dossier d'un credit mal adosse : le compte saisi tel qu'il est reellement, et les
      * comptes du client qui conviendraient. Lecture de la PRODUCTION, forcee dans le depot.

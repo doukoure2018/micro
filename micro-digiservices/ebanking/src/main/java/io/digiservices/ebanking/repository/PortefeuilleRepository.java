@@ -1198,6 +1198,80 @@ public class PortefeuilleRepository {
         }
     }
 
+    // ==================== Comptes ouverts hors de l'agence du client (DSIG, 17/11/2026) ====================
+
+    /**
+     * Comptes dont l'agence n'est pas celle du client, d'apres les trois premiers chiffres du
+     * numero de membre. Reprise du script DSIG du 17/11/2026 avec trois complements :
+     *
+     * <ul>
+     *   <li>toutes les jointures portent {@code COD_EMPRESA}, comme partout ailleurs ici ;</li>
+     *   <li>l'agence de l'usager n'est retenue que si les trois derniers caracteres de son code
+     *       designent une agence existante : {@code ADMIN001} n'est pas l'agence 001 ;</li>
+     *   <li>l'agence de la FICHE client est remontee : quand elle est celle du compte, le client
+     *       a ete transfere et le compte est a sa place. Le tri se fait dans ecreditservice.</li>
+     * </ul>
+     *
+     * <p>Tous les etats de compte sont lus : un compte ferme reste dans l'historique de la page,
+     * mais seul un compte actif (A) declenche un courriel — c'est le service qui decide.</p>
+     */
+    static final String SQL_COMPTES_HORS_AGENCE = """
+            SELECT c.NUM_CUENTA,
+                   CASE WHEN LEN(ISNULL(c.NUM_CUENTA, '')) >= 6 THEN SUBSTRING(c.NUM_CUENTA, 4, 3) END AS TYPE_COMPTE,
+                   c.NOM_CHEQUERA AS INTITULE,
+                   c.COD_CLIENTE, cl.NOM_CLIENTE,
+                   LEFT(c.COD_CLIENTE, 3) AS AGENCE_CLIENT,
+                   cl.COD_AGENCIA AS AGENCE_CLIENT_FICHE,
+                   c.COD_AGENCIA AS AGENCE_COMPTE, ag.DES_AGENCIA AS DES_AGENCE_COMPTE,
+                   c.COD_USUARIO AS CREE_PAR,
+                   (SELECT MAX(u.NOM_USUARIO) FROM SG.SG_USUARIOS u
+                     WHERE u.COD_EMPRESA = c.COD_EMPRESA AND u.COD_USUARIO = c.COD_USUARIO) AS NOM_CREE_PAR,
+                   aga.COD_AGENCIA AS AGENCE_AGENT,
+                   c.FEC_APERTURA AS DATE_OUVERTURE, c.IND_ESTADO AS ETAT_COMPTE, c.SAL_DISPONIBLE AS SOLDE
+            FROM CC.CC_CUENTA_EFECTIVO c
+            LEFT JOIN CL.CL_CLIENTES cl
+                ON cl.COD_EMPRESA = c.COD_EMPRESA AND cl.COD_CLIENTE = c.COD_CLIENTE
+            LEFT JOIN CF.CF_AGENCIAS ag
+                ON ag.COD_EMPRESA = c.COD_EMPRESA AND ag.COD_AGENCIA = c.COD_AGENCIA
+            LEFT JOIN CF.CF_AGENCIAS aga
+                ON aga.COD_EMPRESA = c.COD_EMPRESA
+               AND aga.COD_AGENCIA = RIGHT(LTRIM(RTRIM(ISNULL(c.COD_USUARIO, ''))), 3)
+            WHERE c.COD_CLIENTE IS NOT NULL
+              AND LEN(LTRIM(RTRIM(c.COD_CLIENTE))) >= 3
+              AND LTRIM(RTRIM(c.COD_AGENCIA)) <> LEFT(LTRIM(RTRIM(c.COD_CLIENTE)), 3)
+            ORDER BY c.FEC_APERTURA DESC, c.NUM_CUENTA
+            """;
+
+    /**
+     * Comptes ouverts hors de l'agence du client, lus dans la base de PRODUCTION. La cible est
+     * forcee ici comme pour les deux autres surveillances : le passage horaire tourne sans
+     * requete HTTP, et la sauvegarde de la veille ne verrait pas l'ouverture de ce matin.
+     */
+    public List<io.digiservices.clients.portefeuille.CompteHorsAgenceDto> findComptesHorsAgence() {
+        io.digiservices.ebanking.config.SafRoutage.Cible avant =
+                io.digiservices.ebanking.config.SafRoutage.courante();
+        io.digiservices.ebanking.config.SafRoutage.forcer(
+                io.digiservices.ebanking.config.SafRoutage.Cible.PRODUCTION);
+        try {
+            return execute("portefeuille.comptesHorsAgence", () -> primary.query(SQL_COMPTES_HORS_AGENCE,
+                    new MapSqlParameterSource(),
+                    (rs, n) -> new io.digiservices.clients.portefeuille.CompteHorsAgenceDto(
+                            str(rs, "NUM_CUENTA"), str(rs, "TYPE_COMPTE"), str(rs, "INTITULE"),
+                            str(rs, "COD_CLIENTE"), str(rs, "NOM_CLIENTE"),
+                            str(rs, "AGENCE_CLIENT"), str(rs, "AGENCE_CLIENT_FICHE"),
+                            str(rs, "AGENCE_COMPTE"), str(rs, "DES_AGENCE_COMPTE"),
+                            str(rs, "CREE_PAR"), str(rs, "NOM_CREE_PAR"), str(rs, "AGENCE_AGENT"),
+                            dt(rs, "DATE_OUVERTURE"), str(rs, "ETAT_COMPTE"), rs.getBigDecimal("SOLDE"),
+                            null)));
+        } finally {
+            if (avant == null) {
+                io.digiservices.ebanking.config.SafRoutage.effacer();
+            } else {
+                io.digiservices.ebanking.config.SafRoutage.forcer(avant);
+            }
+        }
+    }
+
     /**
      * La liste des types autorises, mise en forme pour un {@code IN} SQL. Le format est verifie
      * avant d'etre inline : trois chiffres par type, separes par des virgules. Un type se lit
