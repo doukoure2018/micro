@@ -228,3 +228,25 @@ export type FicheCredit = {
   /** Toutes les lignes sont soldees alors que le credit court : il echappe aux relances. */
   echeancierIncomplet: boolean;
 };
+
+/**
+ * Une notification du journal. `envoyee` vaut faux quand le push n'est pas parti — aucun
+ * appareil declare, projet Expo non rattache, reseau absent : la notification existe quand
+ * meme, et c'est tout l'interet du journal.
+ */
+export type NotificationVue = {
+  id: number;
+  categorie: 'PORTEFEUILLE' | 'RECOUVREMENT' | 'SYNCHRONISATION' | 'RECLAMATION' | 'DOSSIER';
+  titre: string;
+  corps: string;
+  ecran: string | null;
+  parametres: Record<string, unknown> | null;
+  creeeAt: string;
+  envoyee: boolean;
+  lue: boolean;
+};
+
+export type JournalNotifications = {
+  nonLues: number;
+  notifications: NotificationVue[];
+};

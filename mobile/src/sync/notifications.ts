@@ -90,3 +90,37 @@ export async function retirerLAppareil(jetonPush: string | null): Promise<void> 
     console.warn('[push] appareil non retire :', e instanceof Error ? e.message : e);
   }
 }
+
+/**
+ * Ce qui se passe quand l'agent TOUCHE une notification.
+ *
+ * <p>Sans cela, le toucher ouvre l'accueil et l'agent cherche lui-meme de quoi on lui
+ * parlait. L'ecran est pose par le serveur dans les donnees de la notification ; la
+ * correspondance avec les chemins de l'application est tenue ailleurs, pour que cette
+ * fonction ne connaisse rien de la navigation.</p>
+ *
+ * <p>Deux cas, un seul traitement : l'application etait ouverte (l'ecouteur recoit), ou elle
+ * etait fermee et c'est la notification qui l'a lancee (il faut la demander).</p>
+ */
+export function surToucheDUneNotification(aller: (ecran: string | null) => void): () => void {
+  function ecranDe(reponse: Notifications.NotificationResponse | null): string | null {
+    const donnees = reponse?.notification?.request?.content?.data as
+      { ecran?: string } | undefined;
+    return donnees?.ecran ?? null;
+  }
+
+  // L'application a ete lancee PAR la notification : l'ecouteur ne la verra jamais passer.
+  Notifications.getLastNotificationResponseAsync()
+    .then((reponse) => {
+      const ecran = ecranDe(reponse);
+      if (ecran) aller(ecran);
+    })
+    .catch(() => {
+      // Expo Go, ou pas de notification au lancement : il n'y a rien a ouvrir.
+    });
+
+  const abonnement = Notifications.addNotificationResponseReceivedListener((reponse) => {
+    aller(ecranDe(reponse));
+  });
+  return () => abonnement.remove();
+}

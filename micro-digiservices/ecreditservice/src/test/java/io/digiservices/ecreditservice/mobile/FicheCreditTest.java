@@ -7,7 +7,7 @@ import io.digiservices.clients.portefeuille.PortefeuilleEcheanceDto;
 import io.digiservices.ecreditservice.dossier.DossierAgentRepository;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.FicheCredit;
 import io.digiservices.ecreditservice.mobile.repository.MobileRepository;
-import io.digiservices.ecreditservice.mobile.service.ExpoPushService;
+import io.digiservices.ecreditservice.notification.NotificationMobileService;
 import io.digiservices.ecreditservice.mobile.service.MobileService;
 import io.digiservices.ecreditservice.repository.PortefeuilleCreditPhotoRepository;
 import io.digiservices.ecreditservice.service.FileStorageService;
@@ -67,7 +67,7 @@ class FicheCreditTest {
     private MobileService service() {
         return new MobileService(repository, userClient, saf,
                 mock(PortefeuilleCreditPhotoRepository.class), mock(FileStorageService.class),
-                mock(PerimetreSafService.class), mock(ExpoPushService.class),
+                mock(PerimetreSafService.class), mock(NotificationMobileService.class),
                 mock(DossierAgentRepository.class));
     }
 

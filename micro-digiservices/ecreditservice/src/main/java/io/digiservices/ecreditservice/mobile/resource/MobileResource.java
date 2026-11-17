@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 
 import static io.digiservices.ecreditservice.utils.RequestUtils.getResponse;
@@ -211,6 +212,29 @@ public class MobileResource {
         var fiche = service.ficheCredit(authentication.getName(), codAgencia, numCredito);
         return ResponseEntity.ok(getResponse(request, Map.of("fiche", fiche),
                 fiche.echeancier().size() + " echeance(s)", OK));
+    }
+
+    /**
+     * Le centre de notifications. Il existe parce qu'une notification poussée s'efface d'un
+     * balayage : le push annonce, le journal conserve.
+     */
+    @GetMapping("/notifications")
+    public ResponseEntity<Response> notifications(@NotNull Authentication authentication,
+                                                  HttpServletRequest request) {
+        var journal = service.notifications(authentication.getName(), 60);
+        return ResponseEntity.ok(getResponse(request, Map.of("journal", journal),
+                journal.nonLues() + " non lue(s)", OK));
+    }
+
+    /** « Tout marquer lu », ou seulement celles que l'agent vient d'ouvrir. */
+    @PostMapping("/notifications/lues")
+    public ResponseEntity<Response> marquerLues(@NotNull Authentication authentication,
+                                                @RequestBody(required = false) Map<String, List<Long>> corps,
+                                                HttpServletRequest request) {
+        List<Long> ids = corps == null ? null : corps.get("ids");
+        int n = service.marquerNotificationsLues(authentication.getName(), ids);
+        return ResponseEntity.ok(getResponse(request, Map.of("marquees", n),
+                n + " notification(s) marquee(s) lue(s)", OK));
     }
 
     // --------------------------------------------------------------- la collecte agricole

@@ -61,7 +61,7 @@ class ReclamationTerrainTest {
 
     private final ReclamationService service =
             new ReclamationService(repository, destinataires, journal, publisher, userClient,
-                    habilitations);
+                    habilitations, mock(io.digiservices.ecreditservice.notification.NotificationMobileService.class));
 
     @BeforeEach
     void unAgentEtSixDirections() {

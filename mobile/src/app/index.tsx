@@ -6,6 +6,7 @@ import { profilGarde } from '@/auth/session';
 import type { Profil } from '@/api/types';
 import { compterReclamationsEnAttente, dossiersLocaux, portefeuilleLocal } from '@/db/visites';
 import { compterAgriEnAttente } from '@/db/agri';
+import { compterNonLues } from '@/db/notifications';
 import { estOuverte } from '@/db/base';
 import type { CreditPortefeuille } from '@/api/types';
 import { etatDeLaFile, synchroniser } from '@/sync/moteur';
@@ -26,6 +27,7 @@ export default function Aujourdhui() {
   const [dossiersAFaire, setDossiersAFaire] = useState(0);
   const [agriEnAttente, setAgriEnAttente] = useState(0);
   const [reclamationsEnAttente, setReclamationsEnAttente] = useState(0);
+  const [notificationsNonLues, setNotificationsNonLues] = useState(0);
 
   const charger = useCallback(async () => {
     setProfil(await profilGarde());
@@ -36,6 +38,7 @@ export default function Aujourdhui() {
     setDossiersAFaire((await dossiersLocaux(false)).filter((d) => d.attendLAgent).length);
     setAgriEnAttente(await compterAgriEnAttente());
     setReclamationsEnAttente(await compterReclamationsEnAttente());
+    setNotificationsNonLues(await compterNonLues());
     const { compte, derniere: d } = await etatDeLaFile();
     setEnAttente(compte.EN_ATTENTE + compte.ENVOI);
     setDerniere(d);
@@ -141,6 +144,8 @@ export default function Aujourdhui() {
                compte={reclamationsEnAttente} teinte={couleurs.ambre} />
         <Tuile href="/synchronisation" icone="cloud-upload-outline" libelle="Synchronisation"
                compte={enAttente} teinte="#2A4F9E" />
+        <Tuile href="/notifications" icone="notifications-outline" libelle="Notifications"
+               compte={notificationsNonLues} teinte={couleurs.vertFonce} />
       </View>
 
       <Text style={s.titreSection}>A faire aujourd'hui</Text>
@@ -180,7 +185,8 @@ export default function Aujourdhui() {
  * une information, c'est du bruit a cote de l'icone.
  */
 function Tuile({ href, icone, libelle, compte, teinte }: {
-  href: '/portefeuille' | '/dossiers' | '/agri' | '/reclamations' | '/synchronisation';
+  href: '/portefeuille' | '/dossiers' | '/agri' | '/reclamations' | '/synchronisation'
+    | '/notifications';
   icone: React.ComponentProps<typeof Ionicons>['name'];
   libelle: string;
   compte: number;
