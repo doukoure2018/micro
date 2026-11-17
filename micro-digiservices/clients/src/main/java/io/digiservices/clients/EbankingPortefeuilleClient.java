@@ -84,6 +84,10 @@ public interface EbankingPortefeuilleClient {
     @GetMapping("/ebanking/portefeuille/comptes-mal-adosses")
     List<io.digiservices.clients.portefeuille.CompteMalAdosseDto> getComptesMalAdosses();
 
+    /** Comptes ouverts dans une agence differente de celle du client (PRODUCTION forcee dans le depot). */
+    @GetMapping("/ebanking/portefeuille/comptes-hors-agence")
+    List<io.digiservices.clients.portefeuille.CompteHorsAgenceDto> getComptesHorsAgence();
+
     @GetMapping("/ebanking/portefeuille/credits/{codAgencia}/{numCredito}/dossier-compte")
     io.digiservices.clients.portefeuille.DossierCompteSafDto getDossierCompte(
             @org.springframework.web.bind.annotation.PathVariable("codAgencia") String codAgencia,
