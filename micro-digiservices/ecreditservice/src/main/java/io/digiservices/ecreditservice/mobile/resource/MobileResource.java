@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.mobile.resource;
 
 import io.digiservices.ecreditservice.domain.Response;
+import io.digiservices.ecreditservice.mobile.dto.MobileDtos.AppareilDeclare;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.LotRecu;
 import io.digiservices.ecreditservice.mobile.dto.MobileDtos.SortSaisie;
 import io.digiservices.ecreditservice.agri.dto.AgriDtos.ParcelleRecue;
@@ -305,16 +306,27 @@ public class MobileResource {
                 : "Saisie " + sort.sort().toLowerCase();
     }
 
-    /** Déclare le téléphone, ou le réveille : c'est lui qui recevra les notifications. */
+    /**
+     * Déclare le téléphone, ou le réveille : c'est lui qui recevra les notifications.
+     *
+     * <p>Le jeton arrive dans le CORPS. Il s'écrit {@code ExponentPushToken[xxx]}, et les
+     * crochets sont interdits dans une cible de requête : Tomcat rejetait l'appel avant que
+     * l'application le voie. Les anciens téléphones qui l'envoient encore en paramètre
+     * d'adresse restent acceptés — ils doivent pouvoir se déclarer sans être réinstallés.</p>
+     */
     @PostMapping("/appareils")
     public ResponseEntity<Response> declarerAppareil(
             @NotNull Authentication authentication,
-            @RequestParam(name = "jeton") String jeton,
-            @RequestParam(name = "plateforme") String plateforme,
+            @RequestBody(required = false) AppareilDeclare corps,
+            @RequestParam(name = "jeton", required = false) String jeton,
+            @RequestParam(name = "plateforme", required = false) String plateforme,
             @RequestParam(name = "modele", required = false) String modele,
             @RequestParam(name = "version", required = false) String version,
             HttpServletRequest request) {
-        Long id = service.declarerAppareil(authentication.getName(), jeton, plateforme, modele, version);
+        AppareilDeclare a = corps != null && corps.jeton() != null ? corps
+                : new AppareilDeclare(jeton, plateforme, modele, version);
+        Long id = service.declarerAppareil(authentication.getName(), a.jeton(), a.plateforme(),
+                a.modele(), a.version());
         return ResponseEntity.ok(getResponse(request, Map.of("appareilId", id),
                 "Appareil declare", OK));
     }

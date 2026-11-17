@@ -69,13 +69,18 @@ export async function declarerLAppareil(): Promise<string | null> {
     if (!jeton) {
       return jetonPush;
     }
-    const parametres = new URLSearchParams({
+    // Dans le CORPS, pas dans l'adresse. Un jeton Expo s'ecrit `ExponentPushToken[xxx]`
+    // et Tomcat refuse les crochets dans une cible de requete (RFC 3986) : il rejetait
+    // l'appel avant que le serveur le voie, le telephone obtenait son jeton et personne ne
+    // le savait. Encoder aurait suffi — mais un jeton dans une URL se retrouve dans chaque
+    // journal d'acces, et le nom d'appareil (« Galaxy A17 de Salifou ») y pose le meme
+    // probleme. Le corps regle les deux d'un coup.
+    await api.post('/ecredit/mobile/appareils', jeton, {
       jeton: jetonPush,
       plateforme: Platform.OS,
       modele: Constants.deviceName ?? '',
       version: Constants.expoConfig?.version ?? '',
     });
-    await api.post(`/ecredit/mobile/appareils?${parametres.toString()}`, jeton);
     return jetonPush;
   } catch (e) {
     // Expo Go, emulateur sans services Google, refus systeme : rien de tout cela n'empeche

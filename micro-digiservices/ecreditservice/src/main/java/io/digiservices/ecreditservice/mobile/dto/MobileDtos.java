@@ -14,6 +14,19 @@ public final class MobileDtos {
     private MobileDtos() {
     }
 
+    /**
+     * Un téléphone qui se déclare.
+     *
+     * <p>Dans le CORPS de la requête, et non dans l'adresse. Un jeton Expo s'écrit
+     * {@code ExponentPushToken[xxx]} : les crochets sont interdits dans une cible de requête
+     * (RFC 3986) et Tomcat rejetait l'appel avant même d'atteindre l'application — « Invalid
+     * character found in the request target », 17/11/2026. Même encodé, un jeton n'a rien à
+     * faire dans une URL : il se retrouverait dans chaque journal d'accès et chaque mandataire
+     * traversé.</p>
+     */
+    public record AppareilDeclare(String jeton, String plateforme, String modele, String version) {
+    }
+
     /** Une saisie telle qu'elle arrive du téléphone, avec l'identifiant créé là-bas. */
     public record VisiteRecue(
             String identifiantClient,
