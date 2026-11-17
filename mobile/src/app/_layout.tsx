@@ -63,12 +63,14 @@ export default function Ossature() {
    * l'accueil. L'ecran voyage dans la notification ; s'il est inconnu, on ne bouge pas.
    */
   useEffect(() => {
-    if (!pret) return;
+    // Apres la connexion seulement : ouvrir un ecran qu'on ne peut pas encore lire ferait
+    // un aller-retour par l'ecran de connexion sous les yeux de l'agent.
+    if (!connecte) return;
     return surToucheDUneNotification((ecran) => {
       const chemin = cheminDeLEcran(ecran);
       if (chemin) router.push(chemin as never);
     });
-  }, [pret, router]);
+  }, [connecte, router]);
 
   useEffect(() => {
     if (!connecte) return;
