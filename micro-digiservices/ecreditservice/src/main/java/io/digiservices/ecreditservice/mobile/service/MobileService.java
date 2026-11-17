@@ -630,7 +630,29 @@ public class MobileService {
         if (jeton == null || jeton.isBlank()) {
             throw new ApiException("Jeton d'appareil absent");
         }
-        return repository.declarerAppareil(user.getUserId(), jeton, plateforme, modele, versionApp);
+        return repository.declarerAppareil(user.getUserId(), jeton.trim(), plateforme(plateforme),
+                modele, versionApp);
+    }
+
+    /**
+     * ANDROID ou IOS, quoi qu'envoie le téléphone.
+     *
+     * <p>React Native dit {@code android} en minuscules, et la table n'accepte que les
+     * majuscules (V209). Le 17/11, le premier téléphone de recette a donc obtenu son jeton
+     * Expo, l'a envoyé, et la ligne a été refusée par la contrainte : l'appareil n'existait
+     * nulle part, et aucune notification ne pouvait lui parvenir. Normaliser ici plutôt que
+     * dans l'application protège aussi les versions déjà installées, qu'on ne peut pas
+     * corriger à distance.</p>
+     */
+    private static String plateforme(String valeur) {
+        String p = valeur == null ? "" : valeur.trim().toUpperCase();
+        if (p.startsWith("ANDROID")) {
+            return "ANDROID";
+        }
+        if (p.startsWith("IOS") || p.startsWith("IPHONE") || p.startsWith("IPAD")) {
+            return "IOS";
+        }
+        throw new ApiException("Plateforme d'appareil inconnue : " + valeur);
     }
 
     /** L'appareil qui parle, s'il s'est déclaré : sert à rattacher ce qu'il transmet. */
