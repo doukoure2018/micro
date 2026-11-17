@@ -1,5 +1,10 @@
 # Activer les notifications poussées de l'application mobile
 
+> **Fait le 17/11/2026** : étape 1 (projet Expo `@doukoure2711/digicrg`,
+> `5e0eb275-3576-4b87-a4d5-cec9e64c77e9`) et étape 2a (projet Firebase `digi-crg`,
+> `google-services.json` en place, branché dans `app.json`). **Reste la clé de compte de
+> service FCM V1 (§ 2.4) puis la reconstruction de l'APK (§ 3).**
+
 **État au 17/11/2026.** Tout le code est en production (V215). Chaque notification est déjà
 **rangée** en base à l'instant où elle est produite : l'alerte de 08h20, les promesses de
 08h50, la fin d'une synchronisation, une réclamation prise en charge, une décision du DA.
@@ -64,6 +69,12 @@ Expo Push relaie vers **FCM** pour Android. Deux pièces à récupérer sur
 
    (ou sur expo.dev : projet → *Credentials* → *FCM V1 service account key*).
 
+> **Conséquence d'un clone neuf.** `app.json` désigne un fichier que git ne transporte pas :
+> sur une machine qui vient de cloner le dépôt, `expo prebuild` s'arrêtera sur
+> *google-services.json not found*. C'est voulu — récupérez le fichier dans le coffre DSIG ou
+> re-téléchargez-le depuis la console Firebase (projet `digi-crg`), il est identique à chaque
+> fois.
+>
 > ⚠️ **Le dépôt est public.** `google-services.json` et surtout la clé de compte de service
 > sont dans `.gitignore` et doivent y rester : cette clé autorise à notifier **tous** les
 > téléphones de la flotte. Gardez-les dans le coffre DSIG, pas dans git.
