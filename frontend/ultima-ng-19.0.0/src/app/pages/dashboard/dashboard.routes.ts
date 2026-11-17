@@ -199,6 +199,12 @@ export default [
         loadComponent: () => import('./comptes-mal-adosses/comptes-mal-adosses.component').then((c) => c.ComptesMalAdossesComponent)
     },
     {
+        path: 'comptes-hors-agence',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Comptes hors agence', rubriques: ['CREDITS_NEGATIFS', 'AUDIT_CAISSE'] },
+        loadComponent: () => import('./comptes-hors-agence/comptes-hors-agence.component').then((c) => c.ComptesHorsAgenceComponent)
+    },
+    {
         path: 'synthese-direction',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Synthèse de direction', rubrique: 'SYNTHESE_DIRECTION' },
@@ -655,6 +661,11 @@ export default [
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Répertoires SMS', rubrique: 'ADMIN_OUTILS' },
         loadComponent: () => import('./digital/repertoires-sms/repertoires-sms.component').then((c) => c.RepertoiresSmsComponent)
+    },
+    {
+        path: 'desinscriptions-sms',
+        data: { breadcrumb: 'Désinscriptions SMS' },
+        loadComponent: () => import('./digital/desinscriptions-sms/desinscriptions-sms.component').then((c) => c.DesinscriptionsSmsComponent)
     },
     {
         path: 'campagnes-sms/:campagneId',

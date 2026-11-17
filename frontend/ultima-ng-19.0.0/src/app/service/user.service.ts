@@ -2169,6 +2169,34 @@ export class UserService {
         return p;
     }
 
+    // ==================== Comptes ouverts hors de l'agence du client (V214, lot 2) ====================
+    getComptesHorsAgence$ = (f: { situation: string | null; etat: string | null; agence: string | null; agenceAgent: string | null; creePar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-hors-agence`, { params: this.paramsHorsAgence(f) }).pipe(catchError(this.handleError));
+    suiviCompteHorsAgence$ = (id: number, traite: boolean, commentaire: string | null) =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/comptes-hors-agence/${id}/suivi`, {}, { params: commentaire ? { traite, commentaire } : { traite } })
+            .pipe(catchError(this.handleError));
+    /** Confronte un compte a la production, tout de suite, sans attendre le passage horaire. */
+    verifierCompteHorsAgence$ = (id: number) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/comptes-hors-agence/${id}/verifier`, {}).pipe(catchError(this.handleError));
+    /** Les comptes pris en charge et encore ouverts, confrontes d'un coup. */
+    verifierPrisesEnChargeHorsAgence$ = () =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/comptes-hors-agence/verifier-prises-en-charge`, {}).pipe(catchError(this.handleError));
+    getDossierCompteHorsAgence$ = (id: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/comptes-hors-agence/${id}/dossier`).pipe(catchError(this.handleError));
+    exportComptesHorsAgence$ = (f: { situation: string | null; etat: string | null; agence: string | null; agenceAgent: string | null; creePar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }) =>
+        this.http.get(`${this.server}/ecredit/comptes-hors-agence/export`, { params: this.paramsHorsAgence(f), responseType: 'blob', observe: 'response' });
+    private paramsHorsAgence(f: { situation: string | null; etat: string | null; agence: string | null; agenceAgent: string | null; creePar: string | null; recherche: string | null; inclureCorriges: boolean; tout: boolean }): Record<string, string | boolean> {
+        const p: Record<string, string | boolean> = { inclureCorriges: f.inclureCorriges, tout: f.tout };
+        if (f.situation) p['situation'] = f.situation;
+        if (f.etat) p['etat'] = f.etat;
+        if (f.agence) p['agence'] = f.agence;
+        if (f.agenceAgent) p['agenceAgent'] = f.agenceAgent;
+        if (f.creePar) p['creePar'] = f.creePar;
+        if (f.recherche) p['recherche'] = f.recherche;
+        return p;
+    }
+
     getDossierCreditNegatif$ = (id: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/dossier`).pipe(catchError(this.handleError));
     exportDossierCreditNegatif$ = (id: number) =>
@@ -2296,8 +2324,47 @@ export class UserService {
         return <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/sms/repertoires/${repertoireId}/recharger`, formData).pipe(catchError(this.handleError));
     };
 
-    getNumerosRepertoireSms$ = (repertoireId: number, page = 0, size = 50) =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/repertoires/${repertoireId}/numeros?page=${page}&size=${size}`).pipe(catchError(this.handleError));
+    /** Les numeros d'un repertoire, page par page, avec recherche d'un numero precis. */
+    getNumerosRepertoireSms$ = (repertoireId: number, page = 0, size = 50, recherche = '') =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/sms/repertoires/${repertoireId}/numeros`, {
+                params: recherche ? { page, size, recherche } : { page, size }
+            })
+            .pipe(catchError(this.handleError));
+
+    /** Historique des chargements d'un repertoire (journalise depuis aout, affiche depuis le lot 0). */
+    getChargementsRepertoireSms$ = (repertoireId: number) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/sms/repertoires/${repertoireId}/chargements`)
+            .pipe(catchError(this.handleError));
+
+    // ---------------------------------------------------------------- desinscription SMS (lot 1)
+
+    /** Liste des numeros exclus des campagnes, avec recherche. */
+    getOptoutSms$ = (recherche = '', page = 0, size = 50) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/sms/optout`, {
+                params: recherche ? { recherche, page, size } : { page, size }
+            })
+            .pipe(catchError(this.handleError));
+
+    /** Etat et histoire d'un numero : exclu ou non, depuis quand, sur quelle demande. */
+    rechercherOptoutSms$ = (telephone: string) =>
+        <Observable<IResponse>>this.http
+            .get<IResponse>(`${this.server}/ecredit/sms/optout/${encodeURIComponent(telephone)}`)
+            .pipe(catchError(this.handleError));
+
+    /** Retire un numero des campagnes. Motif obligatoire. */
+    exclureSms$ = (telephone: string, origine: string, motif: string) =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/sms/optout`, { telephone, origine, motif })
+            .pipe(catchError(this.handleError));
+
+    /** Reinscrit un numero. Reserve a l'administrateur cote serveur. */
+    leverOptoutSms$ = (telephone: string, motif: string) =>
+        <Observable<IResponse>>this.http
+            .post<IResponse>(`${this.server}/ecredit/sms/optout/lever`, { telephone, motif })
+            .pipe(catchError(this.handleError));
 
     getCampagnesSms$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/sms/campagnes`).pipe(catchError(this.handleError));
 
