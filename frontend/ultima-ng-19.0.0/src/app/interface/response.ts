@@ -333,6 +333,16 @@ export interface IResponse {
         /** Score de confiance : membres passes dans une classe moins bonne (lot 3). */
         derive?: { mois: string | null; degradations: any[] };
         photo?: { mois: string; membres: number; enregistres: number; erreurs: number; message: string };
+        /** Répertoires SMS : une page de numéros d'un répertoire (lot 0). */
+        numerosPage?: { numeros: string[]; total: number; page: number; size: number; parOperateur: Record<string, number> };
+        /** Répertoires SMS : historique des chargements (lot 0). */
+        chargements?: { nbImportes: number; nbDoublons: number; nbInvalides: number; chargePar: string; dateChargement: string }[];
+        /** Désinscription SMS : liste des numéros exclus (lot 1). */
+        exclusions?: { telephone: string; actif: boolean; origine: string; motif: string; excluPar: string; dateExclusion: string; levePar?: string; dateLevee?: string; motifLevee?: string }[];
+        /** Désinscription SMS : totaux par origine. */
+        syntheseOptout?: { total: number; parOrigine: Record<string, number> };
+        /** Désinscription SMS : état et histoire d'un numéro. */
+        optout?: any;
         /**
          * Crédits octroyés : synthèse du niveau affiché. Nom propre à cet écran — « synthese »
          * est déjà pris par l'état TT1, qui y met un tableau.
