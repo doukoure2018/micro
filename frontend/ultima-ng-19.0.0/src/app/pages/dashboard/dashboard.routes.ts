@@ -663,11 +663,6 @@ export default [
         loadComponent: () => import('./digital/repertoires-sms/repertoires-sms.component').then((c) => c.RepertoiresSmsComponent)
     },
     {
-        path: 'desinscriptions-sms',
-        data: { breadcrumb: 'Désinscriptions SMS' },
-        loadComponent: () => import('./digital/desinscriptions-sms/desinscriptions-sms.component').then((c) => c.DesinscriptionsSmsComponent)
-    },
-    {
         path: 'campagnes-sms/:campagneId',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Suivi campagne SMS', rubrique: 'ADMIN_OUTILS' },
