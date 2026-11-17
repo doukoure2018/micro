@@ -259,7 +259,8 @@ export class AppMenu {
                     { label: 'Audit rapprochement', icon: 'pi pi-fw pi-shield', routerLink: ['/dashboards/audit-rapprochement'] },
                     { label: 'Arrêtés de caisse', icon: 'pi pi-fw pi-money-bill', routerLink: ['/dashboards/suivi-arrete-caisse'] },
                     { label: 'Crédits négatifs', icon: 'pi pi-fw pi-exclamation-circle', routerLink: ['/dashboards/credits-negatifs'] },
-                    { label: 'Comptes mal adossés', icon: 'pi pi-fw pi-link', routerLink: ['/dashboards/comptes-mal-adosses'] }
+                    { label: 'Comptes mal adossés', icon: 'pi pi-fw pi-link', routerLink: ['/dashboards/comptes-mal-adosses'] },
+                    { label: 'Comptes hors agence', icon: 'pi pi-fw pi-building', routerLink: ['/dashboards/comptes-hors-agence'] }
                 ]
             });
         }
@@ -581,6 +582,12 @@ export class AppMenu {
                 label: 'Comptes mal adossés',
                 icon: 'pi pi-fw pi-link',
                 routerLink: ['/dashboards/comptes-mal-adosses']
+            });
+            // Comptes ouverts hors de l'agence du client (V214) : meme rubrique, memes personnes (17/11/2026).
+            items.push({
+                label: 'Comptes hors agence',
+                icon: 'pi pi-fw pi-building',
+                routerLink: ['/dashboards/comptes-hors-agence']
             });
         }
         // Synthese hebdomadaire de direction (V198) : le courriel du lundi, relisible a l'ecran.
