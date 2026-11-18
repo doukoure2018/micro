@@ -53,6 +53,19 @@ export default function Aujourdhui() {
     setRafraichit(false);
   }, [charger]);
 
+  /*
+    « A jour » ne voulait pas dire ce qu'on y lisait. Le mot repondait a la FILE D'ENVOI —
+    rien ne reste a transmettre — et l'agent le lisait comme « vos donnees sont fraiches ».
+    Le 18/11, apres un changement de format qui refait la copie locale, l'ecran annoncait
+    « a jour » au-dessus d'un portefeuille a zero credit. Un ecran rassurant sur une copie
+    vide est pire que pas d'ecran du tout : il n'y a plus de raison d'aller voir.
+  */
+  const copieVide = credits.length === 0;
+  const heuresDepuis = derniere
+    ? (Date.now() - new Date(derniere).getTime()) / 3_600_000
+    : null;
+  const copieVieille = heuresDepuis !== null && heuresDepuis > 24;
+
   // Le portefeuille, c'est ce que SAF porte. Une affectation dont SAF n'a plus le credit est
   // comptee a part : sinon le telephone annonce 90 credits la ou le web en compte 89.
   const portefeuille = credits.filter((c) => !c.horsCreditsVivants);
@@ -88,14 +101,18 @@ export default function Aujourdhui() {
       <Link href="/synchronisation" asChild>
         <Pressable style={s.bandeau}>
           <Text style={s.bandeauTexte}>
-            {derniere
-              ? `Donnees du ${dateCourte(derniere)} a ${heureCourte(derniere)}`
-              : 'Jamais synchronise'}
+            {copieVide
+              ? 'Portefeuille a recevoir : lancez une synchronisation'
+              : derniere
+                ? `Donnees du ${dateCourte(derniere)} a ${heureCourte(derniere)}`
+                : 'Jamais synchronise'}
           </Text>
           {enAttente > 0 ? (
             <Text style={s.badge}>{enAttente} en attente</Text>
+          ) : copieVide || copieVieille ? (
+            <Text style={s.badge}>a synchroniser</Text>
           ) : (
-            <Text style={s.badgeCalme}>a jour</Text>
+            <Text style={s.badgeCalme}>rien en attente</Text>
           )}
         </Pressable>
       </Link>
