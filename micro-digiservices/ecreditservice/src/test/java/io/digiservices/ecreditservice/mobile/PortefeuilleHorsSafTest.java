@@ -106,12 +106,18 @@ class PortefeuilleHorsSafTest {
     void safMuetSansEtatConnuDigiDonneLeNom() {
         when(saf.getTousCredits(anyString())).thenThrow(new IllegalStateException("VPN bancaire coupe"));
         when(repository.identitesConnues(any()))
-                .thenReturn(Map.of(MEMBRE, new IdentiteMembre("DIALLO SEKOUBA", "628111111")));
+                .thenReturn(Map.of(MEMBRE, new IdentiteMembre("DIALLO SEKOUBA", "628111111",
+                        "622222222", "Quartier Hermakono, Kouroussa", "Marche central")));
 
         CreditPortefeuille ligne = service().portefeuille(UUID_AGENT).get(0);
 
         assertEquals("DIALLO SEKOUBA", ligne.nomClient(), "digi porte la fiche du membre : le nom existe");
         assertEquals("628111111", ligne.telephone());
+        // SAF ne porte ni second numero ni adresse : ils ne peuvent venir que de digi, et ils
+        // doivent survivre a son silence — c'est la que l'agent en a le plus besoin.
+        assertEquals("622222222", ligne.telephoneAutre());
+        assertEquals("Quartier Hermakono, Kouroussa", ligne.adresseDomicile());
+        assertEquals("Marche central", ligne.lieuActivite());
         assertNull(ligne.encours(), "un encours inconnu reste vide : zero serait un mensonge");
         assertNull(ligne.joursRetard());
         assertNull(ligne.montantsAt(), "sans mesure, aucune date de mesure");

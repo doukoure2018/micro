@@ -204,13 +204,15 @@ export async function remplacerPortefeuille(credits: CreditPortefeuille[]): Prom
     await db.runAsync('DELETE FROM credit');
     for (const c of credits) {
       await db.runAsync(
-        `INSERT INTO credit (cod_agencia, num_credito, cod_cliente, nom_client, telephone, produit,
+        `INSERT INTO credit (cod_agencia, num_credito, cod_cliente, nom_client, telephone,
+                             telephone_autre, adresse_domicile, lieu_activite, produit,
                              encours, montant_impaye, jours_retard, prochaine_echeance,
                              prochaine_echeance_montant, derniere_appreciation,
                              derniere_visite_at, promesse_date, promesse_montant, montants_at,
                              hors_credits_vivants)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        c.codAgencia, c.numCredito, c.codCliente, c.nomClient, c.telephone, c.produit,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        c.codAgencia, c.numCredito, c.codCliente, c.nomClient, c.telephone,
+        c.telephoneAutre, c.adresseDomicile, c.lieuActivite, c.produit,
         c.encours, c.montantImpaye, c.joursRetard, c.prochaineEcheance,
         c.prochaineEcheanceMontant, c.derniereAppreciation, c.derniereVisiteAt,
         c.promesseDate, c.promesseMontant, c.montantsAt, c.horsCreditsVivants ? 1 : 0);
@@ -227,6 +229,9 @@ export async function portefeuilleLocal(): Promise<CreditPortefeuille[]> {
     codCliente: (l.cod_cliente as string) ?? null,
     nomClient: (l.nom_client as string) ?? null,
     telephone: (l.telephone as string) ?? null,
+    telephoneAutre: (l.telephone_autre as string) ?? null,
+    adresseDomicile: (l.adresse_domicile as string) ?? null,
+    lieuActivite: (l.lieu_activite as string) ?? null,
     produit: (l.produit as string) ?? null,
     encours: (l.encours as number) ?? null,
     montantImpaye: (l.montant_impaye as number) ?? null,

@@ -114,6 +114,10 @@ public final class MobileDtos {
             String codCliente,
             String nomClient,
             String telephone,
+            /** Les trois que SAF ne porte pas : ils viennent du dossier de credit dans digi. */
+            String telephoneAutre,
+            String adresseDomicile,
+            String lieuActivite,
             String produit,
             BigDecimal encours,
             BigDecimal montantImpaye,

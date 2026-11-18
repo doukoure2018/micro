@@ -157,6 +157,12 @@ public class MobileService {
                     premierRenseigne(s == null ? null : PortefeuilleCreditPhotoRepository.telephone(s),
                             k == null ? null : k.telephone(),
                             fiche == null ? null : fiche.telephone()),
+                    // SAF ne porte ni second numero ni adresse : ils ne peuvent venir que de
+                    // digi. Ils voyagent avec le portefeuille, donc dans la copie locale, parce
+                    // qu'une adresse sert justement la ou il n'y a pas de reseau.
+                    fiche == null ? null : fiche.telephoneAutre(),
+                    fiche == null ? null : fiche.adresseDomicile(),
+                    fiche == null ? null : fiche.lieuActivite(),
                     s != null ? s.getDesTipCredito() : (chiffres == null ? null : chiffres.produit()),
                     s != null ? s.getMonSaldo() : (chiffres == null ? null : chiffres.encours()),
                     s != null ? impaye(s) : (chiffres == null ? null : chiffres.montantImpaye()),

@@ -190,38 +190,69 @@ public class MobileRepository {
         }
         Map<String, IdentiteMembre> identites = new LinkedHashMap<>();
         jdbcClient.sql("""
-                        SELECT DISTINCT ON (cod_cliente) cod_cliente, nom, telephone
+                        SELECT t.cod_cliente,
+                               (array_agg(t.nom ORDER BY t.rang, t.recence DESC NULLS LAST)
+                                   FILTER (WHERE btrim(coalesce(t.nom, '')) <> ''))[1] AS nom,
+                               (array_agg(t.telephone ORDER BY t.rang, t.recence DESC NULLS LAST)
+                                   FILTER (WHERE btrim(coalesce(t.telephone, '')) <> ''))[1] AS telephone,
+                               (array_agg(t.telephone_autre ORDER BY t.rang, t.recence DESC NULLS LAST)
+                                   FILTER (WHERE btrim(coalesce(t.telephone_autre, '')) <> ''))[1] AS telephone_autre,
+                               (array_agg(t.adresse_domicile ORDER BY t.rang, t.recence DESC NULLS LAST)
+                                   FILTER (WHERE btrim(coalesce(t.adresse_domicile, '')) <> ''))[1] AS adresse_domicile,
+                               (array_agg(t.lieu_activite ORDER BY t.rang, t.recence DESC NULLS LAST)
+                                   FILTER (WHERE btrim(coalesce(t.lieu_activite, '')) <> ''))[1] AS lieu_activite
                           FROM (
                                SELECT pp.cod_cliente AS cod_cliente,
                                       btrim(coalesce(pp.nom_client, pp.nom_cliente, '') || ' '
                                             || coalesce(pp.prenom_client, '')) AS nom,
-                                      pp.tel_principal AS telephone, 1 AS rang
+                                      pp.tel_principal AS telephone,
+                                      pp.tel_otro AS telephone_autre,
+                                      NULL::text AS adresse_domicile,
+                                      NULL::text AS lieu_activite,
+                                      1 AS rang, NULL::timestamptz AS recence
                                  FROM personne_physique pp
                                 WHERE pp.cod_cliente IN (:ids)
                                UNION ALL
                                SELECT di.numero_membre,
                                       btrim(coalesce(di.nom, '') || ' ' || coalesce(di.prenom, '')),
-                                      di.telephone, 2
+                                      di.telephone, NULL,
+                                      di.addresse_domicile_contact,
+                                      coalesce(di.adresse_lieu_activite, di.lieu_activite),
+                                      2, di.createdat
                                  FROM demandeindividuel di
                                 WHERE di.numero_membre IN (:ids)
                                UNION ALL
                                SELECT mg.numero_membre,
-                                      coalesce(mg.membre_nom_saf, mg.nom_prenom), NULL, 3
+                                      coalesce(mg.membre_nom_saf, mg.nom_prenom),
+                                      NULL, NULL, NULL, NULL, 3, NULL
                                  FROM membre_groupe mg
                                 WHERE mg.numero_membre IN (:ids)
                           ) t
-                         WHERE nom IS NOT NULL AND btrim(nom) <> ''
-                         ORDER BY cod_cliente, rang
+                         GROUP BY t.cod_cliente
                         """)
                 .param("ids", List.copyOf(codClients))
                 .query().listOfRows()
                 .forEach(r -> identites.put((String) r.get("cod_cliente"),
-                        new IdentiteMembre((String) r.get("nom"), (String) r.get("telephone"))));
+                        new IdentiteMembre((String) r.get("nom"), (String) r.get("telephone"),
+                                (String) r.get("telephone_autre"),
+                                (String) r.get("adresse_domicile"),
+                                (String) r.get("lieu_activite"))));
         return identites;
     }
 
-    /** Ce que digi sait d'un membre quand SAF se tait. */
-    public record IdentiteMembre(String nom, String telephone) {
+    /**
+     * Ce que digi sait d'un membre quand SAF se tait, et ce que SAF ne porte pas du tout.
+     *
+     * <p>Chaque champ est pris à la PREMIÈRE source qui le renseigne, indépendamment des
+     * autres : le nom vient le plus souvent de la fiche signalétique, l'adresse ne peut venir
+     * que du dossier de crédit — digi ne range aucune adresse sur la fiche. Prendre la source
+     * entière, comme avant, aurait rendu l'adresse invisible pour tout membre ayant une
+     * fiche, c'est-à-dire presque tous.</p>
+     *
+     * <p>Entre deux dossiers d'un même membre, le plus récent gagne : une adresse déménage.</p>
+     */
+    public record IdentiteMembre(String nom, String telephone, String telephoneAutre,
+                                 String adresseDomicile, String lieuActivite) {
     }
 
     /**

@@ -18,6 +18,14 @@ export type CreditPortefeuille = {
   codCliente: string | null;
   nomClient: string | null;
   telephone: string | null;
+  /**
+   * Ce que SAF ne porte pas, et que seul digi connait : le second numero et les adresses du
+   * dossier de credit. Ils voyagent avec le portefeuille parce qu'une adresse sert justement
+   * la ou il n'y a pas de reseau — devant la maison du membre.
+   */
+  telephoneAutre: string | null;
+  adresseDomicile: string | null;
+  lieuActivite: string | null;
   produit: string | null;
   encours: number | null;
   montantImpaye: number | null;

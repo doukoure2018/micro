@@ -55,6 +55,14 @@ export default function FicheCredit() {
 
   // Une fiche porte parfois deux numeros (« 628833094/624380638 ») : on compose le premier.
   const aAppeler = premierNumero(credit.telephone);
+  const autreNumero = premierNumero(credit.telephoneAutre);
+  // Le second numero ne s'affiche que s'il DIFFERE du premier : les deux champs portent
+  // souvent la meme ligne, et proposer deux fois le meme bouton ferait perdre un appel.
+  const secondUtile = autreNumero && autreNumero !== aAppeler ? autreNumero : null;
+  // Les deux adresses sont souvent la meme chaine dans les dossiers : « FILY » / « FILY ».
+  // Repeter la ligne ne dit rien de plus, et fait douter de ce qu'on lit.
+  const activite = credit.lieuActivite !== credit.adresseDomicile ? credit.lieuActivite : null;
+  const aDesCoordonnees = Boolean(secondUtile || credit.adresseDomicile || activite);
 
   return (
     <ScrollView style={{ backgroundColor: couleurs.fond }} contentContainerStyle={s.page}>
@@ -107,6 +115,44 @@ export default function FicheCredit() {
               : 'Montants indisponibles : la banque n\'a pas pu etre lue'}
         </Text>
       </View>
+
+      {/*
+        Ce que SAF ne porte pas. L'agent qui part en tournee a besoin de savoir ou aller et
+        quel autre numero essayer ; tout cela vient du dossier de credit dans digi, et tout
+        cela est dans la copie locale — donc lisible devant la maison du membre, sans reseau.
+      */}
+      {aDesCoordonnees ? (
+        <View style={s.carte}>
+          <Text style={s.produit}>Le membre</Text>
+          {secondUtile ? (
+            <Pressable accessibilityRole="button"
+                       accessibilityLabel={`Appeler l autre numero, ${secondUtile}`}
+                       onPress={() => void appeler(secondUtile)}>
+              <Text style={s.telephone}>Autre numero · appeler {secondUtile}</Text>
+            </Pressable>
+          ) : null}
+          {/*
+            Une adresse s'ecrit sur sa propre ligne, alignee a gauche : « Quartier Hermakono,
+            derriere la mosquee » tient rarement au bout d'une ligne, et le meme texte aligne
+            a droite sur trois lignes se lit mal.
+          */}
+          {credit.adresseDomicile ? (
+            <View style={s.adresse}>
+              <Text style={s.donneeLibelle}>Domicile</Text>
+              <Text style={s.adresseTexte}>{credit.adresseDomicile}</Text>
+            </View>
+          ) : null}
+          {activite ? (
+            <View style={s.adresse}>
+              <Text style={s.donneeLibelle}>Activite</Text>
+              <Text style={s.adresseTexte}>{activite}</Text>
+            </View>
+          ) : null}
+          <Text style={s.source}>
+            Renseigne dans son dossier de credit, et non par la banque : a verifier sur place.
+          </Text>
+        </View>
+      ) : null}
 
       {chargeFiche && !fiche ? (
         <View style={s.attente}><ActivityIndicator color={couleurs.vert} /></View>
@@ -289,6 +335,8 @@ const s = StyleSheet.create({
   donnee: { flexDirection: 'row', justifyContent: 'space-between', gap: espaces.m },
   donneeLibelle: { fontSize: texte.petit, color: couleurs.texteSecondaire },
   donneeValeur: { fontSize: texte.petit, fontWeight: '600', color: couleurs.texte, flexShrink: 1, textAlign: 'right' },
+  adresse: { marginTop: espaces.xs },
+  adresseTexte: { fontSize: texte.petit, fontWeight: '600', color: couleurs.texte },
   actions: { gap: espaces.s },
   action: {
     minHeight: 52, borderRadius: 12, backgroundColor: couleurs.vert,

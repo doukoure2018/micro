@@ -95,6 +95,9 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       cod_cliente TEXT,
       nom_client TEXT,
       telephone TEXT,
+      telephone_autre TEXT,
+      adresse_domicile TEXT,
+      lieu_activite TEXT,
       produit TEXT,
       encours REAL,
       montant_impaye REAL,
@@ -290,8 +293,9 @@ async function creerSchema(db: SQLite.SQLiteDatabase): Promise<void> {
  * 5 : la collecte agricole — parcelle, passages, recolte (15/11/2026).
  * 6 : la copie des dossiers de credit de l'agent (15/11/2026).
  * 7 : le journal des notifications (17/11/2026).
+ * 8 : le second numero et les adresses du membre (18/11/2026).
  */
-const FORMAT_BASE = 7;
+const FORMAT_BASE = 8;
 
 /**
  * Rebatit la COPIE du portefeuille quand le format change — et elle seule. La file des
