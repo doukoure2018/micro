@@ -60,7 +60,17 @@ fi
 
 # 4. Les migrations que la sauvegarde ne contient pas encore.
 echo "🗄  migrations"
-$COMPOSE --profile migration up flyway-test 2>&1 | grep -E "Successfully|Migrating|ERROR|now at version" | sed 's/^/   /' || true
+# « run » rend le code de Flyway (« up » rend toujours 0) : une migration en echec arrete
+# le rafraichissement ici, avant de redemarrer une pile dont le code ne correspondrait pas au schema.
+set +e
+SORTIE_FLYWAY=$($COMPOSE --profile migration run --rm -T flyway-test 2>&1)
+CODE_FLYWAY=$?
+set -e
+echo "$SORTIE_FLYWAY" | grep -E "Successfully|Migrating|ERROR|Message|Detail|now at version" | sed 's/^/   /' || true
+if [ "$CODE_FLYWAY" -ne 0 ]; then
+    echo "   ❌ Migrations Flyway en echec (code $CODE_FLYWAY) : la pile n est pas redemarree."
+    exit 1
+fi
 
 # 5. Compte-rendu, puis redemarrage par le script et ses controles.
 docker exec "$CONTENEUR" psql -U "$UTILISATEUR" -d "$BASE" -At \

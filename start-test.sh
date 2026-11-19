@@ -89,7 +89,22 @@ echo "🚀 Demarrage"
 # Les images au marqueur demande (TEST_IMAGE_TAG) : « up » ne remplace pas une image deja
 # presente sous le meme marqueur, il faut tirer d abord. Une image absente n arrete pas tout.
 $COMPOSE $PROFILS pull --quiet --ignore-pull-failures 2>&1 | grep -viE "^\s*$" | tail -3 || true
-$COMPOSE --profile migration up flyway-test 2>&1 | grep -E "Successfully|Migrating|ERROR|now at version" || true
+# Les migrations d abord, et la pile ne demarre PAS si elles echouent : le nouveau code
+# tournerait sur l ancien schema et repondrait 500 a chaque appel. C est arrive le 19/11/2026
+# (V216 rejetee, pile demarree et annoncee ✅). « up » rend 0 meme quand le conteneur sort
+# en erreur ; « run » rend le code de Flyway lui-meme, demarre la base si besoin et ne
+# l arrete pas apres. Flyway annule la migration fautive : le schema reste a la version d avant.
+set +e
+SORTIE_FLYWAY=$($COMPOSE --profile migration run --rm -T flyway-test 2>&1)
+CODE_FLYWAY=$?
+set -e
+echo "$SORTIE_FLYWAY" | grep -E "Successfully|Migrating|ERROR|Message|Detail|Line  |now at version" || true
+if [ "$CODE_FLYWAY" -ne 0 ]; then
+    echo ""
+    echo "❌ Migrations Flyway en echec (code $CODE_FLYWAY) : la pile de test ne demarre pas."
+    echo "   Le schema est reste a la version d avant. Corriger la migration, puis relancer ./start-test.sh"
+    exit 1
+fi
 $COMPOSE $PROFILS up -d "$@"
 
 echo ""
