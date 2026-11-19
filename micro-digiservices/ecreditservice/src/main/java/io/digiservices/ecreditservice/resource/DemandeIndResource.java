@@ -950,14 +950,6 @@ public class DemandeIndResource {
         }
     }
 
-    @PatchMapping("/update/{demandeindividuel_id}")
-    public ResponseEntity<Response> rejetDemandeCredit(@NotNull Authentication authentication,
-                                                     @PathVariable(name = "demandeindividuel_id") Long demandeindividuel_id,
-                                                     HttpServletRequest request) {
-        demandeIndService.rejetDemandeInd(demandeindividuel_id);
-        return created(getUri()).body(getResponse(request, emptyMap(), "Mise à jour effectué avec Success", OK));
-    }
-
     /**
      * Liste des credits par delegations
      */

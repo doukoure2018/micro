@@ -94,17 +94,27 @@ public interface WorkflowRepository {
     List<String> getMesFonctions(Long userId);
     List<String> getRolesOfUser(Long userId);
 
-    // ===== Annulation du dossier (V163) =====
+    // ===== Annulation du dossier (V163, puis V216 : a toute etape, par tout role) =====
 
-    /** @return 1 si la demande d'annulation a ete posee, 0 si l'etat ou le porteur ne s'y prete pas. */
-    int demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
-                           Long userId, String codUsuarios, String username);
+    /** Ce que la regle d'annulation a besoin de savoir du dossier ; null si le dossier n'existe pas. */
+    WorkflowDemandeDto lireDossierPourAnnulation(Long demandeId);
 
-    int validerAnnulation(Long demandeId, Long agenceId, String decideePar);
+    /** @return 1 si le dossier a ete annule sur-le-champ, 0 s'il a change d'etat entre-temps. */
+    int annulerDirectement(Long demandeId, String etape, String role, String motifCode, String motif,
+                           String par, Long parId);
 
-    int refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar);
+    /** @return 1 si la demande d'annulation a ete posee, 0 si le dossier a change d'etat entre-temps. */
+    int demanderAnnulation(Long demandeId, String etape, String motifCode, String motif, String par, Long parId);
 
-    List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId);
+    int validerAnnulation(Long demandeId, String role, String decideePar);
+
+    int refuserAnnulation(Long demandeId, String role, String motifRefus, String decideePar);
+
+    /** @return 1 si le dossier annule est rouvert, 0 si le delai est passe ou le dossier n'est pas annule. */
+    int reouvrirDossier(Long demandeId, String par, String motif, int jours);
+
+    /** File d'un decideur : agenceId pour un DA, delegationId pour un DR, les deux a null pour DE / DG / DSIG. */
+    List<WorkflowDemandeDto> getAnnulationsADecider(String tenant, Long agenceId, Long delegationId);
 
     List<WorkflowDemandeDto> getAnnulationsAC(Long userId, String codUsuarios, String username);
 }

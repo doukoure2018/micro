@@ -693,40 +693,68 @@ public class WorkflowResource {
         throw new ApiException("Acces reserve aux agents d'accueil");
     }
 
-    // ==================== Annulation du dossier (V163, DSIG 2026-10-15) ====================
+    // ==================== Annulation du dossier (V163, puis V216 DSIG 2026-11-19) ====================
+    /*
+     * Un seul bouton pour tous les roles, a toute etape. Le serveur decide : le tenant de l'etape
+     * annule sur-le-champ, un autre acteur du dossier depose une demande que le tenant tranche,
+     * les autres sont refuses avec la raison. La regle est dans dossier/AnnulationDossier.java.
+     */
 
-    /** L'agent demande l'annulation de son dossier : le client s'est desiste. */
+    /** Ce que l'ecran doit savoir avant d'afficher le bouton : mode, tenant, raison, reouverture. */
+    @GetMapping("/{demandeId}/droit-annulation")
+    public ResponseEntity<Response> droitAnnulation(@PathVariable Long demandeId,
+                                                    Authentication authentication,
+                                                    HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("droit", workflowService.droitAnnulation(demandeId, user)), "Droit d'annulation", OK));
+    }
+
+    /** Le bouton unique : annulation directe par le tenant, ou demande au tenant. */
+    @PutMapping("/{demandeId}/annuler-dossier")
+    public ResponseEntity<Response> annulerDossier(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String motifCode = body.get("motifCode") != null ? String.valueOf(body.get("motifCode")) : null;
+        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
+        var decision = workflowService.annulerDossier(demandeId, motifCode, motif, user);
+        boolean directe = decision.mode() == io.digiservices.ecreditservice.dossier.AnnulationDossier.Mode.DIRECTE;
+        String message = directe
+                ? "Dossier annulé : il rejoint les dossiers clôturés"
+                : "Annulation demandée, en attente de la décision de "
+                  + io.digiservices.ecreditservice.dossier.AnnulationDossier.libelleTenant(decision.tenant());
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("message", message, "mode", decision.mode().name(),
+                        "tenant", decision.tenant() == null ? "" : decision.tenant()),
+                directe ? "Dossier annulé" : "Annulation demandée", OK));
+    }
+
+    /** Compatibilite avec la fenetre d'avant V216 : meme traitement que annuler-dossier. */
     @PutMapping("/{demandeId}/demander-annulation")
     public ResponseEntity<Response> demanderAnnulation(
             @PathVariable Long demandeId,
             @RequestBody Map<String, Object> body,
             Authentication authentication,
             HttpServletRequest httpRequest) {
-        var user = userClient.getUserByUuid(authentication.getName());
-        String demandeePar = user.getFirstName() + " " + user.getLastName();
-        String motifCode = body.get("motifCode") != null ? String.valueOf(body.get("motifCode")) : null;
-        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
-        workflowService.demanderAnnulation(demandeId, motifCode, motif, demandeePar,
-                user.getUserId(), demandeePar, user.getUsername());
-        return ResponseEntity.ok(getResponse(httpRequest,
-                Map.of("message", "Annulation demandée, en attente de la validation du Directeur d'Agence"),
-                "Annulation demandée", OK));
+        return annulerDossier(demandeId, body, authentication, httpRequest);
     }
 
-    /** Le DA valide l'annulation : le dossier sort du circuit. */
+    /** Le tenant de l'etape memorisee valide : le dossier sort du circuit. */
     @PutMapping("/{demandeId}/valider-annulation")
     public ResponseEntity<Response> validerAnnulation(
             @PathVariable Long demandeId,
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        String decideePar = user.getFirstName() + " " + user.getLastName();
-        workflowService.validerAnnulation(demandeId, user.getAgenceId(), decideePar);
+        workflowService.validerAnnulation(demandeId, user);
         return ResponseEntity.ok(getResponse(httpRequest,
                 Map.of("message", "Dossier annulé"), "Annulation validée", OK));
     }
 
-    /** Le DA refuse : le dossier reprend sa course a l'etape ou il etait. */
+    /** Le tenant refuse : le dossier reprend sa course a l'etape ou il etait. */
     @PutMapping("/{demandeId}/refuser-annulation")
     public ResponseEntity<Response> refuserAnnulation(
             @PathVariable Long demandeId,
@@ -734,21 +762,42 @@ public class WorkflowResource {
             Authentication authentication,
             HttpServletRequest httpRequest) {
         var user = userClient.getUserByUuid(authentication.getName());
-        String decideePar = user.getFirstName() + " " + user.getLastName();
         String motifRefus = body.get("motifRefus") != null ? String.valueOf(body.get("motifRefus")) : null;
-        workflowService.refuserAnnulation(demandeId, user.getAgenceId(), motifRefus, decideePar);
+        workflowService.refuserAnnulation(demandeId, motifRefus, user);
         return ResponseEntity.ok(getResponse(httpRequest,
                 Map.of("message", "Annulation refusée, le dossier reprend son cours"), "Annulation refusée", OK));
     }
 
-    /** File du DA : les annulations de son agence qui attendent sa decision. */
+    /** Reouverture d'un dossier annule par le tenant de son etape, dans les trente jours. */
+    @PutMapping("/{demandeId}/reouvrir-dossier")
+    public ResponseEntity<Response> reouvrirDossier(
+            @PathVariable Long demandeId,
+            @RequestBody Map<String, Object> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        String motif = body.get("motif") != null ? String.valueOf(body.get("motif")) : null;
+        workflowService.reouvrirDossier(demandeId, motif, user);
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("message", "Dossier rouvert : il reprend son cours à l'étape où il s'était arrêté"),
+                "Dossier rouvert", OK));
+    }
+
+    /** File du decideur connecte : les demandes dont il est le tenant, dans son perimetre. */
+    @GetMapping("/annulations-a-decider")
+    public ResponseEntity<Response> getAnnulationsADecider(Authentication authentication,
+                                                           HttpServletRequest httpRequest) {
+        var user = userClient.getUserByUuid(authentication.getName());
+        var result = workflowService.getAnnulationsADecider(user);
+        return ResponseEntity.ok(getResponse(httpRequest,
+                Map.of("workflowDemandes", result), "Annulations à décider récupérées", OK));
+    }
+
+    /** Compatibilite : la file du DA est la file du decideur connecte. */
     @GetMapping("/annulations-a-valider-da")
     public ResponseEntity<Response> getAnnulationsAValiderDA(Authentication authentication,
                                                             HttpServletRequest httpRequest) {
-        var user = userClient.getUserByUuid(authentication.getName());
-        var result = workflowService.getAnnulationsAValiderDA(user.getAgenceId());
-        return ResponseEntity.ok(getResponse(httpRequest,
-                Map.of("workflowDemandes", result), "Annulations à valider récupérées", OK));
+        return getAnnulationsADecider(authentication, httpRequest);
     }
 
     /** Suivi de l'agent : ses demandes en attente et les refus du DA. */

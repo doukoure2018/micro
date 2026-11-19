@@ -1,6 +1,11 @@
 package io.digiservices.ecreditservice.service.impl;
 
+import io.digiservices.clients.EbankingPortefeuilleClient;
+import io.digiservices.clients.domain.User;
+import io.digiservices.clients.portefeuille.CreditMembreSafDto;
+import io.digiservices.ecreditservice.dossier.AnnulationDossier;
 import io.digiservices.ecreditservice.dto.AgentAgenceDto;
+import io.digiservices.ecreditservice.service.AnnulationDossierNotifier;
 import io.digiservices.ecreditservice.dto.WorkflowDemandeDto;
 import io.digiservices.ecreditservice.dto.WorkflowRejetRequest;
 import io.digiservices.ecreditservice.exception.ApiException;
@@ -12,7 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -24,6 +34,8 @@ public class WorkflowServiceImpl implements WorkflowService {
     private static final java.math.BigDecimal SEUIL_BILAN_GNF = new java.math.BigDecimal("50000000");
 
     private final WorkflowRepository workflowRepository;
+    private final EbankingPortefeuilleClient portefeuilleClient;
+    private final AnnulationDossierNotifier notifier;
     private final AnalyseChargesFonctionnaireService analyseChargesFonctionnaireService;
     private final io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService analyseCreditAgricoleService;
 
@@ -514,60 +526,252 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
     }
 
-    // ===== Annulation du dossier (V163, DSIG 2026-10-15) =====
-
-    /** Motifs normalises : c'est le code qui se compte, le commentaire qui explique le cas. */
-    private static final Set<String> MOTIFS_ANNULATION = Set.of(
-            "DESISTEMENT_CLIENT", "CLIENT_INJOIGNABLE", "DOUBLE_SAISIE", "ERREUR_SAISIE", "AUTRE");
+    // ===== Annulation du dossier (V163, puis V216 DSIG 2026-11-19 : a toute etape, par tout role) =====
 
     /** Un commentaire plus court n'explique rien : meme exigence que les autres motifs du circuit. */
     private static final int LONGUEUR_MINIMALE_MOTIF = 10;
 
+    private static AnnulationDossier.Acteur acteur(User u) {
+        String nom = ((u.getFirstName() == null ? "" : u.getFirstName()) + " "
+                + (u.getLastName() == null ? "" : u.getLastName())).trim();
+        return new AnnulationDossier.Acteur(u.getRole(), u.getService(), u.getUserId(), u.getUsername(), nom,
+                u.getAgenceId(), u.getDelegationId());
+    }
+
+    private static String nomAffichable(User u) {
+        return acteur(u).nomComplet();
+    }
+
+    private static AnnulationDossier.Dossier dossier(WorkflowDemandeDto d, boolean creditSafMisEnPlace) {
+        return new AnnulationDossier.Dossier(d.getDemandeIndividuelId(), d.getValidationState(), d.getStatutDemande(),
+                d.getAgence(), d.getDelegation(), d.getAgentCreditAffecte(), d.getCodUsuarios(), d.getSaisiePar(),
+                creditSafMisEnPlace);
+    }
+
+    private WorkflowDemandeDto lire(Long demandeId) {
+        WorkflowDemandeDto d = workflowRepository.lireDossierPourAnnulation(demandeId);
+        if (d == null) throw new ApiException("Dossier " + demandeId + " introuvable");
+        return d;
+    }
+
+    /**
+     * La garde SAF : un dossier approuve au niveau final n'est annulable ici que si aucun credit
+     * n'a ete ouvert pour le membre depuis la validation. Retourne vrai si un credit existe ; leve
+     * une erreur explicite si SAF ne repond pas (jamais d'annulation a l'aveugle) ou si le numero
+     * de membre manque (rien a verifier, donc rien a accorder).
+     */
+    private boolean creditSafMisEnPlace(WorkflowDemandeDto d) {
+        if (!AnnulationDossier.VALIDATED_FINAL.equals(d.getValidationState())) return false;
+        String membre = d.getNumeroMembre() == null ? "" : d.getNumeroMembre().trim();
+        if (membre.isEmpty()) {
+            throw new ApiException("Ce dossier approuvé n'a pas de numéro de membre : impossible de vérifier dans SAF "
+                    + "qu'aucun crédit n'est mis en place, donc impossible de l'annuler ici");
+        }
+        List<CreditMembreSafDto> credits;
+        try {
+            credits = portefeuilleClient.getCreditsDesMembres(List.of(membre));
+        } catch (Exception e) {
+            log.warn("[ANNULATION] SAF injoignable pour le membre {} : {}", membre, e.getMessage());
+            throw new ApiException("SAF ne répond pas : impossible de vérifier que le crédit n'est pas déjà mis en place. "
+                    + "Réessayez plus tard, l'annulation n'est jamais accordée à l'aveugle");
+        }
+        LocalDate depuis = d.getDateValidationFinale() == null ? null : d.getDateValidationFinale().toLocalDate();
+        return credits != null && credits.stream().anyMatch(c -> c.getFecApertura() != null
+                && (depuis == null || !c.getFecApertura().isBefore(depuis)));
+    }
+
     @Override
-    public void demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
-                                   Long userId, String codUsuarios, String username) {
-        if (motifCode == null || !MOTIFS_ANNULATION.contains(motifCode)) {
+    public Map<String, Object> droitAnnulation(Long demandeId, User user) {
+        WorkflowDemandeDto d = workflowRepository.lireDossierPourAnnulation(demandeId);
+        Map<String, Object> droit = new LinkedHashMap<>();
+        if (d == null) {
+            droit.put("mode", "REFUS");
+            droit.put("raison", "Dossier introuvable");
+            droit.put("peutReouvrir", false);
+            return droit;
+        }
+        AnnulationDossier.Acteur a = acteur(user);
+        AnnulationDossier.Decision decision;
+        try {
+            decision = AnnulationDossier.decider(a, dossier(d, creditSafMisEnPlace(d)));
+        } catch (ApiException e) {
+            decision = new AnnulationDossier.Decision(AnnulationDossier.Mode.REFUS,
+                    AnnulationDossier.tenantDe(d.getValidationState()), e.getMessage());
+        }
+        droit.put("mode", decision.mode().name());
+        droit.put("etape", d.getValidationState());
+        droit.put("tenant", decision.tenant());
+        droit.put("libelleTenant", AnnulationDossier.libelleTenant(decision.tenant()));
+        droit.put("raison", decision.raison());
+        droit.put("libelleBouton", decision.mode() == AnnulationDossier.Mode.DIRECTE
+                ? "Annuler le dossier" : "Demander l'annulation");
+        // Reouverture : dossier annule, dans le delai, par le tenant de l'etape ou il s'est arrete.
+        boolean annule = "ANNULE".equals(d.getStatutDemande());
+        boolean dansLeDelai = d.getDateDecisionAnnulation() != null
+                && d.getDateDecisionAnnulation().isAfter(LocalDateTime.now().minusDays(AnnulationDossier.JOURS_REOUVERTURE));
+        boolean tenantDeLEtape = AnnulationDossier.peutDecider(a, AnnulationDossier.tenantDe(d.getValidationState()),
+                dossier(d, false));
+        droit.put("peutReouvrir", annule && dansLeDelai && tenantDeLEtape);
+        droit.put("joursReouverture", AnnulationDossier.JOURS_REOUVERTURE);
+        if (annule && !dansLeDelai) {
+            droit.put("raisonReouverture", "Le délai de réouverture de " + AnnulationDossier.JOURS_REOUVERTURE + " jours est passé");
+        } else if (annule && !tenantDeLEtape) {
+            droit.put("raisonReouverture", "Seul " + AnnulationDossier.libelleTenant(
+                    AnnulationDossier.tenantDe(d.getValidationState())) + " peut rouvrir ce dossier");
+        }
+        // La trace de l'annulation, pour les bandeaux de la page : la lecture du détail
+        // (GET /ecredit/detail) ne porte pas ces colonnes, c'est ici que la page les prend.
+        Map<String, Object> trace = new LinkedHashMap<>();
+        trace.put("enAttente", AnnulationDossier.ETAPE_DEMANDE.equals(d.getValidationState()));
+        trace.put("annule", annule);
+        trace.put("etatAvantAnnulation", d.getEtatAvantAnnulation());
+        trace.put("tenantDecision", AnnulationDossier.tenantDe(d.getEtatAvantAnnulation()));
+        trace.put("libelleTenantDecision", AnnulationDossier.libelleTenant(AnnulationDossier.tenantDe(d.getEtatAvantAnnulation())));
+        trace.put("motifCode", d.getAnnulationMotifCode());
+        trace.put("motif", d.getAnnulationMotif());
+        trace.put("demandeePar", d.getAnnulationDemandeePar());
+        trace.put("dateDemande", d.getDateDemandeAnnulation());
+        trace.put("decideePar", d.getAnnulationDecideePar());
+        trace.put("dateDecision", d.getDateDecisionAnnulation());
+        trace.put("motifRefus", d.getAnnulationMotifRefus());
+        trace.put("modeAnnulation", d.getAnnulationMode());
+        trace.put("role", d.getAnnulationRole());
+        trace.put("dateReouverture", d.getDateReouverture());
+        trace.put("reouverturePar", d.getReouverturePar());
+        droit.put("annulation", trace);
+        return droit;
+    }
+
+    @Override
+    @Transactional
+    public AnnulationDossier.Decision annulerDossier(Long demandeId, String motifCode, String motif, User user) {
+        if (motifCode == null || !AnnulationDossier.MOTIFS.contains(motifCode)) {
             throw new ApiException("Le motif d'annulation est obligatoire et doit être choisi dans la liste");
         }
         if (motif == null || motif.strip().length() < LONGUEUR_MINIMALE_MOTIF) {
             throw new ApiException("Expliquez l'annulation en " + LONGUEUR_MINIMALE_MOTIF + " caractères au moins");
         }
-        log.info("Demande d'annulation du dossier {} par {} ({}) : {}", demandeId, demandeePar, motifCode, motif);
-        int rows = workflowRepository.demanderAnnulation(demandeId, motifCode, motif.strip(), demandeePar,
-                userId, codUsuarios, username);
-        if (rows == 0) {
-            throw new ApiException("Annulation impossible : ce dossier ne vous est pas affecté, "
-                    + "il est déjà mis en place, ou une demande d'annulation est déjà en cours");
+        WorkflowDemandeDto d = lire(demandeId);
+        AnnulationDossier.Acteur a = acteur(user);
+        AnnulationDossier.Decision decision = AnnulationDossier.decider(a, dossier(d, creditSafMisEnPlace(d)));
+        if (!decision.permise()) {
+            throw new ApiException(decision.raison());
         }
+        String etape = d.getValidationState() == null || d.getValidationState().isBlank() ? "NOUVEAU" : d.getValidationState();
+        String par = nomAffichable(user);
+        String texte = motif.strip();
+        if (decision.mode() == AnnulationDossier.Mode.DIRECTE) {
+            String role = a.roleNormalise();
+            log.info("Annulation directe du dossier {} par {} ({}) : {} — {}", demandeId, par, role, motifCode, texte);
+            int rows = workflowRepository.annulerDirectement(demandeId, etape, role, motifCode, texte, par, user.getUserId());
+            if (rows == 0) {
+                throw new ApiException("Le dossier a changé d'étape entre-temps : rouvrez-le et recommencez");
+            }
+            notifier.annulationDirecte(d, par, role, texte);
+        } else {
+            log.info("Demande d'annulation du dossier {} par {} ({}) : {} — {}", demandeId, par, a.roleNormalise(), motifCode, texte);
+            int rows = workflowRepository.demanderAnnulation(demandeId, etape, motifCode, texte, par, user.getUserId());
+            if (rows == 0) {
+                throw new ApiException("Le dossier a changé d'étape entre-temps : rouvrez-le et recommencez");
+            }
+            notifier.demande(d, decision.tenant(), par, texte);
+        }
+        return decision;
+    }
+
+    /** Le tenant de l'etape memorisee, ou la DSIG ; sinon, erreur qui nomme le decideur attendu. */
+    private String controlerDecideur(WorkflowDemandeDto d, User user) {
+        if (!AnnulationDossier.ETAPE_DEMANDE.equals(d.getValidationState())) {
+            throw new ApiException("Aucune annulation n'est en attente sur ce dossier");
+        }
+        String tenant = AnnulationDossier.tenantDe(d.getEtatAvantAnnulation());
+        AnnulationDossier.Acteur a = acteur(user);
+        if (!AnnulationDossier.peutDecider(a, tenant, dossier(d, false))) {
+            throw new ApiException("Seul " + AnnulationDossier.libelleTenant(tenant)
+                    + " peut décider de cette annulation (dossier arrêté à l'étape "
+                    + d.getEtatAvantAnnulation() + ")");
+        }
+        return a.roleNormalise();
     }
 
     @Override
-    public void validerAnnulation(Long demandeId, Long agenceId, String decideePar) {
-        log.info("Validation de l'annulation du dossier {} par {}", demandeId, decideePar);
-        int rows = workflowRepository.validerAnnulation(demandeId, agenceId, decideePar);
+    @Transactional
+    public void validerAnnulation(Long demandeId, User user) {
+        WorkflowDemandeDto d = lire(demandeId);
+        String role = controlerDecideur(d, user);
+        String par = nomAffichable(user);
+        log.info("Validation de l'annulation du dossier {} par {} ({})", demandeId, par, role);
+        int rows = workflowRepository.validerAnnulation(demandeId, role, par);
         if (rows == 0) {
-            throw new ApiException("Demande non trouvée, hors de votre agence, "
-                    + "ou aucune annulation n'est en attente sur ce dossier");
+            throw new ApiException("Aucune annulation n'est en attente sur ce dossier");
         }
+        notifier.decision(d, true, par, null);
     }
 
     @Override
-    public void refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar) {
+    @Transactional
+    public void refuserAnnulation(Long demandeId, String motifRefus, User user) {
         if (motifRefus == null || motifRefus.strip().length() < LONGUEUR_MINIMALE_MOTIF) {
             throw new ApiException("Le motif du refus est obligatoire, en "
                     + LONGUEUR_MINIMALE_MOTIF + " caractères au moins");
         }
-        log.info("Refus de l'annulation du dossier {} par {} : {}", demandeId, decideePar, motifRefus);
-        int rows = workflowRepository.refuserAnnulation(demandeId, agenceId, motifRefus.strip(), decideePar);
+        WorkflowDemandeDto d = lire(demandeId);
+        String role = controlerDecideur(d, user);
+        String par = nomAffichable(user);
+        log.info("Refus de l'annulation du dossier {} par {} ({}) : {}", demandeId, par, role, motifRefus);
+        int rows = workflowRepository.refuserAnnulation(demandeId, role, motifRefus.strip(), par);
         if (rows == 0) {
-            throw new ApiException("Demande non trouvée, hors de votre agence, "
-                    + "ou aucune annulation n'est en attente sur ce dossier");
+            throw new ApiException("Aucune annulation n'est en attente sur ce dossier");
         }
+        notifier.decision(d, false, par, motifRefus.strip());
     }
 
     @Override
-    public List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId) {
-        return workflowRepository.getAnnulationsAValiderDA(agenceId);
+    @Transactional
+    public void reouvrirDossier(Long demandeId, String motif, User user) {
+        if (motif == null || motif.strip().length() < LONGUEUR_MINIMALE_MOTIF) {
+            throw new ApiException("Le motif de la réouverture est obligatoire, en "
+                    + LONGUEUR_MINIMALE_MOTIF + " caractères au moins");
+        }
+        WorkflowDemandeDto d = lire(demandeId);
+        if (!"ANNULE".equals(d.getStatutDemande())) {
+            throw new ApiException("Ce dossier n'est pas annulé");
+        }
+        String tenant = AnnulationDossier.tenantDe(d.getValidationState());
+        if (!AnnulationDossier.peutDecider(acteur(user), tenant, dossier(d, false))) {
+            throw new ApiException("Seul " + AnnulationDossier.libelleTenant(tenant) + " peut rouvrir ce dossier");
+        }
+        String par = nomAffichable(user);
+        log.info("Réouverture du dossier {} par {} : {}", demandeId, par, motif);
+        int rows = workflowRepository.reouvrirDossier(demandeId, par, motif.strip(), AnnulationDossier.JOURS_REOUVERTURE);
+        if (rows == 0) {
+            throw new ApiException("La réouverture n'est possible que dans les "
+                    + AnnulationDossier.JOURS_REOUVERTURE + " jours qui suivent l'annulation");
+        }
+        notifier.reouverture(d, par, motif.strip());
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAnnulationsADecider(User user) {
+        AnnulationDossier.Acteur a = acteur(user);
+        String role = a.roleNormalise();
+        if (role == null) return List.of();
+        return switch (role) {
+            case AnnulationDossier.DA -> user.getAgenceId() == null ? List.of()
+                    : workflowRepository.getAnnulationsADecider(AnnulationDossier.DA, user.getAgenceId(), null);
+            case AnnulationDossier.DR -> user.getDelegationId() == null ? List.of()
+                    : workflowRepository.getAnnulationsADecider(AnnulationDossier.DR, null, user.getDelegationId());
+            case AnnulationDossier.DE -> workflowRepository.getAnnulationsADecider(AnnulationDossier.DE, null, null);
+            case AnnulationDossier.DG -> workflowRepository.getAnnulationsADecider(AnnulationDossier.DG, null, null);
+            case AnnulationDossier.DSIG -> {
+                List<WorkflowDemandeDto> toutes = new ArrayList<>();
+                for (String t : List.of(AnnulationDossier.DA, AnnulationDossier.DR, AnnulationDossier.DE, AnnulationDossier.DG)) {
+                    toutes.addAll(workflowRepository.getAnnulationsADecider(t, null, null));
+                }
+                yield toutes;
+            }
+            default -> List.of();
+        };
     }
 
     @Override
