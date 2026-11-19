@@ -73,9 +73,21 @@ public class UnifiedDataSourceConfig {
     /** Au-dela, SQL Server annule la requete du dossier : personne n'attend plus depuis longtemps. */
     private static final int DELAI_REQUETE_DOSSIER_S = 180;
 
+    /**
+     * Huit connexions vers la production, et non deux.
+     *
+     * <p>Le 19/11/2026, la fiche signalétique échouait en production sur
+     * « ProductionPool - Connection is not available » : une seule fiche ouvre trois lectures
+     * en parallèle (fiche, comptes, middleware), et deux utilisateurs en même temps suffisaient
+     * à faire attendre le troisième 45 s puis échouer. Les chemins forcés sur la production —
+     * fiche signalétique, téléphone, réconciliation, vérification de membre, crédits négatifs,
+     * comptes mal adossés — sont tous des lectures par clé, courtes : huit connexions portent
+     * la concurrence réelle sans peser sur la base où travaillent les agences. Décision du
+     * user le 19/11.</p>
+     */
     @Bean(name = "productionDataSource")
     public DataSource productionDataSource() {
-        return pool("Production", productionUrl, productionUsername, productionPassword, 2);
+        return pool("Production", productionUrl, productionUsername, productionPassword, 8);
     }
 
     @Bean(name = "sauvegardeDataSource")

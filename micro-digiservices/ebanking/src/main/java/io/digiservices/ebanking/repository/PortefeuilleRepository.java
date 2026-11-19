@@ -843,6 +843,15 @@ public class PortefeuilleRepository {
      * L'ecran et le classeur doivent montrer la meme chose, sans quoi on ne peut pas les
      * comparer.</p>
      *
+     * <p>Meme regle, autre ecriture (19/11/2026). La premiere version faisait
+     * {@code CHARINDEX(CONVERT(VARCHAR(30), :n), CONVERT(VARCHAR(MAX), DES_MOVIMIENTO))} avec deux
+     * {@code COLLATE} : convertir chaque libelle en VARCHAR(MAX) ligne par ligne, sur 21,9 M de
+     * lignes, coutait 122 s mesurees. {@code DES_MOVIMIENTO} est un VARCHAR(40) en
+     * SQL_Latin1_General_CP1_CI_AS : un {@code LIKE} direct, avec un motif envoye en VARCHAR et
+     * non en Unicode (sinon c'est la colonne que SQL Server convertit), rend exactement les
+     * memes lignes — verifie sur le credit 419/519398 — en 60 s. Toujours un parcours, mais
+     * sans la conversion.</p>
+     *
      * <p>Ce que cela coute : la recherche porte desormais sur le reseau entier, sans index
      * puisqu'elle cherche dans du texte libre. Restent deux bornes qui ne changent AUCUNE ligne
      * du resultat — l'entreprise, et la date d'ouverture du credit, puisqu'aucun mouvement
@@ -852,8 +861,7 @@ public class PortefeuilleRepository {
             SELECT TOP (:max) * FROM CC.CC_MOVIMTO_MENSUAL
              WHERE COD_EMPRESA = :codEmpresa
                AND (:depuis IS NULL OR FEC_MOVIMIENTO >= :depuis)
-               AND CHARINDEX(CONVERT(VARCHAR(30), :numTexte) COLLATE DATABASE_DEFAULT,
-                             ISNULL(CONVERT(VARCHAR(MAX), DES_MOVIMIENTO), '') COLLATE DATABASE_DEFAULT) > 0
+               AND DES_MOVIMIENTO LIKE :motif
              ORDER BY COD_AGENCIA, NUM_CUENTA, FEC_MOVIMIENTO, NUM_MOVIMIENTO
             """;
 
@@ -862,8 +870,7 @@ public class PortefeuilleRepository {
             SELECT TOP (:max) * FROM CG.CG_ASTO_DETALLE
              WHERE COD_EMPRESA = :codEmpresa AND COD_AGENCIA = :codAgencia
                AND (:depuis IS NULL OR FEC_MOVIMIENTO >= :depuis)
-               AND CHARINDEX(CONVERT(VARCHAR(30), :numTexte) COLLATE DATABASE_DEFAULT,
-                             ISNULL(CONVERT(VARCHAR(MAX), REFERENCIA), '') COLLATE DATABASE_DEFAULT) > 0
+               AND REFERENCIA LIKE :motif
              ORDER BY FEC_MOVIMIENTO, NUM_ASIENTO, NUM_LINEA
             """;
 
@@ -910,10 +917,14 @@ public class PortefeuilleRepository {
             MapSqlParameterSource p = new MapSqlParameterSource()
                     .addValue("codEmpresa", empresa).addValue("codAgencia", codAgencia)
                     .addValue("numCredito", numCredito).addValue("max", max);
+            // Le motif part en VARCHAR, pas en NVARCHAR (defaut du pilote) : face a une colonne
+            // VARCHAR en collation SQL_Latin1, un parametre Unicode force la conversion de la
+            // COLONNE a chaque ligne — et l'on repaie ce que la reecriture vient d'economiser.
             MapSqlParameterSource q = new MapSqlParameterSource()
                     .addValue("codEmpresa", empresa).addValue("codAgencia", codAgencia)
                     .addValue("max", max)
-                    .addValue("numTexte", String.valueOf(numCredito))
+                    .addValue("motif", new org.springframework.jdbc.core.SqlParameterValue(
+                            java.sql.Types.VARCHAR, "%" + numCredito + "%"))
                     .addValue("depuis", fecApertura == null ? null : java.sql.Date.valueOf(fecApertura));
 
             List<java.util.Map<String, Object>> echeancier = chrono(millis, "echeancier",
