@@ -719,8 +719,6 @@ export class UserService {
     getAllPointVentesAudit$ = (): Observable<IResponse> => this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/points-vente`).pipe(catchError(this.handleError));
 
     // Méthode pour rejeter une demande (spécifique au DA)
-    rejectDemandeIndividuel$ = (demandeIndividuelId: number) =>
-        <Observable<IResponse>>this.http.patch<IResponse>(`${this.server}/ecredit/update/${demandeIndividuelId}`, {}, { withCredentials: true }).pipe(tap(console.log), catchError(this.handleError));
 
     // Add these methods to your existing UserService
     // Correction annomalie
@@ -1690,18 +1688,23 @@ export class UserService {
     getCandidatsRepriseCharge$ = (userId: number) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/agents/${userId}/candidats-reprise`).pipe(catchError(this.handleError));
 
-    demanderAnnulationDossier$ = (demandeId: number, motifCode: string, motif: string) =>
-        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/demander-annulation`, { motifCode, motif }).pipe(catchError(this.handleError));
-
+    // ===== Annulation du dossier (V163, puis V216 : à toute étape, par tout rôle) =====
+    /** Ce que la page doit savoir avant d'afficher le bouton : mode (DIRECTE / DEMANDEE / REFUS), tenant, raison, réouverture. */
+    droitAnnulationDossier$ = (demandeId: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/droit-annulation`).pipe(catchError(this.handleError));
+    /** Le bouton unique : le serveur annule sur-le-champ (tenant de l'étape) ou enregistre une demande. */
+    annulerDossier$ = (demandeId: number, motifCode: string, motif: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/annuler-dossier`, { motifCode, motif }).pipe(catchError(this.handleError));
     validerAnnulationDossier$ = (demandeId: number) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/valider-annulation`, {}).pipe(catchError(this.handleError));
-
     refuserAnnulationDossier$ = (demandeId: number, motifRefus: string) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/refuser-annulation`, { motifRefus }).pipe(catchError(this.handleError));
-
-    getAnnulationsAValiderDA$ = () =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-a-valider-da`).pipe(catchError(this.handleError));
-
+    reouvrirDossier$ = (demandeId: number, motif: string) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/workflow/${demandeId}/reouvrir-dossier`, { motif }).pipe(catchError(this.handleError));
+    /** La file du décideur connecté (DA, DR, DE, DG, DSIG) : les demandes dont il est le tenant. */
+    getAnnulationsADecider$ = () =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-a-decider`).pipe(catchError(this.handleError));
+    getAnnulationsAValiderDA$ = () => this.getAnnulationsADecider$();
     getAnnulationsAC$ = () =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-ac`).pipe(catchError(this.handleError));
 

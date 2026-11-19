@@ -78,6 +78,23 @@ const SEVERITES: Record<string, SeveriteTag> = {
     ANNULATION_DEMANDEE: 'warn'
 };
 
+/** V163/V216 : motifs normalisés d'annulation d'un dossier, identiques à ceux du serveur. */
+export const LIBELLES_MOTIF_ANNULATION: Record<string, string> = {
+    DESISTEMENT_CLIENT: 'Désistement du client',
+    CLIENT_INJOIGNABLE: 'Client injoignable',
+    DOUBLE_SAISIE: 'Double saisie',
+    ERREUR_SAISIE: 'Erreur de saisie',
+    DOSSIER_INCOMPLET_ABANDONNE: 'Dossier incomplet abandonné',
+    CHANGEMENT_DE_PRODUIT: 'Changement de produit',
+    AUTRE: 'Autre motif'
+};
+
+export const MOTIFS_ANNULATION = Object.entries(LIBELLES_MOTIF_ANNULATION).map(([value, label]) => ({ label, value }));
+
+export function libelleMotifAnnulation(code?: string | null): string {
+    return (code && LIBELLES_MOTIF_ANNULATION[code]) || code || '—';
+}
+
 export function estRejete(d: { statutDemande?: string | null }): boolean {
     return d.statutDemande === 'REJET' || d.statutDemande === 'REJECTED';
 }
@@ -102,9 +119,10 @@ export function etapeDossier(d: { statutDemande?: string | null; validationState
     return ETAPES[d.validationState || 'NOUVEAU'] || 'RECEPTION';
 }
 
-export function libelleEtat(d: { statutDemande?: string | null; validationState?: string | null; motifRejetDg?: string | null; motifRejetDe?: string | null }): string {
+export function libelleEtat(d: { statutDemande?: string | null; validationState?: string | null; motifRejetDg?: string | null; motifRejetDe?: string | null; annulationMotifCode?: string | null }): string {
     if (estRejete(d)) return 'Rejetée';
-    if (estAnnule(d)) return 'Annulée (désistement)';
+    // V216 : le libellé dit le motif quand la liste le porte, « Annulée » sinon
+    if (estAnnule(d)) return d.annulationMotifCode ? `Annulée (${libelleMotifAnnulation(d.annulationMotifCode).toLowerCase()})` : 'Annulée';
     // Rejet DG confirmé par le DE (2026-09-23) : CORRECTION_DE sans motif DE propre
     if (d.validationState === 'CORRECTION_DE' && d.motifRejetDg && !d.motifRejetDe) return 'À corriger (rejet DG confirmé par le DE)';
     return LIBELLES[d.validationState || 'NOUVEAU'] || d.validationState || 'Nouvelle demande';
@@ -136,5 +154,6 @@ export const CARTES_EN_COURS: CarteFiltre[] = [
 export const CARTES_CLOTURES: CarteFiltre[] = [
     { cle: 'ALL', libelle: 'Toutes clôturées', description: 'Approuvées et rejetées', icone: 'pi-list', couleur: 'primary', predicat: () => true },
     { cle: 'APPROUVE', libelle: 'Approuvées', description: 'Niveau final atteint', icone: 'pi-verified', couleur: 'green', predicat: (d) => etapeDossier(d) === 'APPROUVE' },
-    { cle: 'REJETE', libelle: 'Rejetées', description: 'Refus définitif', icone: 'pi-times-circle', couleur: 'red', predicat: (d) => etapeDossier(d) === 'REJETE' }
+    { cle: 'REJETE', libelle: 'Rejetées', description: 'Refus définitif', icone: 'pi-times-circle', couleur: 'red', predicat: (d) => etapeDossier(d) === 'REJETE' },
+    { cle: 'ANNULE', libelle: 'Annulées', description: 'Sorties du circuit avec motif', icone: 'pi-ban', couleur: 'orange', predicat: (d) => etapeDossier(d) === 'ANNULATION' }
 ];

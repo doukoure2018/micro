@@ -1,3 +1,4 @@
+import { AnnulationsADeciderComponent } from '@/pages/dashboard/credit/annulations-a-decider/annulations-a-decider.component';
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
@@ -28,7 +29,7 @@ import { ToastModule } from 'primeng/toast';
     imports: [TooltipModule, 
         CommonModule, TableModule, InputIconModule, IconFieldModule, TagModule,
         ButtonModule, ToastModule, ProgressSpinnerModule, ChipModule, DividerModule,
-        TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule
+        TabViewModule, BadgeModule, DialogModule, ReactiveFormsModule, TextareaModule, AnnulationsADeciderComponent
     ],
     templateUrl: './resp-regional.component.html',
     providers: [MessageService]
