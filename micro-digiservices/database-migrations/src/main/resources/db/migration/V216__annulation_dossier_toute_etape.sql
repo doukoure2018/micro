@@ -19,6 +19,28 @@
 -- chk_validation_state n'est pas touchée.
 
 -- -------------------------------------------------------------------------------------
+-- 0. L'ancienne étape VALIDATION entre dans la contrainte (arbitrage 7)
+-- -------------------------------------------------------------------------------------
+-- Vingt-trois dossiers portent l'étape « VALIDATION », d'avant la V115, absente de
+-- chk_validation_state. La contrainte est NOT VALID mais Postgres la revérifie à CHAQUE
+-- UPDATE de la ligne : la V181 avait dû les laisser de côté, et le premier déploiement de
+-- cette V216 a échoué sur le dossier 15 (REJET / VALIDATION) à la reprise du § 3. Comme la
+-- règle d'annulation tient VALIDATION pour une étape de l'agent, ces dossiers doivent
+-- pouvoir être mis à jour : la liste complète est reprise (V115, V119, V163) + VALIDATION.
+ALTER TABLE demandeindividuel DROP CONSTRAINT IF EXISTS chk_validation_state;
+ALTER TABLE demandeindividuel ADD CONSTRAINT chk_validation_state
+    CHECK (validation_state IS NULL OR validation_state IN (
+        'NOUVEAU', 'SELECTION', 'APPROVED',
+        'VALIDATED_DA', 'VALIDATED_DR',
+        'PENDING_DG', 'VALIDATED_FINAL',
+        'CORRECTION', 'CORRECTION_DR', 'CORRECTION_DE',
+        'RETOUR_AGENT', 'REJETE_DG',
+        'EN_ATTENTE_DA', 'CORRECTION_ACCUEIL', 'AFFECTEE',
+        'ANNULATION_DEMANDEE',
+        'VALIDATION'
+    )) NOT VALID;
+
+-- -------------------------------------------------------------------------------------
 -- 1. Trace du mode et du rôle décideur, identité du demandeur, réouverture
 -- -------------------------------------------------------------------------------------
 ALTER TABLE demandeindividuel
