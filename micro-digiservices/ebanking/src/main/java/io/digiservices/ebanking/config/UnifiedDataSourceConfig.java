@@ -67,6 +67,12 @@ public class UnifiedDataSourceConfig {
     /** Attente maximale d'une connexion du pool : une base muette doit repondre « indisponible » vite. */
     private static final long ATTENTE_CONNEXION_MS = 45_000;
 
+    /** Le dossier a sa propre connexion : inutile de faire patienter, elle est prise ou libre. */
+    private static final long ATTENTE_DOSSIER_MS = 15_000;
+
+    /** Au-dela, SQL Server annule la requete du dossier : personne n'attend plus depuis longtemps. */
+    private static final int DELAI_REQUETE_DOSSIER_S = 180;
+
     @Bean(name = "productionDataSource")
     public DataSource productionDataSource() {
         return pool("Production", productionUrl, productionUsername, productionPassword, 2);
@@ -85,6 +91,41 @@ public class UnifiedDataSourceConfig {
     @Bean(name = "tertiaryDataSource")
     public DataSource tertiaryDataSource() {
         return pool("Tertiary", tertiaryUrl, tertiaryUsername, tertiaryPassword, 3);
+    }
+
+    /**
+     * Le dossier d'un crédit, et lui seul.
+     *
+     * <p><b>Une seule connexion, et c'est tout l'objet du bean.</b> Mesure du 19/11/2026 en
+     * production : une lecture de dossier dure <b>6 min 33</b> — elle cherche le numéro du
+     * crédit dans du texte libre sur tout le réseau, sans index, et c'est la règle voulue
+     * (voir {@code SQL_DOSSIER_COMPTE}). Tant qu'elle partageait le pool « Sauvegarde », elle
+     * immobilisait une connexion sur six pendant six minutes : <b>93 épuisements du pool le
+     * même jour</b>, et tout le reste des lectures SAF en échec — fiche signalétique,
+     * secteurs, activités. Un écran de diagnostic ne doit pas faire tomber la plateforme.</p>
+     *
+     * <p>Avec un pool à une connexion, deux agents qui cliquent en même temps ne s'additionnent
+     * plus : le second attend quinze secondes puis reçoit « dossier déjà en cours de lecture »,
+     * ce qui est vrai et lisible. Et aucun des deux ne gêne qui que ce soit d'autre.</p>
+     */
+    @Bean(name = "dossierDataSource")
+    public DataSource dossierDataSource() {
+        return pool("Dossier", sauvegardeUrl, sauvegardeUsername, sauvegardePassword, 1,
+                ATTENTE_DOSSIER_MS);
+    }
+
+    /**
+     * Le modèle du dossier : sa connexion dédiée, et un délai maximal côté SQL.
+     *
+     * <p>Sans ce délai, une requête partie de travers court jusqu'au bout — six minutes, ou
+     * davantage le jour où un crédit cite un numéro très répandu. Le navigateur a abandonné
+     * depuis longtemps, et le serveur continue. Au-delà de la borne, SQL Server annule.</p>
+     */
+    @Bean(name = "dossierJdbcTemplate")
+    public JdbcTemplate dossierJdbcTemplate(@Qualifier("dossierDataSource") DataSource dossier) {
+        JdbcTemplate modele = new JdbcTemplate(dossier);
+        modele.setQueryTimeout(DELAI_REQUETE_DOSSIER_S);
+        return modele;
     }
 
     /** L'aiguillage : production ou sauvegarde selon la requete en cours. */
@@ -132,6 +173,11 @@ public class UnifiedDataSourceConfig {
     }
 
     private HikariDataSource pool(String nom, String url, String utilisateur, String motDePasse, int taille) {
+        return pool(nom, url, utilisateur, motDePasse, taille, ATTENTE_CONNEXION_MS);
+    }
+
+    private HikariDataSource pool(String nom, String url, String utilisateur, String motDePasse,
+                                  int taille, long attenteMs) {
         log.info("Configuration DataSource {} : {} (compte {})", nom, hote(url), utilisateur);
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(url);
@@ -141,7 +187,7 @@ public class UnifiedDataSourceConfig {
         config.setPoolName(nom + "Pool");
         config.setMaximumPoolSize(taille);
         config.setMinimumIdle(0);
-        config.setConnectionTimeout(ATTENTE_CONNEXION_MS);
+        config.setConnectionTimeout(attenteMs);
         // Resilience VPN : ne pas bloquer ni planter au demarrage si SQL est injoignable ;
         // le pool se (re)connecte a la demande des que le tunnel revient.
         config.setInitializationFailTimeout(-1);

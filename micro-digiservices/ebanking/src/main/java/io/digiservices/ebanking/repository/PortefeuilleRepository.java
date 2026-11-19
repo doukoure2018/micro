@@ -38,9 +38,21 @@ import java.util.function.Supplier;
 public class PortefeuilleRepository {
 
     private final NamedParameterJdbcTemplate primary;
+    /**
+     * Le dossier d'un credit lit par sa PROPRE connexion, et jamais par celle des autres.
+     *
+     * <p>Mesure du 19/11/2026 : une lecture de dossier dure six minutes et demie. Tant qu'elle
+     * passait par l'aiguillage commun, elle prenait une connexion sur les six de la sauvegarde
+     * pendant tout ce temps — 93 epuisements du pool le meme jour, et toutes les autres
+     * lectures SAF en echec avec elle. Le pool « Dossier » ne porte qu'une connexion : un
+     * ecran de diagnostic ne doit pas faire tomber la plateforme.</p>
+     */
+    private final NamedParameterJdbcTemplate dossier;
 
-    public PortefeuilleRepository(@Qualifier("jdbcTemplate") JdbcTemplate jdbcTemplate) {
+    public PortefeuilleRepository(@Qualifier("jdbcTemplate") JdbcTemplate jdbcTemplate,
+                                  @Qualifier("dossierJdbcTemplate") JdbcTemplate dossierJdbcTemplate) {
         this.primary = new NamedParameterJdbcTemplate(jdbcTemplate);
+        this.dossier = new NamedParameterJdbcTemplate(dossierJdbcTemplate);
     }
 
     private static final String SQL_AGENCES = """
@@ -882,7 +894,7 @@ public class PortefeuilleRepository {
             MapSqlParameterSource cle = new MapSqlParameterSource()
                     .addValue("codAgencia", codAgencia).addValue("numCredito", numCredito);
             List<java.util.Map<String, Object>> fiches = chrono(millis, "fiche",
-                    () -> execute("portefeuille.dossier.fiche", () -> primary.query(SQL_DOSSIER_FICHE, cle, LIGNE_BRUTE)));
+                    () -> execute("portefeuille.dossier.fiche", () -> dossier.query(SQL_DOSSIER_FICHE, cle, LIGNE_BRUTE)));
             if (fiches.isEmpty()) {
                 log.info("[DOSSIER] credit {}/{} introuvable dans SAF", codAgencia, numCredito);
                 return io.digiservices.clients.portefeuille.DossierCreditDto.builder()
@@ -905,17 +917,20 @@ public class PortefeuilleRepository {
                     .addValue("depuis", fecApertura == null ? null : java.sql.Date.valueOf(fecApertura));
 
             List<java.util.Map<String, Object>> echeancier = chrono(millis, "echeancier",
-                    () -> execute("portefeuille.dossier.echeancier", () -> primary.query(SQL_DOSSIER_ECHEANCIER, p, LIGNE_BRUTE)));
+                    () -> execute("portefeuille.dossier.echeancier", () -> dossier.query(SQL_DOSSIER_ECHEANCIER, p, LIGNE_BRUTE)));
             List<java.util.Map<String, Object>> mouvements = chrono(millis, "mouvements",
-                    () -> execute("portefeuille.dossier.mouvements", () -> primary.query(SQL_DOSSIER_MOUVEMENTS, p, LIGNE_BRUTE)));
+                    () -> execute("portefeuille.dossier.mouvements", () -> dossier.query(SQL_DOSSIER_MOUVEMENTS, p, LIGNE_BRUTE)));
             List<java.util.Map<String, Object>> compte = chrono(millis, "compte",
-                    () -> execute("portefeuille.dossier.compte", () -> primary.query(SQL_DOSSIER_COMPTE, q, LIGNE_BRUTE)));
+                    () -> execute("portefeuille.dossier.compte", () -> dossier.query(SQL_DOSSIER_COMPTE, q, LIGNE_BRUTE)));
             List<java.util.Map<String, Object>> ecritures = chrono(millis, "ecritures",
-                    () -> execute("portefeuille.dossier.ecritures", () -> primary.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE)));
+                    () -> execute("portefeuille.dossier.ecritures", () -> dossier.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE)));
 
-            log.info("[DOSSIER] credit {}/{} : {} echeances, {} mouvements, {} lignes de compte, {} ecritures — {} ms",
+            // Le detail par requete, et pas seulement le total : le 19/11, le total disait
+            // 6 min 33 sans dire laquelle des cinq les avait passees. On ne regle pas ce qu'on
+            // ne sait pas nommer.
+            log.info("[DOSSIER] credit {}/{} : {} echeances, {} mouvements, {} lignes de compte, {} ecritures — {} ms {}",
                     codAgencia, numCredito, echeancier.size(), mouvements.size(), compte.size(), ecritures.size(),
-                    millis.values().stream().mapToLong(Long::longValue).sum());
+                    millis.values().stream().mapToLong(Long::longValue).sum(), millis);
 
             return io.digiservices.clients.portefeuille.DossierCreditDto.builder()
                     .codAgencia(codAgencia).numCredito(numCredito)
