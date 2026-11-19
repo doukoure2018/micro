@@ -1167,69 +1167,141 @@ public class WorkflowQuery {
             WHERE ur.user_id = :userId
             """;
 
-    // ==================== ANNULATION DU DOSSIER (V163, DSIG 2026-10-15) ====================
+    // ==================== ANNULATION DU DOSSIER (V163, puis V216 DSIG 2026-11-19) ====================
     /*
-     * Le client se desiste pendant l'analyse : l'agent demande l'annulation avec un motif,
-     * son DA tranche. Le dossier se fige entre les deux — aucune transition du circuit ne
-     * reconnait 'ANNULATION_DEMANDEE', donc il ne peut ni avancer, ni etre valide, ni etre
-     * affecte tant que la decision n'est pas prise. L'etape atteinte est memorisee pour
-     * pouvoir y revenir si le DA refuse.
+     * V163 : l'agent demande, son DA tranche. V216 : annulation possible a TOUTE etape, par TOUT
+     * role du circuit, selon une regle unique portee par dossier/AnnulationDossier.java — celui
+     * qui tient le dossier a son etape l'annule directement, les autres demandent et le tenant
+     * tranche. Les requetes ne portent plus la regle de role : elles gardent l'etat (statut vivant,
+     * etape lue juste avant, demande en attente) et ecrivent la trace. Le dossier se fige entre la
+     * demande et la decision : aucune transition du circuit ne reconnait 'ANNULATION_DEMANDEE'.
      */
 
-    /** Etapes depuis lesquelles l'agent peut demander l'annulation : partout sauf la phase
-     *  accueil (le dossier n'est pas encore le sien) et un dossier deja mis en place. */
-    public static final String UPDATE_DEMANDER_ANNULATION = """
+    /** Ce que la regle a besoin de savoir du dossier, en une lecture. */
+    public static final String SELECT_DOSSIER_POUR_ANNULATION = """
+            SELECT d.demandeindividuel_id AS "demandeIndividuelId",
+                   d.validation_state AS "validationState",
+                   d.statut_demande AS "statutDemande",
+                   d.agence, d.delegation, d.pos,
+                   d.agent_credit_affecte AS "agentCreditAffecte",
+                   d.cod_usuarios AS "codUsuarios",
+                   d.saisie_par AS "saisiePar",
+                   d.numero_membre AS "numeroMembre",
+                   d.nom, d.prenom, d.montant_demande AS "montantDemande",
+                   d.etat_avant_annulation AS "etatAvantAnnulation",
+                   d.annulation_dossier_demandee_par AS "annulationDemandeePar",
+                   d.annulation_dossier_demandee_par_id AS "annulationDemandeeParId",
+                   d.date_decision_annulation_dossier AS "dateDecisionAnnulation",
+                   COALESCE(d.date_validation_dg, d.date_validation_de, d.date_validation_dr, d.date_validation_da)
+                       AS "dateValidationFinale"
+            FROM demandeindividuel d
+            WHERE d.demandeindividuel_id = :demandeId
+            """;
+
+    /**
+     * Le tenant de l'etape annule sur-le-champ (ou la DSIG). L'etape atteinte est gardee, comme
+     * pour un rejet, pour que l'audit sache ou le dossier s'est arrete. La garde sur l'etape lue
+     * juste avant protege d'un dossier qui aurait bouge entre la lecture et l'ecriture.
+     */
+    public static final String UPDATE_ANNULER_DIRECTEMENT = """
             UPDATE demandeindividuel
-            SET etat_avant_annulation = validation_state,
-                validation_state = 'ANNULATION_DEMANDEE',
+            SET statut_demande = 'ANNULE',
+                etat_avant_annulation = validation_state,
+                annulation_dossier_mode = 'DIRECTE',
+                annulation_dossier_role = :role,
                 annulation_dossier_motif_code = :motifCode,
                 annulation_dossier_motif = :motif,
-                annulation_dossier_demandee_par = :demandeePar,
+                annulation_dossier_demandee_par = :par,
+                annulation_dossier_demandee_par_id = :parId,
+                date_demande_annulation_dossier = CURRENT_TIMESTAMP,
+                annulation_dossier_decidee_par = :par,
+                date_decision_annulation_dossier = CURRENT_TIMESTAMP,
+                annulation_dossier_motif_refus = NULL
+            WHERE demandeindividuel_id = :demandeId
+              AND statut_demande = 'EN_ATTENTE'
+              AND COALESCE(validation_state, 'NOUVEAU') = :etape
+            """;
+
+    /** Un autre acteur du dossier demande : le dossier se fige, le tenant de l'etape memorisee tranchera. */
+    public static final String UPDATE_DEMANDER_ANNULATION = """
+            UPDATE demandeindividuel
+            SET etat_avant_annulation = COALESCE(validation_state, 'NOUVEAU'),
+                validation_state = 'ANNULATION_DEMANDEE',
+                annulation_dossier_mode = 'DEMANDEE',
+                annulation_dossier_role = NULL,
+                annulation_dossier_motif_code = :motifCode,
+                annulation_dossier_motif = :motif,
+                annulation_dossier_demandee_par = :par,
+                annulation_dossier_demandee_par_id = :parId,
                 date_demande_annulation_dossier = CURRENT_TIMESTAMP,
                 annulation_dossier_decidee_par = NULL,
                 date_decision_annulation_dossier = NULL,
                 annulation_dossier_motif_refus = NULL
             WHERE demandeindividuel_id = :demandeId
               AND statut_demande = 'EN_ATTENTE'
-              AND validation_state IN ('AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR',
-                                       'CORRECTION_DE', 'RETOUR_AGENT', 'APPROVED',
-                                       'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG', 'REJETE_DG')
-              AND (agent_credit_affecte = :userId
-                   OR cod_usuarios = :codUsuarios
-                   OR cod_usuarios = :username)
+              AND COALESCE(validation_state, 'NOUVEAU') = :etape
             """;
 
     /**
-     * Le DA valide : le dossier sort du circuit. Le statut porte la cloture (c'est lui que
-     * lisent la liste des dossiers et l'anti-doublon), l'etape revient a celle atteinte avant
-     * la demande, pour garder trace de l'endroit ou le dossier s'est arrete — comme un rejet.
+     * Le tenant valide : le dossier sort du circuit. Le statut porte la cloture (c'est lui que
+     * lisent la liste des dossiers et l'anti-doublon), l'etape revient a celle atteinte avant la
+     * demande. Le perimetre du decideur est controle par la regle, pas par la requete.
      */
     public static final String UPDATE_VALIDER_ANNULATION = """
             UPDATE demandeindividuel
             SET statut_demande = 'ANNULE',
                 validation_state = COALESCE(etat_avant_annulation, validation_state),
+                annulation_dossier_role = :role,
                 annulation_dossier_decidee_par = :decideePar,
                 date_decision_annulation_dossier = CURRENT_TIMESTAMP
             WHERE demandeindividuel_id = :demandeId
               AND validation_state = 'ANNULATION_DEMANDEE'
-              AND agence = :agenceId
             """;
 
-    /** Le DA refuse : le dossier reprend sa course exactement la ou il etait. */
+    /** Le tenant refuse : le dossier reprend sa course exactement la ou il etait. */
     public static final String UPDATE_REFUSER_ANNULATION = """
             UPDATE demandeindividuel
             SET validation_state = COALESCE(etat_avant_annulation, 'SELECTION'),
                 etat_avant_annulation = NULL,
+                annulation_dossier_role = :role,
                 annulation_dossier_motif_refus = :motifRefus,
                 annulation_dossier_decidee_par = :decideePar,
                 date_decision_annulation_dossier = CURRENT_TIMESTAMP
             WHERE demandeindividuel_id = :demandeId
               AND validation_state = 'ANNULATION_DEMANDEE'
-              AND agence = :agenceId
             """;
 
-    /** File du DA : les annulations de son agence qui attendent sa decision. */
-    public static final String SELECT_ANNULATIONS_A_VALIDER_DA = """
+    /**
+     * Reouverture par le tenant (arbitrage 4) : dans les trente jours de la decision, avec motif.
+     * Le dossier revient vivant a l'etape ou il s'etait arrete ; la trace de l'annulation reste.
+     */
+    public static final String UPDATE_REOUVRIR_DOSSIER = """
+            UPDATE demandeindividuel
+            SET statut_demande = 'EN_ATTENTE',
+                date_reouverture_dossier = CURRENT_TIMESTAMP,
+                reouverture_dossier_par = :par,
+                reouverture_dossier_motif = :motif
+            WHERE demandeindividuel_id = :demandeId
+              AND statut_demande = 'ANNULE'
+              AND date_decision_annulation_dossier >= CURRENT_TIMESTAMP - make_interval(days => :jours)
+            """;
+
+    /** Le tenant d'une demande en attente, deduit de l'etape memorisee (meme table que la regle Java). */
+    private static final String TENANT_SQL = """
+            CASE etat_avant_annulation
+                WHEN 'VALIDATED_DA' THEN 'DR'
+                WHEN 'VALIDATED_DR' THEN 'DE'
+                WHEN 'VALIDATED_FINAL' THEN 'DE'
+                WHEN 'PENDING_DG' THEN 'DG'
+                ELSE 'DA'
+            END""";
+
+    /**
+     * File d'un decideur : les demandes en attente dont il est le tenant, dans son perimetre
+     * (agence pour un DA, delegation pour un DR, tout le reseau pour la DE, la DG et la DSIG qui
+     * passent NULL partout).
+     */
+    public static final String SELECT_ANNULATIONS_A_DECIDER = """
             SELECT d.demandeindividuel_id AS "demandeIndividuelId",
                    d.nom, d.prenom, d.telephone,
                    d.numero_membre AS "numeroMembre",
@@ -1245,14 +1317,21 @@ public class WorkflowQuery {
                    d.annulation_dossier_motif_code AS "annulationMotifCode",
                    d.annulation_dossier_motif AS "annulationMotif",
                    d.annulation_dossier_demandee_par AS "annulationDemandeePar",
+                   d.annulation_dossier_mode AS "annulationMode",
                    d.date_demande_annulation_dossier AS "dateDemandeAnnulation",
                    d.avis_agent_credit AS "avisAgentCredit",
-                   d.createdat AS "createdAt"
+                   d.createdat AS "createdAt",
+                   a.libele AS "agenceLibele", dl.libele AS "delegationLibele", pv.libele AS "pointventeLibele"
             FROM demandeindividuel d
+            LEFT JOIN pointvente pv ON pv.id = d.pos
+            LEFT JOIN agence a ON a.id = d.agence
+            LEFT JOIN delegation dl ON dl.id = d.delegation
             WHERE d.validation_state = 'ANNULATION_DEMANDEE'
-              AND d.agence = :agenceId
+              AND (%s) = :tenant
+              AND (CAST(:agenceId AS BIGINT) IS NULL OR d.agence = CAST(:agenceId AS BIGINT))
+              AND (CAST(:delegationId AS BIGINT) IS NULL OR d.delegation = CAST(:delegationId AS BIGINT))
             ORDER BY d.date_demande_annulation_dossier
-            """;
+            """.formatted(TENANT_SQL.replace("etat_avant_annulation", "d.etat_avant_annulation"));
 
     /**
      * Suivi de l'agent : ses demandes en attente de decision, et celles que le DA a refusees

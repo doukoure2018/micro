@@ -113,4 +113,11 @@ public class WorkflowDemandeDto {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS")
     private LocalDateTime dateDecisionAnnulation;
+    // V216 : annulation à toute étape
+    private String annulationMode;          // DIRECTE, DEMANDEE, HISTORIQUE_SANS_TRACE
+    private String annulationRole;          // DA, DR, DE, DG, DSIG
+    private Long annulationDemandeeParId;
+    private LocalDateTime dateValidationFinale;      // COALESCE des dates DG, DE, DR, DA
+    private LocalDateTime dateReouverture;
+    private String reouverturePar;
 }

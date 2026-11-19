@@ -742,20 +742,49 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
         }
     }
 
-    // ===== Annulation du dossier (V163) =====
+    // ===== Annulation du dossier (V163, puis V216 : a toute etape, par tout role) =====
+    @Override
+    public WorkflowDemandeDto lireDossierPourAnnulation(Long demandeId) {
+        try {
+            return jdbcClient.sql(SELECT_DOSSIER_POUR_ANNULATION)
+                    .param("demandeId", demandeId)
+                    .query(WorkflowDemandeDto.class)
+                    .optional().orElse(null);
+        } catch (Exception e) {
+            log.error("Erreur lors de la lecture du dossier {} pour annulation: {}", demandeId, e.getMessage());
+            throw new ApiException("Erreur lors de la lecture du dossier: " + e.getMessage());
+        }
+    }
 
     @Override
-    public int demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
-                                  Long userId, String codUsuarios, String username) {
+    public int annulerDirectement(Long demandeId, String etape, String role, String motifCode, String motif,
+                                  String par, Long parId) {
+        try {
+            return jdbcClient.sql(UPDATE_ANNULER_DIRECTEMENT)
+                    .param("demandeId", demandeId)
+                    .param("etape", etape)
+                    .param("role", role)
+                    .param("motifCode", motifCode)
+                    .param("motif", motif)
+                    .param("par", par)
+                    .param("parId", parId)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de l'annulation directe du dossier {}: {}", demandeId, e.getMessage());
+            throw new ApiException("Erreur lors de l'annulation: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int demanderAnnulation(Long demandeId, String etape, String motifCode, String motif, String par, Long parId) {
         try {
             return jdbcClient.sql(UPDATE_DEMANDER_ANNULATION)
                     .param("demandeId", demandeId)
+                    .param("etape", etape)
                     .param("motifCode", motifCode)
                     .param("motif", motif)
-                    .param("demandeePar", demandeePar)
-                    .param("userId", userId)
-                    .param("codUsuarios", codUsuarios)
-                    .param("username", username)
+                    .param("par", par)
+                    .param("parId", parId)
                     .update();
         } catch (Exception e) {
             log.error("Erreur lors de la demande d'annulation: {}", e.getMessage());
@@ -764,11 +793,11 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public int validerAnnulation(Long demandeId, Long agenceId, String decideePar) {
+    public int validerAnnulation(Long demandeId, String role, String decideePar) {
         try {
             return jdbcClient.sql(UPDATE_VALIDER_ANNULATION)
                     .param("demandeId", demandeId)
-                    .param("agenceId", agenceId)
+                    .param("role", role)
                     .param("decideePar", decideePar)
                     .update();
         } catch (Exception e) {
@@ -778,11 +807,11 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public int refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar) {
+    public int refuserAnnulation(Long demandeId, String role, String motifRefus, String decideePar) {
         try {
             return jdbcClient.sql(UPDATE_REFUSER_ANNULATION)
                     .param("demandeId", demandeId)
-                    .param("agenceId", agenceId)
+                    .param("role", role)
                     .param("motifRefus", motifRefus)
                     .param("decideePar", decideePar)
                     .update();
@@ -793,14 +822,31 @@ public class WorkflowRepositoryImpl implements WorkflowRepository {
     }
 
     @Override
-    public List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId) {
+    public int reouvrirDossier(Long demandeId, String par, String motif, int jours) {
         try {
-            return jdbcClient.sql(SELECT_ANNULATIONS_A_VALIDER_DA)
+            return jdbcClient.sql(UPDATE_REOUVRIR_DOSSIER)
+                    .param("demandeId", demandeId)
+                    .param("par", par)
+                    .param("motif", motif)
+                    .param("jours", jours)
+                    .update();
+        } catch (Exception e) {
+            log.error("Erreur lors de la reouverture du dossier {}: {}", demandeId, e.getMessage());
+            throw new ApiException("Erreur lors de la réouverture: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WorkflowDemandeDto> getAnnulationsADecider(String tenant, Long agenceId, Long delegationId) {
+        try {
+            return jdbcClient.sql(SELECT_ANNULATIONS_A_DECIDER)
+                    .param("tenant", tenant)
                     .param("agenceId", agenceId)
+                    .param("delegationId", delegationId)
                     .query(WorkflowDemandeDto.class)
                     .list();
         } catch (Exception e) {
-            log.error("Erreur lors de la recuperation des annulations a valider: {}", e.getMessage());
+            log.error("Erreur lors de la recuperation des annulations a decider: {}", e.getMessage());
             throw new ApiException("Erreur lors de la récupération: " + e.getMessage());
         }
     }

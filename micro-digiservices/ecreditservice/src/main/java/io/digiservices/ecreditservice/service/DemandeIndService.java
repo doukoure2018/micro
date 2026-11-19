@@ -22,8 +22,6 @@ public interface DemandeIndService {
     /** Demande encore en cours pour ce membre (anti-doublon), vide sinon. */
     Optional<DemandeIndividuel> getDemandeEnCours(String numeroMembre);
 
-    void rejetDemandeInd(Long demandeindividuel_id);
-
     DemandeIndividuel getDetailDemandeIndividuel(Long demandeIndividuelId);
 
     List<DemandeIndividuel> getListDemandeCreditByDate(Long pointventeId,Long userId);

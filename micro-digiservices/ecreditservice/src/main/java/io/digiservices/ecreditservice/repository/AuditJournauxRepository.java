@@ -175,6 +175,8 @@ public class AuditJournauxRepository {
                    d.annulation_dossier_demandee_par, d.date_demande_annulation_dossier,
                    d.annulation_dossier_decidee_par, d.date_decision_annulation_dossier,
                    d.annulation_dossier_motif_refus, d.createdat,
+                   d.annulation_dossier_mode, d.annulation_dossier_role,
+                   d.date_reouverture_dossier, d.reouverture_dossier_par,
                    pv.libele AS point_vente, a.libele AS agence, dl.libele AS delegation
               FROM demandeindividuel d
               LEFT JOIN pointvente pv ON pv.id = d.pos   -- `pos` = identifiant du point de vente sur demandeindividuel
@@ -225,8 +227,13 @@ public class AuditJournauxRepository {
                 .decideePar(par)
                 .dateDecision(rs.getObject("date_decision_annulation_dossier", LocalDateTime.class))
                 .motifRefus(rs.getString("annulation_dossier_motif_refus"))
+                .mode(rs.getString("annulation_dossier_mode"))
+                .role(rs.getString("annulation_dossier_role"))
+                .dateReouverture(rs.getObject("date_reouverture_dossier", LocalDateTime.class))
+                .reouverturePar(rs.getString("reouverture_dossier_par"))
                 .dateCreation(rs.getObject("createdat", LocalDate.class))
-                .tracee(motif != null && !motif.isBlank() && par != null && !par.isBlank())
+                .tracee(motif != null && !motif.isBlank() && par != null && !par.isBlank()
+                        && !"HISTORIQUE_SANS_TRACE".equals(rs.getString("annulation_dossier_mode")))
                 .build();
     }
 

@@ -82,16 +82,27 @@ public interface WorkflowService {
     void setAgentFonction(Long userId, String fonction, boolean actif, Long affectePar, Long agenceIdDA);
     List<String> getMesFonctions(Long userId);
 
-    // ===== Annulation du dossier (V163) =====
+    // ===== Annulation du dossier (V163, puis V216 : a toute etape, par tout role) =====
 
-    void demanderAnnulation(Long demandeId, String motifCode, String motif, String demandeePar,
-                            Long userId, String codUsuarios, String username);
+    /** Ce que l'ecran doit savoir avant d'afficher le bouton : mode, tenant, raison, reouverture. */
+    java.util.Map<String, Object> droitAnnulation(Long demandeId, io.digiservices.clients.domain.User user);
 
-    void validerAnnulation(Long demandeId, Long agenceId, String decideePar);
+    /** Le bouton unique : le serveur annule sur-le-champ, enregistre une demande, ou refuse avec la raison. */
+    io.digiservices.ecreditservice.dossier.AnnulationDossier.Decision annulerDossier(
+            Long demandeId, String motifCode, String motif, io.digiservices.clients.domain.User user);
 
-    void refuserAnnulation(Long demandeId, Long agenceId, String motifRefus, String decideePar);
+    void validerAnnulation(Long demandeId, io.digiservices.clients.domain.User user);
 
-    List<WorkflowDemandeDto> getAnnulationsAValiderDA(Long agenceId);
+    void refuserAnnulation(Long demandeId, String motifRefus, io.digiservices.clients.domain.User user);
+
+    void reouvrirDossier(Long demandeId, String motif, io.digiservices.clients.domain.User user);
+
+    /** La file du decideur connecte : ce dont il est le tenant, dans son perimetre. */
+    List<WorkflowDemandeDto> getAnnulationsADecider(io.digiservices.clients.domain.User user);
+
+
+
+
 
     List<WorkflowDemandeDto> getAnnulationsAC(Long userId, String codUsuarios, String username);
 }

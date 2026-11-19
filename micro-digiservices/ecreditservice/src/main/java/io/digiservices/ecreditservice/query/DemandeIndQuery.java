@@ -762,7 +762,7 @@ public class DemandeIndQuery {
                FROM demandeindividuel WHERE demandeindividuel_id = :demandeindividuelId
          """;
 
-   public static final String UPDATE_STATUT_REJET_DEMANDE_QUERY =  "UPDATE demandeIndividuel SET statut_demande = 'REJET', createdat = NOW() WHERE demandeIndividuel_id = :demandeindividuel_id";
+   // V216 : UPDATE_STATUT_REJET_DEMANDE_QUERY retire — sortie de dossier sans garde, sans motif ni auteur (238 dossiers), remplacee par l'annulation tracee.
 
 
     public static final String LIST_CREDIT_PAR_DELEGATION = """

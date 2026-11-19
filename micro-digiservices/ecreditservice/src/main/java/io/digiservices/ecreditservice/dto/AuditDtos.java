@@ -122,6 +122,10 @@ public final class AuditDtos {
         private LocalDateTime dateDecision;
         private String motifRefus;
         private LocalDate dateCreation;
+        private String mode;                 // V216 : DIRECTE, DEMANDEE, HISTORIQUE_SANS_TRACE
+        private String role;                 // V216 : DA, DR, DE, DG, DSIG
+        private LocalDateTime dateReouverture;
+        private String reouverturePar;
         private boolean tracee;              // motif ET auteur presents
     }
 
