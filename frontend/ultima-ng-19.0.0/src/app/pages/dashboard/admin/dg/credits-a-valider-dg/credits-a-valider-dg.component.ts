@@ -1,3 +1,4 @@
+import { AnnulationsADeciderComponent } from '@/pages/dashboard/credit/annulations-a-decider/annulations-a-decider.component';
 import { IResponse } from '@/interface/response';
 import { IUser } from '@/interface/user';
 import { UserService } from '@/service/user.service';
@@ -28,7 +29,7 @@ import { TooltipModule } from 'primeng/tooltip';
     imports: [
         CommonModule, FormsModule, TableModule, ButtonModule, TagModule, ToastModule,
         DialogModule, IconFieldModule, InputIconModule, InputTextModule,
-        ProgressSpinnerModule, TooltipModule
+        ProgressSpinnerModule, TooltipModule, AnnulationsADeciderComponent
     ],
     templateUrl: './credits-a-valider-dg.component.html',
     providers: [MessageService]

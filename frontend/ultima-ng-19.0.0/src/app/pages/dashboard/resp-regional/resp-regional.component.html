@@ -37,6 +37,7 @@
                             [value]="state().demandesAValider.length.toString()" severity="info" class="ml-2"></p-badge>
                     </ng-template>
 
+<app-annulations-a-decider sousTitre="Dossiers dont vous tenez l'étape : votre décision les sort du circuit ou les remet en instruction."></app-annulations-a-decider>
                     <div class="card border-l-4 border-blue-500">
                         <p-table #dtValider [value]="state().demandesAValider" [paginator]="true" [rows]="10"
                             [showCurrentPageReport]="true" responsiveLayout="scroll"

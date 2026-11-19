@@ -72,6 +72,16 @@
                         icon="pi pi-folder-open" class="p-button-sm p-button-secondary p-button-rounded"
                         pTooltip="Documents">
                     </button>
+                    <!-- V216 : un seul bouton d'annulation, à toute étape ; le serveur dit s'il annule ou s'il demande -->
+                    <button *ngIf="peutAnnulerDossier()" pButton type="button" icon="pi pi-ban"
+                        [label]="droit()?.libelleBouton || 'Annuler le dossier'"
+                        class="p-button-sm p-button-danger p-button-outlined ml-2"
+                        [pTooltip]="droit()?.raison" tooltipPosition="bottom"
+                        (click)="ouvrirAnnulationDossier()"></button>
+                    <button *ngIf="peutReouvrirDossier()" pButton type="button" icon="pi pi-replay"
+                        label="Rouvrir le dossier" class="p-button-sm p-button-warning p-button-outlined ml-2"
+                        pTooltip="Le dossier reprendra son cours &agrave; l'&eacute;tape o&ugrave; il s'&eacute;tait arr&ecirc;t&eacute;" tooltipPosition="bottom"
+                        (click)="ouvrirReouvertureDossier()"></button>
                 </div>
             </div>
         </div>
@@ -982,26 +992,62 @@
                         class="bg-indigo-600 hover:bg-indigo-700 font-bold" [loading]="state().loading"
                         (click)="prendreEnChargeDepuisDetail()"></button>
                 </div>
-                <!-- V163 : annulation du dossier (desistement du client) -->
+                <!-- V163/V216 : annulation du dossier, à toute étape -->
+                <div *ngIf="estAnnule()"
+                    class="mb-6 border-2 border-red-400 bg-red-50 rounded-xl p-4 flex items-start gap-3">
+                    <i class="pi pi-ban text-red-600 text-xl mt-1"></i>
+                    <div class="flex-1">
+                        <div class="font-bold text-red-800">Dossier annul&eacute;
+                            <span *ngIf="traceAnnulation()?.dateDecision"> le {{ traceAnnulation()?.dateDecision | date:'dd/MM/yyyy' }}</span>
+                            <span *ngIf="traceAnnulation()?.decideePar"> par {{ traceAnnulation()?.decideePar }}</span>
+                            <span *ngIf="traceAnnulation()?.role" class="font-normal"> ({{ traceAnnulation()?.role }})</span>
+                        </div>
+                        <div class="text-sm text-red-700" *ngIf="traceAnnulation()?.motifCode || traceAnnulation()?.motif">
+                            <strong>{{ libelleMotifAnnulation(traceAnnulation()?.motifCode) }}</strong><span *ngIf="traceAnnulation()?.motif"> &mdash; {{ traceAnnulation()?.motif }}</span>
+                        </div>
+                        <div class="text-xs text-red-700 mt-1" *ngIf="traceAnnulation()?.modeAnnulation === 'DEMANDEE' && traceAnnulation()?.demandeePar">
+                            Demand&eacute;e par {{ traceAnnulation()?.demandeePar }}<span *ngIf="traceAnnulation()?.dateDemande"> le {{ traceAnnulation()?.dateDemande | date:'dd/MM/yyyy' }}</span>,
+                            &agrave; l'&eacute;tape {{ traceAnnulation()?.etatAvantAnnulation }}.
+                        </div>
+                        <div class="text-xs text-red-700 mt-1" *ngIf="traceAnnulation()?.modeAnnulation === 'DIRECTE'">
+                            Annulation directe par le tenant de l'&eacute;tape {{ traceAnnulation()?.etatAvantAnnulation }}.
+                        </div>
+                        <div class="text-sm text-red-800 mt-2">Le dossier est sorti du circuit. Le membre peut d&eacute;poser une nouvelle demande.
+                            <span *ngIf="droit()?.raisonReouverture" class="text-red-600"> {{ droit()?.raisonReouverture }}.</span>
+                        </div>
+                    </div>
+                </div>
                 <div *ngIf="annulationEnAttente()"
                     class="mb-6 border-2 border-orange-400 bg-orange-50 rounded-xl p-4 flex items-start gap-3">
                     <i class="pi pi-hourglass text-orange-600 text-xl mt-1"></i>
                     <div>
-                        <div class="font-bold text-orange-800">Annulation demand&eacute;e, en attente de la d&eacute;cision du Directeur d'Agence</div>
+                        <div class="font-bold text-orange-800">Annulation demand&eacute;e, en attente de la d&eacute;cision de {{ libelleTenantAnnulation() }}</div>
                         <div class="text-sm text-orange-700">Le dossier est fig&eacute; : il ne peut ni avancer, ni &ecirc;tre valid&eacute;, tant que la d&eacute;cision n'est pas prise.</div>
-                        <div class="text-sm text-orange-700 mt-1" *ngIf="$any(state().demandeIndividuel)?.annulationMotif">
-                            Motif : {{ $any(state().demandeIndividuel)?.annulationMotif }}
+                        <div class="text-sm text-orange-700 mt-1" *ngIf="traceAnnulation()?.motif || traceAnnulation()?.motifCode">
+                            Motif : <strong>{{ libelleMotifAnnulation(traceAnnulation()?.motifCode) }}</strong><span *ngIf="traceAnnulation()?.motif"> &mdash; {{ traceAnnulation()?.motif }}</span>
+                        </div>
+                        <div class="text-xs text-orange-700 mt-1" *ngIf="traceAnnulation()?.demandeePar">
+                            Demand&eacute;e par {{ traceAnnulation()?.demandeePar }}<span *ngIf="traceAnnulation()?.dateDemande"> le {{ traceAnnulation()?.dateDemande | date:'dd/MM/yyyy HH:mm' }}</span>.
                         </div>
                     </div>
                 </div>
-                <div *ngIf="$any(state().demandeIndividuel)?.annulationMotifRefus && !annulationEnAttente()"
+                <div *ngIf="traceAnnulation()?.motifRefus && !annulationEnAttente() && !estAnnule()"
                     class="mb-6 border-2 border-red-400 bg-red-50 rounded-xl p-4 flex items-start gap-3">
                     <i class="pi pi-times-circle text-red-600 text-xl mt-1"></i>
                     <div>
-                        <div class="font-bold text-red-800">Annulation refus&eacute;e par le Directeur d'Agence</div>
-                        <div class="text-sm text-red-700">{{ $any(state().demandeIndividuel)?.annulationMotifRefus }}</div>
+                        <div class="font-bold text-red-800">Annulation refus&eacute;e<span *ngIf="traceAnnulation()?.decideePar"> par {{ traceAnnulation()?.decideePar }}</span></div>
+                        <div class="text-sm text-red-700">{{ traceAnnulation()?.motifRefus }}</div>
                         <div class="text-sm text-red-700 mt-1">Le dossier a repris son cours : poursuivez l'instruction.</div>
                     </div>
+                </div>
+                <div *ngIf="traceAnnulation()?.dateReouverture && !estAnnule()"
+                    class="mb-6 border border-orange-300 bg-orange-50 rounded-xl p-3 text-sm text-orange-800 flex items-start gap-3">
+                    <i class="pi pi-replay text-orange-600 mt-1"></i>
+                    <div>Dossier rouvert le {{ traceAnnulation()?.dateReouverture | date:'dd/MM/yyyy' }}<span *ngIf="traceAnnulation()?.reouverturePar"> par {{ traceAnnulation()?.reouverturePar }}</span>,
+                        apr&egrave;s une annulation<span *ngIf="traceAnnulation()?.motifCode"> ({{ libelleMotifAnnulation(traceAnnulation()?.motifCode).toLowerCase() }})</span>.</div>
+                </div>
+                <div *ngIf="raisonSansAnnulation()" class="mb-4 text-xs text-gray-500 text-right">
+                    <i class="pi pi-info-circle mr-1"></i>Annulation du dossier : {{ raisonSansAnnulation() }}.
                 </div>
                 <div *ngIf="peutReattribuer()" class="mb-6 border border-indigo-200 bg-indigo-50 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
                     <div class="text-sm text-indigo-900">
@@ -1012,13 +1058,6 @@
                     <button pButton type="button" icon="pi pi-user-edit" label="R&eacute;attribuer le dossier"
                         class="p-button-outlined" (click)="ouvrirReattribution()"></button>
                 </div>
-                <div *ngIf="peutAnnulerDossier()" class="mb-6 flex justify-end">
-                    <button pButton type="button" icon="pi pi-ban" label="Annuler le dossier"
-                        class="p-button-danger p-button-outlined"
-                        pTooltip="Le client renonce &agrave; sa demande : votre Directeur d'Agence devra valider l'annulation"
-                        (click)="ouvrirAnnulationDossier()"></button>
-                </div>
-
                 <div *ngIf="!peutApprouver() && !estAffecteAMoiNonPrisEnCharge() && libelleBlocageApprobation()"
                     class="mb-6 border border-gray-300 bg-gray-50 rounded-xl p-4 text-gray-700 flex items-center gap-3">
                     <i class="pi pi-info-circle text-gray-500 text-xl"></i>
@@ -1920,8 +1959,10 @@
                 <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
                 <p class="text-600 m-0">{{ state().demandeIndividuel?.montantDemande | currency:'GNF ':'symbol':'1.0-0' }} - {{
                     state().demandeIndividuel?.objectCredit }}</p>
-                <p class="text-600 m-0 mt-2 text-sm">Le dossier sera fig&eacute; puis transmis &agrave; votre Directeur d'Agence,
-                    qui validera ou refusera l'annulation. S'il refuse, le dossier reprendra exactement o&ugrave; il en est.</p>
+                <p class="text-600 m-0 mt-2 text-sm" *ngIf="annulationDirecte()">Vous tenez ce dossier &agrave; son &eacute;tape ({{ droit()?.etape || 'NOUVEAU' }}) :
+                    <strong>il sera annul&eacute; imm&eacute;diatement</strong> et rejoindra les dossiers cl&ocirc;tur&eacute;s. Vous pourrez le rouvrir pendant {{ droit()?.joursReouverture || 30 }} jours.</p>
+                <p class="text-600 m-0 mt-2 text-sm" *ngIf="!annulationDirecte()">Le dossier sera fig&eacute; puis transmis &agrave; {{ droit()?.libelleTenant || "au responsable de l'&eacute;tape" }},
+                    qui validera ou refusera l'annulation. En cas de refus, le dossier reprendra exactement o&ugrave; il en est.</p>
             </div>
             <form [formGroup]="annulationDossierForm">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Motif <span class="text-red-500">*</span></label>
@@ -1938,8 +1979,31 @@
                 <div class="flex justify-end gap-3">
                     <button pButton type="button" label="Retour" icon="pi pi-times" class="p-button-secondary p-button-outlined"
                         (click)="state.update(mergeState({showAnnulationDossier: false}))"></button>
-                    <button pButton type="button" label="Demander l'annulation" icon="pi pi-ban" class="p-button-danger"
+                    <button pButton type="button" [label]="annulationDirecte() ? 'Annuler le dossier' : 'Demander l\'annulation'" icon="pi pi-ban" class="p-button-danger"
                         (click)="confirmerAnnulationDossier()" [disabled]="annulationDossierForm.invalid"></button>
+                </div>
+            </ng-template>
+        </p-dialog>
+
+        <!-- V216 : réouverture d'un dossier annulé par le tenant de son étape, dans les 30 jours -->
+        <p-dialog header="Rouvrir le dossier annul&eacute;" [visible]="state().showReouvertureDossier" [modal]="true"
+            [style]="{ width: '520px' }" [closable]="true"
+            (onHide)="state.update(mergeState({showReouvertureDossier: false}))">
+            <div class="mb-4 p-3 bg-orange-50 border-round">
+                <p class="font-semibold m-0">{{ state().demandeIndividuel?.prenom }} {{ state().demandeIndividuel?.nom }}</p>
+                <p class="text-600 m-0 text-sm">Le dossier reprendra son cours &agrave; l'&eacute;tape {{ traceAnnulation()?.etatAvantAnnulation || 'o&ugrave; il s\'&eacute;tait arr&ecirc;t&eacute;' }}.
+                    La trace de l'annulation est conserv&eacute;e.</p>
+            </div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Motif de la r&eacute;ouverture <span class="text-red-500">*</span></label>
+            <textarea pTextarea [(ngModel)]="motifReouverture" [ngModelOptions]="{standalone: true}" rows="3" class="w-full" [autoResize]="true"
+                placeholder="Ex : le client est revenu le 20/11 et confirme sa demande"></textarea>
+            <small class="text-500">Minimum 10 caract&egrave;res.</small>
+            <ng-template #footer>
+                <div class="flex justify-end gap-3">
+                    <button pButton type="button" label="Retour" icon="pi pi-times" class="p-button-secondary p-button-outlined"
+                        (click)="state.update(mergeState({showReouvertureDossier: false}))"></button>
+                    <button pButton type="button" label="Rouvrir le dossier" icon="pi pi-replay" class="p-button-warning"
+                        (click)="confirmerReouvertureDossier()" [disabled]="motifReouverture.trim().length < 10"></button>
                 </div>
             </ng-template>
         </p-dialog>

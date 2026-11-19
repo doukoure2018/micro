@@ -86,6 +86,7 @@ type Vue = 'SANS_MOTIF' | 'ANNULEES' | 'EN_ATTENTE';
                         <th *ngIf="vue() !== 'SANS_MOTIF'">Motif</th>
                         <th *ngIf="vue() !== 'SANS_MOTIF'">Demandée par</th>
                         <th *ngIf="vue() === 'ANNULEES'">Décidée par</th>
+                        <th *ngIf="vue() === 'ANNULEES'">Mode · rôle</th>
                         <th *ngIf="vue() === 'ANNULEES'">Le</th>
                         <th *ngIf="vue() === 'EN_ATTENTE'">Demandée le</th>
                         <th *ngIf="vue() === 'SANS_MOTIF'">Créé le</th>
@@ -105,6 +106,7 @@ type Vue = 'SANS_MOTIF' | 'ANNULEES' | 'EN_ATTENTE';
                         </td>
                         <td *ngIf="vue() !== 'SANS_MOTIF'" class="text-xs">{{ s.demandeePar || '—' }}</td>
                         <td *ngIf="vue() === 'ANNULEES'" class="text-xs">{{ s.decideePar || '—' }}</td>
+                        <td *ngIf="vue() === 'ANNULEES'" class="text-xs">{{ s.mode || '—' }}<span *ngIf="s.role"> · {{ s.role }}</span><div *ngIf="s.dateReouverture" class="text-orange-600">rouvert le {{ s.dateReouverture | date: 'dd/MM/yyyy' }}</div></td>
                         <td *ngIf="vue() === 'ANNULEES'" class="text-xs">{{ s.dateDecision | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td *ngIf="vue() === 'EN_ATTENTE'" class="text-xs">{{ s.dateDemande | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td *ngIf="vue() === 'SANS_MOTIF'" class="text-xs">{{ s.dateCreation | date: 'dd/MM/yyyy' }}</td>

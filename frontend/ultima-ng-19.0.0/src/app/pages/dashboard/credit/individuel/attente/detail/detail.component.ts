@@ -40,6 +40,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { MENTION_NOUVEAU_MEMBRE, estNouveauMembre, etiquetteScore, severiteScore } from '@/utils/score-confiance';
+import { MOTIFS_ANNULATION, libelleMotifAnnulation } from '@/interface/etat-dossier';
 import { switchMap, EMPTY } from 'rxjs';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Avis } from '@/interface/avis';
@@ -132,6 +133,9 @@ export class DetailComponent {
         showRenvoiAgent: boolean;
         showReattribution: boolean;
         showAnnulationDossier: boolean;
+        showReouvertureDossier: boolean;
+        /** V216 : réponse de GET /workflow/{id}/droit-annulation (mode, tenant, raison, trace, réouverture). */
+        droitAnnulation?: any;
         analyseChargesFonctionnaire?: AnalyseChargesFonctionnaire | null;
         analyseCreditAgricole?: AnalyseCreditAgricole | null;
         /** Échéancier avec moratoire (CAS / CAS-R, V147) affiché aux approbateurs. */
@@ -168,7 +172,8 @@ export class DetailComponent {
         showWorkflowRejetDR: false,
         showRenvoiAgent: false,
         showReattribution: false,
-        showAnnulationDossier: false
+        showAnnulationDossier: false,
+        showReouvertureDossier: false
     });
 
     updateForm: FormGroup;
@@ -468,6 +473,7 @@ export class DetailComponent {
                             message: `Demande chargée avec ${demandeData.garanties?.length || 0} garantie(s)`,
                             error: undefined
                         }));
+                        this.chargerDroitAnnulation(demandeData.demandeIndividuelId);
 
                         this.messageService.add({
                             severity: 'success',
@@ -1535,68 +1541,7 @@ export class DetailComponent {
             });
     }
 
-    /**
-     * Rejeter la demande (réservé au DA)
-     */
-    rejectDemande(): void {
-        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
-
-        if (!demandeId) {
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Erreur',
-                detail: 'ID de la demande non trouvé'
-            });
-            return;
-        }
-
-        this.confirmationService.confirm({
-            message: 'Êtes-vous sûr de vouloir rejeter cette demande ? Cette action est définitive.',
-            header: 'Confirmation de rejet',
-            icon: 'pi pi-exclamation-triangle',
-            acceptLabel: 'Rejeter',
-            rejectLabel: 'Annuler',
-            acceptButtonStyleClass: 'p-button-danger',
-            accept: () => {
-                this.state.update((s) => ({ ...s, loading: true }));
-
-                this.userService
-                    .rejectDemandeIndividuel$(demandeId)
-                    .pipe(takeUntilDestroyed(this.destroyRef))
-                    .subscribe({
-                        next: (response: IResponse) => {
-                            this.state.update((s) => ({ ...s, loading: false }));
-
-                            this.messageService.add({
-                                severity: 'success',
-                                summary: 'Succès',
-                                detail: 'La demande a été rejetée avec succès',
-                                life: 3000
-                            });
-
-                            // Redirection après 2 secondes
-                            setTimeout(() => {
-                                this.router.navigate(['/dashboards/home']);
-                            }, 2000);
-                        },
-                        error: (error) => {
-                            this.state.update((s) => ({
-                                ...s,
-                                loading: false,
-                                error: error.error?.message || 'Erreur lors du rejet de la demande'
-                            }));
-
-                            this.messageService.add({
-                                severity: 'error',
-                                summary: 'Erreur',
-                                detail: error.error?.message || 'Impossible de rejeter la demande',
-                                life: 5000
-                            });
-                        }
-                    });
-            }
-        });
-    }
+    // V216 : rejectDemande() (PATCH /ecredit/update sans garde, sans motif) retiré — l'annulation tracée le remplace.
 
     /**
      * Imprimer le dossier complet de la demande
@@ -3021,34 +2966,71 @@ export class DetailComponent {
         return '';
     }
 
-    // ===== Annulation du dossier (V163) : le client s'est désisté =====
+    // ===== Annulation du dossier (V163, puis V216 : à toute étape, par tout rôle) =====
 
-    /** Motifs normalisés, identiques à ceux acceptés par le serveur. */
-    readonly motifsAnnulation = [
-        { label: 'Désistement du client', value: 'DESISTEMENT_CLIENT' },
-        { label: 'Client injoignable', value: 'CLIENT_INJOIGNABLE' },
-        { label: 'Double saisie', value: 'DOUBLE_SAISIE' },
-        { label: 'Erreur de saisie', value: 'ERREUR_SAISIE' },
-        { label: 'Autre motif', value: 'AUTRE' }
-    ];
+    /** Motifs normalisés, identiques à ceux acceptés par le serveur (7 depuis la V216). */
+    readonly motifsAnnulation = MOTIFS_ANNULATION;
 
-    /** Étapes depuis lesquelles l'agent qui porte le dossier peut en demander l'annulation. */
-    private static readonly ETATS_ANNULABLES = ['AFFECTEE', 'SELECTION', 'CORRECTION', 'CORRECTION_DR',
-        'CORRECTION_DE', 'RETOUR_AGENT', 'APPROVED', 'VALIDATED_DA', 'VALIDATED_DR', 'PENDING_DG', 'REJETE_DG'];
-
-    peutAnnulerDossier(): boolean {
-        const d: any = this.state().demandeIndividuel;
-        if (!d || this.state().user?.role !== 'AGENT_CREDIT') return false;
-        if (d.statutDemande !== 'EN_ATTENTE') return false;
-        const aMoi = d.agentCreditAffecte === this.state().user?.userId
-            || d.codUsuarios === this.state().user?.username
-            || d.codUsuarios === `${this.state().user?.firstName} ${this.state().user?.lastName}`;
-        return aMoi && DetailComponent.ETATS_ANNULABLES.includes(d.validationState);
+    libelleMotifAnnulation(code?: string | null): string {
+        return libelleMotifAnnulation(code);
     }
 
-    /** Vrai quand une annulation attend la décision du DA : le dossier est figé. */
+    /** Ce que le serveur a répondu : qui peut quoi sur ce dossier, et la trace d'une annulation passée. */
+    droit(): any {
+        return this.state().droitAnnulation || null;
+    }
+
+    /** La trace de l'annulation (motif, demandeur, décideur, réouverture), lue avec le droit. */
+    traceAnnulation(): any {
+        return this.droit()?.annulation || null;
+    }
+
+    private chargerDroitAnnulation(demandeId?: number | string | null): void {
+        if (!demandeId) return;
+        this.userService
+            .droitAnnulationDossier$(+demandeId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.state.update((s) => ({ ...s, droitAnnulation: (r.data as any)?.droit || null })),
+                error: () => this.state.update((s) => ({ ...s, droitAnnulation: null }))
+            });
+    }
+
+    /** Le bouton s'affiche dès que le serveur n'a pas répondu REFUS : c'est lui qui connaît la règle. */
+    peutAnnulerDossier(): boolean {
+        const mode = this.droit()?.mode;
+        return mode === 'DIRECTE' || mode === 'DEMANDEE';
+    }
+
+    /** Pourquoi le bouton n'est pas là (dossier d'un autre, étape tenue par quelqu'un d'autre, crédit dans SAF…). */
+    raisonSansAnnulation(): string {
+        const d = this.droit();
+        if (!d || d.mode !== 'REFUS') return '';
+        if (this.annulationEnAttente() || this.estAnnule()) return '';
+        if (!['EN_ATTENTE'].includes((this.state().demandeIndividuel as any)?.statutDemande)) return '';
+        return d.raison || '';
+    }
+
+    annulationDirecte(): boolean {
+        return this.droit()?.mode === 'DIRECTE';
+    }
+
+    /** Vrai quand une annulation attend la décision du tenant : le dossier est figé. */
     annulationEnAttente(): boolean {
         return (this.state().demandeIndividuel as any)?.validationState === 'ANNULATION_DEMANDEE';
+    }
+
+    estAnnule(): boolean {
+        return (this.state().demandeIndividuel as any)?.statutDemande === 'ANNULE';
+    }
+
+    /** Qui doit trancher la demande en attente, dans les mots de l'écran. */
+    libelleTenantAnnulation(): string {
+        return this.traceAnnulation()?.libelleTenantDecision || this.droit()?.libelleTenant || "le responsable de l'étape";
+    }
+
+    peutReouvrirDossier(): boolean {
+        return !!this.droit()?.peutReouvrir;
     }
 
     // ===== Réattribution par le DA (rotation, absence, départ) — lot 1 rotation =====
@@ -3107,16 +3089,47 @@ export class DetailComponent {
         if (!demandeId) return;
         const { motifCode, motif } = this.annulationDossierForm.value;
         this.userService
-            .demanderAnnulationDossier$(+demandeId, motifCode, motif)
+            .annulerDossier$(+demandeId, motifCode, motif)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-                next: () => {
-                    this.messageService.add({ severity: 'info', summary: 'Annulation demandée', detail: "Votre Directeur d'Agence doit valider l'annulation. Le dossier est figé jusqu'à sa décision.", life: 6000 });
+                next: (r: IResponse) => {
+                    const data: any = r.data || {};
+                    if (data.mode === 'DIRECTE') {
+                        this.messageService.add({ severity: 'success', summary: 'Dossier annulé', detail: data.message || 'Le dossier sort du circuit et rejoint les dossiers clôturés.', life: 6000 });
+                    } else {
+                        this.messageService.add({ severity: 'info', summary: 'Annulation demandée', detail: data.message || `${this.droit()?.libelleTenant || 'Le responsable de l\'étape'} doit trancher. Le dossier est figé jusqu'à sa décision.`, life: 7000 });
+                    }
                     this.state.update(this.mergeState({ showAnnulationDossier: false }));
                     this.loadDemandeWithGaranties();
                 },
                 error: (err: any) => {
-                    this.messageService.add({ severity: 'error', summary: 'Erreur', detail: err || "Erreur lors de la demande d'annulation", life: 6000 });
+                    this.messageService.add({ severity: 'error', summary: 'Annulation refusée', detail: err || "Erreur lors de l'annulation", life: 7000 });
+                }
+            });
+    }
+
+    // ── Réouverture d'un dossier annulé (30 jours, par le tenant de l'étape où il s'était arrêté)
+    motifReouverture = '';
+
+    ouvrirReouvertureDossier(): void {
+        this.motifReouverture = '';
+        this.state.update(this.mergeState({ showReouvertureDossier: true }));
+    }
+
+    confirmerReouvertureDossier(): void {
+        const demandeId = this.state().demandeIndividuel?.demandeIndividuelId;
+        if (!demandeId || this.motifReouverture.trim().length < 10) return;
+        this.userService
+            .reouvrirDossier$(+demandeId, this.motifReouverture.trim())
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: () => {
+                    this.messageService.add({ severity: 'success', summary: 'Dossier rouvert', detail: "Le dossier reprend son cours à l'étape où il s'était arrêté.", life: 6000 });
+                    this.state.update(this.mergeState({ showReouvertureDossier: false }));
+                    this.loadDemandeWithGaranties();
+                },
+                error: (err: any) => {
+                    this.messageService.add({ severity: 'error', summary: 'Réouverture refusée', detail: err || 'Erreur lors de la réouverture', life: 7000 });
                 }
             });
     }
