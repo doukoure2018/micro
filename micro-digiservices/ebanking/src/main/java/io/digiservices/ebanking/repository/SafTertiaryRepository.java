@@ -146,10 +146,13 @@ public class SafTertiaryRepository {
     /**
      * Les N derniers mouvements d'un compte, du plus recent au plus ancien.
      *
-     * SAF repartit les mouvements sur deux tables de structure identique : CC_MOVIMTO_MENSUAL
-     * (mois courant) et CC_MOVIMTO_HISTORICO (mois anterieurs). Un compte sans operation ce
-     * mois-ci n'a donc rien dans la table mensuelle (constat terrain du 2026-10-10) : on prend
-     * le TOP n de chaque table, puis le TOP n de la reunion. Le filtre porte sur COD_EMPRESA +
+     * SAF repartit les mouvements sur deux tables de structure identique. MALGRE SON NOM,
+     * CC_MOVIMTO_MENSUAL n'est pas « le mois courant » : mesure du 19/11/2026 sur la sauvegarde
+     * (10.9.0.168), elle porte TOUT depuis le 01/01/2020 jusqu'a la veille (21,9 M de lignes) ;
+     * CC_MOVIMTO_HISTORICO est une archive close en mai 2020 (2007 -> 2020). La note du
+     * 2026-10-10 qui disait « un compte sans operation ce mois-ci n'a rien dans la mensuelle »
+     * s'est trompee sur la cause. La reunion des deux reste juste : elle couvre 2007 -> J-1.
+     * On prend le TOP n de chaque table, puis le TOP n de la reunion. Le filtre porte sur COD_EMPRESA +
      * NUM_CUENTA pour s'appuyer sur la cle primaire. Le sens vient du libelle (IND_APL_CARGO est
      * constant en production, voir SensMouvement) ; l'indicateur et l'etat sont renvoyes bruts.
      */
