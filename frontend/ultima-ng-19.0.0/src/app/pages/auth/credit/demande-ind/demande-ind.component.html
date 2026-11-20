@@ -90,11 +90,16 @@
                         <small *ngIf="membreSaf?.etat === 'SAF_INDISPONIBLE'" class="text-orange-600 block mt-1">
                             <i class="pi pi-exclamation-triangle mr-1"></i>{{ membreSaf?.message }}
                         </small>
-                        <small *ngIf="demandeEnCours" class="text-red-600 font-semibold block mt-1">
-                            <i class="pi pi-exclamation-triangle mr-1"></i>
+                        <small *ngIf="demandeEnCours && demandeEnCours.bloquante" class="text-red-600 font-semibold block mt-1">
+                            <i class="pi pi-ban mr-1"></i>
                             Demande déjà en cours pour ce membre (n° {{ demandeEnCours.demandeIndividuelId }},
-                            {{ demandeEnCours.prenom }} {{ demandeEnCours.nom }}, état {{ demandeEnCours.validationState }}) —
-                            nouvelle saisie impossible.
+                            {{ demandeEnCours.prenom }} {{ demandeEnCours.nom }}, état {{ demandeEnCours.validationState }},
+                            saisie il y a {{ demandeEnCours.ageJours }} jour(s)) — nouvelle saisie refusée ; si c'est un doublon, le DA peut l'annuler.
+                        </small>
+                        <small *ngIf="demandeEnCours && !demandeEnCours.bloquante" class="text-orange-600 block mt-1">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>
+                            Ancienne demande restée ouverte (n° {{ demandeEnCours.demandeIndividuelId }}, état {{ demandeEnCours.validationState }},
+                            saisie il y a {{ demandeEnCours.ageJours }} jours) — la saisie passera ; à finaliser ou annuler par le DA.
                         </small>
                         <small *ngIf="histoSaf?.creditActif" class="text-amber-700 font-semibold block mt-1">
                             <i class="pi pi-exclamation-triangle mr-1"></i>

@@ -84,10 +84,14 @@
                     <input pInputText [(ngModel)]="pret.numeroMembreGroupe" name="numeroMembreGroupe" class="w-full"
                         [disabled]="state().submitting" required inputmode="numeric" maxlength="11"
                         (blur)="verifierNumeroGroupe()" (ngModelChange)="membreGroupeSaf = null; demandeEnCours = null">
-                    @if (demandeEnCours) {
+                    @if (demandeEnCours?.bloquante) {
                     <small class="text-red-600 font-semibold block"><i class="pi pi-ban mr-1"></i>Demande déjà en cours pour ce groupe :
                         <a [routerLink]="['/dashboards/credit/individuel/attente/detail', demandeEnCours.demandeIndividuelId]" class="underline">n° {{ demandeEnCours.demandeIndividuelId }}</a>
                         ({{ demandeEnCours.validationState }}, {{ demandeEnCours.createdAt | date:'dd/MM/yyyy' }}). Une nouvelle saisie sera refusée.</small>
+                    } @else if (demandeEnCours) {
+                    <small class="text-orange-600 block"><i class="pi pi-exclamation-triangle mr-1"></i>Ancienne demande restée ouverte :
+                        <a [routerLink]="['/dashboards/credit/individuel/attente/detail', demandeEnCours.demandeIndividuelId]" class="underline">n° {{ demandeEnCours.demandeIndividuelId }}</a>
+                        ({{ demandeEnCours.validationState }}, {{ demandeEnCours.createdAt | date:'dd/MM/yyyy' }}). La saisie passera ; à finaliser ou annuler par le DA.</small>
                     }
                     @if (membreGroupeSafEnCours) {
                     <small class="text-gray-400"><i class="pi pi-spinner pi-spin mr-1"></i>Vérification dans SAF…</small>

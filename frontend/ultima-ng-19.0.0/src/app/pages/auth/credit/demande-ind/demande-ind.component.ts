@@ -312,7 +312,7 @@ export class DemandeIndComponent implements OnInit {
      * Anti-doublon : demande encore en cours pour le N° membre saisi (renseigné
      * dès que le numéro fait 11 chiffres ; bloque la soumission si présent).
      */
-    demandeEnCours: { demandeIndividuelId?: number; prenom?: string; nom?: string; montantDemande?: number; validationState?: string; createdAt?: string } | null = null;
+    demandeEnCours: { demandeIndividuelId?: number; prenom?: string; nom?: string; montantDemande?: number; validationState?: string; createdAt?: string; bloquante?: boolean; ageJours?: number } | null = null;
 
     /**
      * Vérification du membre dans SAF production (26/10/2026). Inconnu ou mal formé bloque la
@@ -357,13 +357,21 @@ export class DemandeIndComponent implements OnInit {
             .subscribe({
                 next: (response) => {
                     const data = response.data as any;
-                    if (data?.enCours) {
+                    if (data?.enCours && data.bloquante) {
+                        this.demandeEnCours = data;
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Demande déjà en cours',
+                            detail: `Ce membre a déjà une demande en cours (n° ${data.demandeIndividuelId}, état ${data.validationState}, saisie il y a ${data.ageJours} jour(s)). Une nouvelle saisie sera refusée ; si c'est un doublon, le Directeur d'Agence peut l'annuler.`,
+                            life: 10000
+                        });
+                    } else if (data?.enCours) {
                         this.demandeEnCours = data;
                         this.messageService.add({
                             severity: 'warn',
-                            summary: 'Demande déjà en cours',
-                            detail: `Ce membre a déjà une demande en cours (n° ${data.demandeIndividuelId}, état ${data.validationState}). Une nouvelle saisie sera refusée.`,
-                            life: 8000
+                            summary: 'Une ancienne demande est restée ouverte',
+                            detail: `Demande n° ${data.demandeIndividuelId}, état ${data.validationState}, saisie il y a ${data.ageJours} jours. La nouvelle saisie passera ; signalez l'ancienne au Directeur d'Agence pour qu'elle soit finalisée ou annulée.`,
+                            life: 10000
                         });
                     }
                 },
