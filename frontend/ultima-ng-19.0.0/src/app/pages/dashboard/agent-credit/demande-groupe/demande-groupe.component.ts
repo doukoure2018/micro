@@ -451,11 +451,18 @@ export class DemandeGroupeComponent implements OnInit {
                 next: (response) => {
                     const data = response.data as any;
                     this.demandeEnCours = data?.enCours ? data : null;
-                    if (this.demandeEnCours) {
+                    if (this.demandeEnCours && data.bloquante) {
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Ce groupe a déjà une demande en cours',
+                            detail: `Demande n° ${data.demandeIndividuelId}, étape ${data.validationState}, saisie il y a ${data.ageJours} jour(s). Elle suit déjà son circuit : ne la ressaisissez pas. Si c'est un doublon, le Directeur d'Agence peut l'annuler.`,
+                            life: 10000
+                        });
+                    } else if (this.demandeEnCours) {
                         this.messageService.add({
                             severity: 'warn',
-                            summary: 'Ce groupe a déjà une demande en cours',
-                            detail: `Demande n° ${data.demandeIndividuelId}, étape ${data.validationState}. Elle suit déjà son circuit : ne la ressaisissez pas. Si c'est un doublon, le Directeur d'Agence peut l'annuler.`,
+                            summary: 'Une ancienne demande est restée ouverte',
+                            detail: `Demande n° ${data.demandeIndividuelId}, étape ${data.validationState}, saisie il y a ${data.ageJours} jours. La nouvelle saisie passera ; signalez l'ancienne au Directeur d'Agence pour qu'elle soit finalisée ou annulée.`,
                             life: 10000
                         });
                     }
@@ -523,7 +530,7 @@ export class DemandeGroupeComponent implements OnInit {
     // ==================== SOUMISSION ====================
 
     peutSoumettre(): boolean {
-        if (!this.estCorrection() && this.demandeEnCours) return false;
+        if (!this.estCorrection() && this.demandeEnCours?.bloquante) return false;
         return this.partsEgalesMontant() && !!this.groupe.typeGroupe && !!this.groupe.nomGroupe && !!this.groupe.mandataire1 && !!this.groupe.contactMandataire1 && (this.isCfe() || this.state().garanties.length > 0);
     }
 
