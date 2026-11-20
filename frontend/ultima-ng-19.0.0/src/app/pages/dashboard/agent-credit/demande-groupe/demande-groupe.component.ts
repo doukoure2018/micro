@@ -9,7 +9,7 @@ import localeFr from '@angular/common/locales/fr';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CalendarModule } from 'primeng/calendar';
@@ -40,7 +40,7 @@ registerLocaleData(localeFr, 'fr-FR');
 @Component({
     selector: 'app-demande-groupe',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, CheckboxModule, DialogModule, DropdownModule, InputNumberModule, InputTextModule, ProgressSpinnerModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule, EcheancierPrevisionnelComponent],
+    imports: [CommonModule, FormsModule, ButtonModule, CalendarModule, CheckboxModule, DialogModule, DropdownModule, InputNumberModule, InputTextModule, ProgressSpinnerModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule, RouterLink, EcheancierPrevisionnelComponent],
     templateUrl: './demande-groupe.component.html',
     providers: [MessageService]
 })
@@ -412,11 +412,15 @@ export class DemandeGroupeComponent implements OnInit {
     /** Le numéro du groupe lui-même est un membre SAF : même vérification, à la sortie du champ. */
     membreGroupeSaf: VerificationMembre | null = null;
     membreGroupeSafEnCours = false;
+    /** Anti-doublon : la demande encore en cours de ce groupe, s'il y en a une (le serveur refusera la saisie). */
+    demandeEnCours: any = null;
 
     verifierNumeroGroupe(): void {
         const numero = (this.pret.numeroMembreGroupe || '').trim();
         this.membreGroupeSaf = null;
+        this.demandeEnCours = null;
         if (!numero) return;
+        if (!this.estCorrection()) this.verifierDemandeEnCours(numero);
         this.membreGroupeSafEnCours = true;
         this.userService
             .verifierMembreSaf$(numero)
@@ -429,6 +433,36 @@ export class DemandeGroupeComponent implements OnInit {
                 error: () => {
                     this.membreGroupeSafEnCours = false;
                     this.membreGroupeSaf = null;
+                }
+            });
+    }
+
+    /**
+     * Même contrôle que le formulaire particulier : un groupe qui a déjà une demande vivante ne
+     * doit pas être ressaisi. Le 14/11/2026 un groupe a été enregistré 24 fois en 1 h 40 parce que
+     * l'agent d'accueil ne voyait pas sa demande partir ; le serveur refuse désormais, mais autant
+     * le dire avant que l'agent ne remplisse tout le formulaire.
+     */
+    private verifierDemandeEnCours(numero: string): void {
+        this.userService
+            .getDemandeEnCours$(numero)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (response) => {
+                    const data = response.data as any;
+                    this.demandeEnCours = data?.enCours ? data : null;
+                    if (this.demandeEnCours) {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Ce groupe a déjà une demande en cours',
+                            detail: `Demande n° ${data.demandeIndividuelId}, étape ${data.validationState}. Elle suit déjà son circuit : ne la ressaisissez pas. Si c'est un doublon, le Directeur d'Agence peut l'annuler.`,
+                            life: 10000
+                        });
+                    }
+                },
+                error: () => {
+                    // Contrôle indicatif : le serveur refusera de toute façon à la soumission
+                    this.demandeEnCours = null;
                 }
             });
     }
@@ -489,6 +523,7 @@ export class DemandeGroupeComponent implements OnInit {
     // ==================== SOUMISSION ====================
 
     peutSoumettre(): boolean {
+        if (!this.estCorrection() && this.demandeEnCours) return false;
         return this.partsEgalesMontant() && !!this.groupe.typeGroupe && !!this.groupe.nomGroupe && !!this.groupe.mandataire1 && !!this.groupe.contactMandataire1 && (this.isCfe() || this.state().garanties.length > 0);
     }
 
@@ -632,7 +667,10 @@ export class DemandeGroupeComponent implements OnInit {
                         life: 5000
                     });
                     this.state.update((s) => ({ ...s, submitting: false }));
-                    setTimeout(() => this.router.navigate(['/dashboards/credit/individuel/attente']), 1200);
+                    // « Mes réceptions » : la page où la demande que l'on vient de saisir est visible
+                    // tout de suite (EN_ATTENTE_DA). La liste des demandes en attente ne la montrait
+                    // pas toujours à l'agent d'accueil, qui croyait la saisie perdue et recommençait.
+                    setTimeout(() => this.router.navigate(['/dashboards/accueil/mes-receptions']), 1200);
                 },
                 error: (error) => {
                     this.state.update((s) => ({ ...s, submitting: false }));
