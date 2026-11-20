@@ -606,7 +606,12 @@ public class DemandeIndResource {
         var enCours = demandeIndService.getDemandeEnCours(numeroMembre);
         Map<String, Object> data = new HashMap<>();
         data.put("enCours", enCours.isPresent());
+        data.put("joursRefus", io.digiservices.ecreditservice.service.impl.DemandeIndServiceImpl.JOURS_REFUS_DOUBLON);
         enCours.ifPresent(d -> {
+            // bloquante = la saisie sera refusée ; sinon avertissement seulement (ancienne demande)
+            data.put("bloquante", io.digiservices.ecreditservice.service.impl.DemandeIndServiceImpl.doublonBloquant(d));
+            data.put("ageJours", d.getCreatedAt() == null ? null
+                    : java.time.temporal.ChronoUnit.DAYS.between(d.getCreatedAt().toLocalDate(), java.time.LocalDate.now()));
             data.put("demandeIndividuelId", d.getDemandeIndividuelId());
             data.put("nom", d.getNom());
             data.put("prenom", d.getPrenom());

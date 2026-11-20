@@ -34,7 +34,7 @@ class DemandeIndAntiDoublonTest {
         d.setPrenom("");
         d.setMontantDemande(new BigDecimal("16000000"));
         d.setValidationState("APPROVED");
-        d.setCreatedAt(LocalDateTime.of(2026, 11, 14, 14, 7));
+        d.setCreatedAt(LocalDateTime.now().minusDays(2));
         return d;
     }
 
@@ -66,6 +66,25 @@ class DemandeIndAntiDoublonTest {
         when(repository.findDemandeEnCours("15200007056")).thenReturn(Optional.empty());
         assertDoesNotThrow(() -> service.refuserSiDemandeEnCours(" 15200007056 "));
         verify(repository).findDemandeEnCours("15200007056");
+    }
+
+    @Test
+    @DisplayName("au-delà de 30 jours, l'ancienne demande n'empêche plus la saisie (renouvellement après remboursement)")
+    void ancienneDemandeNeBloquePlus() {
+        DemandeIndividuel vieille = existante();
+        vieille.setCreatedAt(LocalDateTime.now().minusDays(DemandeIndServiceImpl.JOURS_REFUS_DOUBLON + 1));
+        when(repository.findDemandeEnCours("15200112221")).thenReturn(Optional.of(vieille));
+
+        assertDoesNotThrow(() -> service.refuserSiDemandeEnCours("15200112221"));
+        assertFalse(DemandeIndServiceImpl.doublonBloquant(vieille));
+
+        DemandeIndividuel limite = existante();
+        limite.setCreatedAt(LocalDateTime.now().minusDays(DemandeIndServiceImpl.JOURS_REFUS_DOUBLON - 1));
+        assertTrue(DemandeIndServiceImpl.doublonBloquant(limite), "29 jours : encore dans la fenêtre de refus");
+
+        DemandeIndividuel sansDate = existante();
+        sansDate.setCreatedAt(null);
+        assertTrue(DemandeIndServiceImpl.doublonBloquant(sansDate), "date inconnue : on refuse par prudence");
     }
 
     @Test
