@@ -9,6 +9,7 @@ import io.digiservices.ecreditservice.service.DemandeIndService;
 import io.digiservices.ecreditservice.validation.CreditFonctionnaireValidator;
 import io.digiservices.ecreditservice.utils.EcheancierCalculateur;
 import io.digiservices.ecreditservice.validation.CreditGroupeValidator;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,23 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     }
 
     /**
+     * Fenêtre du refus strict : une demande vivante plus récente que ce délai bloque toute
+     * nouvelle saisie du même membre. Au-delà, l'ancienne demande est présumée oubliée dans
+     * digi (crédit mis en place dans SAF puis dossier jamais finalisé : 777 demandes de plus de
+     * 90 jours le 20/11/2026, dont 550 en SELECTION) et la saisie passe, avec avertissement et
+     * trace, pour ne pas bloquer un renouvellement après remboursement. Arbitrage DSIG du
+     * 20/11/2026 : 62 des 67 membres en doublon avaient resaisi en moins de 30 jours.
+     */
+    public static final int JOURS_REFUS_DOUBLON = 30;
+
+    /** La demande vivante est-elle assez récente pour bloquer une nouvelle saisie ? */
+    public static boolean doublonBloquant(DemandeIndividuel existante) {
+        if (existante == null) return false;
+        if (existante.getCreatedAt() == null) return true;   // date inconnue : prudence
+        return !existante.getCreatedAt().isBefore(LocalDateTime.now().minusDays(JOURS_REFUS_DOUBLON));
+    }
+
+    /**
      * Anti-doublon : un membre ne peut pas avoir deux demandes en cours (ni rejetée, ni annulée,
      * ni définitivement validée = en cours). La garde vivait dans {@link #addDemandeInd}, que
      * plus personne n'appelle : le formulaire passe par {@link #addDemandeIndWithGaranties}, qui
@@ -39,17 +57,26 @@ public class DemandeIndServiceImpl implements DemandeIndService {
      * demandes vivantes, dont un groupe saisi 24 fois en 1 h 40 (dossiers 11416 à 11449) parce
      * que l'agent d'accueil ne voyait pas sa demande partir et recommençait. Depuis la V216,
      * un doublon se règle par « Annuler le dossier » (le DA à l'accueil), jamais par une
-     * nouvelle saisie.
+     * nouvelle saisie. Règle à deux vitesses : refus si la demande vivante a moins de
+     * {@link #JOURS_REFUS_DOUBLON} jours, passage tracé au-delà.
      */
     public void refuserSiDemandeEnCours(String numeroMembre) {
         if (numeroMembre == null || numeroMembre.isBlank()) return;
-        demandeIndRepository.findDemandeEnCours(numeroMembre.trim()).ifPresent(existante -> {
+        String numero = numeroMembre.trim();
+        demandeIndRepository.findDemandeEnCours(numero).ifPresent(existante -> {
+            if (!doublonBloquant(existante)) {
+                log.warn("[ANTI-DOUBLON] membre {} : nouvelle saisie acceptée malgré la demande n° {} ({}, créée le {}) "
+                                + "de plus de {} jours encore ouverte — à régulariser (mise en place SAF ou annulation DA)",
+                        numero, existante.getDemandeIndividuelId(), existante.getValidationState(),
+                        existante.getCreatedAt() == null ? "?" : existante.getCreatedAt().toLocalDate(), JOURS_REFUS_DOUBLON);
+                return;
+            }
             throw new ValidationException(String.format(
                     "Doublon refusé : le membre %s a déjà une demande de crédit en cours, la n° %d (%s %s, %s GNF, étape %s, saisie le %s). "
                             + "Cette demande suit déjà son circuit : ne la ressaisissez pas. "
                             + "Si c'est un doublon ou une erreur, demandez au Directeur d'Agence de l'annuler (bouton « Annuler le dossier »), "
                             + "puis recommencez.",
-                    numeroMembre.trim(), existante.getDemandeIndividuelId(),
+                    numero, existante.getDemandeIndividuelId(),
                     existante.getPrenom() == null ? "" : existante.getPrenom(),
                     existante.getNom() == null ? "" : existante.getNom(),
                     existante.getMontantDemande(),
