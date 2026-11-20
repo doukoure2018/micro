@@ -27,22 +27,35 @@ public class DemandeIndServiceImpl implements DemandeIndService {
     private final io.digiservices.ecreditservice.service.AnalyseCreditAgricoleService analyseCreditAgricoleService;
     @Override
     public void addDemandeInd(DemandeIndividuel demandeIndividuel) {
-        // Anti-doublon : un membre ne peut pas avoir deux demandes en cours simultanément
-        // (ni rejetée, ni définitivement validée = en cours). Le DA peut rejeter la
-        // demande existante pour permettre une nouvelle saisie.
-        String numeroMembre = demandeIndividuel.getNumeroMembre();
-        if (numeroMembre != null && !numeroMembre.isBlank()) {
-            demandeIndRepository.findDemandeEnCours(numeroMembre.trim()).ifPresent(existante -> {
-                throw new ValidationException(String.format(
-                        "Doublon refusé : le membre %s a déjà une demande de crédit en cours (n° %d, %s %s, montant %s, état %s, créée le %s). "
-                                + "Faites aboutir ou rejeter cette demande avant d'en créer une nouvelle.",
-                        numeroMembre, existante.getDemandeIndividuelId(),
-                        existante.getPrenom(), existante.getNom(),
-                        existante.getMontantDemande(), existante.getValidationState(),
-                        existante.getCreatedAt() != null ? existante.getCreatedAt().toLocalDate() : "N/A"));
-            });
-        }
+        refuserSiDemandeEnCours(demandeIndividuel.getNumeroMembre());
         demandeIndRepository.addNewDemandeInd(demandeIndividuel);
+    }
+
+    /**
+     * Anti-doublon : un membre ne peut pas avoir deux demandes en cours (ni rejetée, ni annulée,
+     * ni définitivement validée = en cours). La garde vivait dans {@link #addDemandeInd}, que
+     * plus personne n'appelle : le formulaire passe par {@link #addDemandeIndWithGaranties}, qui
+     * ne contrôlait rien. Résultat mesuré le 20/11/2026 en production : 69 membres avec 180
+     * demandes vivantes, dont un groupe saisi 24 fois en 1 h 40 (dossiers 11416 à 11449) parce
+     * que l'agent d'accueil ne voyait pas sa demande partir et recommençait. Depuis la V216,
+     * un doublon se règle par « Annuler le dossier » (le DA à l'accueil), jamais par une
+     * nouvelle saisie.
+     */
+    public void refuserSiDemandeEnCours(String numeroMembre) {
+        if (numeroMembre == null || numeroMembre.isBlank()) return;
+        demandeIndRepository.findDemandeEnCours(numeroMembre.trim()).ifPresent(existante -> {
+            throw new ValidationException(String.format(
+                    "Doublon refusé : le membre %s a déjà une demande de crédit en cours, la n° %d (%s %s, %s GNF, étape %s, saisie le %s). "
+                            + "Cette demande suit déjà son circuit : ne la ressaisissez pas. "
+                            + "Si c'est un doublon ou une erreur, demandez au Directeur d'Agence de l'annuler (bouton « Annuler le dossier »), "
+                            + "puis recommencez.",
+                    numeroMembre.trim(), existante.getDemandeIndividuelId(),
+                    existante.getPrenom() == null ? "" : existante.getPrenom(),
+                    existante.getNom() == null ? "" : existante.getNom(),
+                    existante.getMontantDemande(),
+                    existante.getValidationState() == null ? "NOUVEAU" : existante.getValidationState(),
+                    existante.getCreatedAt() != null ? existante.getCreatedAt().toLocalDate() : "date inconnue"));
+        });
     }
 
     @Override
@@ -250,6 +263,9 @@ public class DemandeIndServiceImpl implements DemandeIndService {
         log.info("Création d'une nouvelle demande avec {} garanties",
                 demandeIndividuel.getGaranties() != null ? demandeIndividuel.getGaranties().size() : 0);
 
+        // Anti-doublon d'abord : le même membre ne repart pas dans le circuit tant qu'une
+        // demande est vivante (voir refuserSiDemandeEnCours).
+        refuserSiDemandeEnCours(demandeIndividuel.getNumeroMembre());
         // Validation des données
         validateDemandeData(demandeIndividuel);
         // Calcul automatique de l'échéance si nécessaire
