@@ -289,6 +289,15 @@ import { TooltipModule } from 'primeng/tooltip';
                 <button pButton icon="pi pi-file-excel" label="Exporter le dossier" class="p-button-success p-button-outlined p-button-sm ml-auto" [loading]="exportDossierEnCours()" (click)="exporterDossier()"></button>
             </div>
 
+            <!-- Une table que SAF n'a pas rendue ne vide plus le dossier : elle est nommée ici. -->
+            @if (sectionsManquantes().length) {
+            <div class="mb-3 p-3 border-l-4 border-orange-400 bg-orange-50 rounded">
+                <div class="font-semibold text-orange-800 text-sm"><i class="pi pi-exclamation-triangle mr-2"></i>Dossier partiel : {{ sectionsManquantes().length }} table(s) non lue(s) dans SAF</div>
+                <div class="text-xs text-orange-700 mt-1" *ngFor="let m of sectionsManquantes()">{{ m }}</div>
+                <div class="text-xs text-orange-700 mt-1">Le reste du dossier est complet. Relancez la lecture dans quelques minutes pour obtenir les tables manquantes.</div>
+            </div>
+            }
+
             <p-tabView>
                 <!-- Opérations du crédit : l'onglet qui répond à « pourquoi ce solde est négatif » -->
                 <p-tabPanel [header]="'Opérations du crédit (' + (d.mouvements?.length || 0) + ')'">
@@ -586,6 +595,9 @@ export class CreditsNegatifsComponent implements OnInit {
     });
 
     nbColonnesFiche = computed(() => Object.keys(this.dossier()?.fiche || {}).length);
+
+    /** Les tables que SAF n'a pas rendues, en clair. Vide quand le dossier est complet. */
+    sectionsManquantes = computed(() => Object.values(this.dossier()?.sectionsIndisponibles || {}));
 
     totalMillis = computed(() => {
         const m = this.dossier()?.millisecondes;
