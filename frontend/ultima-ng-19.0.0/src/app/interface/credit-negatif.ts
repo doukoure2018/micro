@@ -85,4 +85,6 @@ export interface DossierCredit {
     mouvementsCompteComplets: boolean;
     ecrituresCompletes: boolean;
     millisecondes: Record<string, number> | null;
+    /** Sections que SAF n'a pas rendues, et pourquoi : l'écran les nomme au lieu de rester vide. */
+    sectionsIndisponibles: Record<string, string> | null;
 }
