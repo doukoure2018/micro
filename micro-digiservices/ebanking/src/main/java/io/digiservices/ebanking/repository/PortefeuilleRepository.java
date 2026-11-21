@@ -898,6 +898,7 @@ public class PortefeuilleRepository {
                 io.digiservices.ebanking.config.SafRoutage.Cible.SAUVEGARDE);
         try {
             java.util.Map<String, Long> millis = new java.util.LinkedHashMap<>();
+            java.util.Map<String, String> incidents = new java.util.LinkedHashMap<>();
             MapSqlParameterSource cle = new MapSqlParameterSource()
                     .addValue("codAgencia", codAgencia).addValue("numCredito", numCredito);
             List<java.util.Map<String, Object>> fiches = chrono(millis, "fiche",
@@ -927,21 +928,22 @@ public class PortefeuilleRepository {
                             java.sql.Types.VARCHAR, "%" + numCredito + "%"))
                     .addValue("depuis", fecApertura == null ? null : java.sql.Date.valueOf(fecApertura));
 
-            List<java.util.Map<String, Object>> echeancier = chrono(millis, "echeancier",
-                    () -> execute("portefeuille.dossier.echeancier", () -> dossier.query(SQL_DOSSIER_ECHEANCIER, p, LIGNE_BRUTE)));
-            List<java.util.Map<String, Object>> mouvements = chrono(millis, "mouvements",
-                    () -> execute("portefeuille.dossier.mouvements", () -> dossier.query(SQL_DOSSIER_MOUVEMENTS, p, LIGNE_BRUTE)));
-            List<java.util.Map<String, Object>> compte = chrono(millis, "compte",
-                    () -> execute("portefeuille.dossier.compte", () -> dossier.query(SQL_DOSSIER_COMPTE, q, LIGNE_BRUTE)));
-            List<java.util.Map<String, Object>> ecritures = chrono(millis, "ecritures",
-                    () -> execute("portefeuille.dossier.ecritures", () -> dossier.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE)));
+            List<java.util.Map<String, Object>> echeancier = section(millis, incidents, "echeancier",
+                    "L'echeancier", () -> dossier.query(SQL_DOSSIER_ECHEANCIER, p, LIGNE_BRUTE));
+            List<java.util.Map<String, Object>> mouvements = section(millis, incidents, "mouvements",
+                    "Les mouvements du credit", () -> dossier.query(SQL_DOSSIER_MOUVEMENTS, p, LIGNE_BRUTE));
+            List<java.util.Map<String, Object>> compte = section(millis, incidents, "compte",
+                    "Les mouvements du compte courant", () -> dossier.query(SQL_DOSSIER_COMPTE, q, LIGNE_BRUTE));
+            List<java.util.Map<String, Object>> ecritures = section(millis, incidents, "ecritures",
+                    "Les ecritures comptables", () -> dossier.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE));
 
             // Le detail par requete, et pas seulement le total : le 19/11, le total disait
             // 6 min 33 sans dire laquelle des cinq les avait passees. On ne regle pas ce qu'on
             // ne sait pas nommer.
-            log.info("[DOSSIER] credit {}/{} : {} echeances, {} mouvements, {} lignes de compte, {} ecritures — {} ms {}",
+            log.info("[DOSSIER] credit {}/{} : {} echeances, {} mouvements, {} lignes de compte, {} ecritures — {} ms {}{}",
                     codAgencia, numCredito, echeancier.size(), mouvements.size(), compte.size(), ecritures.size(),
-                    millis.values().stream().mapToLong(Long::longValue).sum(), millis);
+                    millis.values().stream().mapToLong(Long::longValue).sum(), millis,
+                    incidents.isEmpty() ? "" : " — sections indisponibles : " + incidents.keySet());
 
             return io.digiservices.clients.portefeuille.DossierCreditDto.builder()
                     .codAgencia(codAgencia).numCredito(numCredito)
@@ -953,6 +955,7 @@ public class PortefeuilleRepository {
                     .echeancierComplet(echeancier.size() < max).mouvementsComplets(mouvements.size() < max)
                     .mouvementsCompteComplets(compte.size() < max).ecrituresCompletes(ecritures.size() < max)
                     .millisecondes(millis)
+                    .sectionsIndisponibles(incidents)
                     .build();
         } finally {
             if (avant == null) {
@@ -986,6 +989,59 @@ public class PortefeuilleRepository {
         }
         return ligne;
     };
+
+    /**
+     * Une section du dossier : chronometree, retentee une fois si la connexion a casse, et
+     * <b>facultative</b>. Elle ne fait jamais echouer le dossier entier.
+     *
+     * <p>Les ecritures comptables lisent cinquante millions de lignes sans index exploitable sur
+     * la date ni sur la reference. Le 21/11/2026, cette seule lecture coupait la connexion
+     * — « Connection reset », SQLSTATE 08S01 — a chacune des huit tentatives de la journee, et
+     * l'ecran restait vide alors que la fiche, l'echeancier, les mouvements et le compte etaient
+     * deja lus. Une connexion cassee est evincee du pool : le second essai en obtient une neuve,
+     * ce qui suffit souvent. S'il echoue aussi, la section est rendue vide et nommee, et
+     * l'utilisateur voit le reste du dossier.</p>
+     */
+    private <R> List<R> section(java.util.Map<String, Long> millis, java.util.Map<String, String> incidents,
+                                String nom, String libelle, Supplier<List<R>> lecture) {
+        long debut = System.currentTimeMillis();
+        try {
+            try {
+                return execute("portefeuille.dossier." + nom, lecture);
+            } catch (RuntimeException premiere) {
+                if (!connexionCassee(premiere)) throw premiere;
+                log.warn("[DOSSIER] {} : connexion cassee, second essai sur une connexion neuve", nom);
+                return execute("portefeuille.dossier." + nom, lecture);
+            }
+        } catch (RuntimeException echec) {
+            String raison = racine(echec);
+            log.error("[DOSSIER] {} indisponible : {}", nom, raison);
+            incidents.put(nom, libelle + " n'a pas pu etre lu dans SAF : " + raison);
+            return List.of();
+        } finally {
+            millis.put(nom, System.currentTimeMillis() - debut);
+        }
+    }
+
+    /** Lien de communication rompu : la connexion est morte, une neuve a toutes ses chances. */
+    static boolean connexionCassee(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.sql.SQLException sql && "08S01".equals(sql.getSQLState())) return true;
+            String m = t.getMessage();
+            if (m != null && (m.contains("Connection reset") || m.contains("connection is closed")
+                    || m.contains("Connection is closed"))) return true;
+            if (t.getCause() == t) break;
+        }
+        return false;
+    }
+
+    /** Le message de la cause la plus profonde : celui qui dit quelque chose a l'utilisateur. */
+    static String racine(Throwable e) {
+        Throwable t = e;
+        while (t.getCause() != null && t.getCause() != t) t = t.getCause();
+        String m = t.getMessage();
+        return m == null || m.isBlank() ? t.getClass().getSimpleName() : m.lines().findFirst().orElse(m).trim();
+    }
 
     private static <R> R chrono(java.util.Map<String, Long> millis, String nom, Supplier<R> action) {
         long debut = System.currentTimeMillis();
@@ -1105,7 +1161,7 @@ public class PortefeuilleRepository {
                 log.warn("[PORTEFEUILLE] {} : sauvegarde SAF en cours de restauration", op);
                 throw new TertiaryUnavailableException(TertiaryUnavailableException.MESSAGE_RESTAURATION, e);
             }
-            log.error("[PORTEFEUILLE] {} : datasource primary indisponible - {}", op, e.getMessage());
+            log.error("[PORTEFEUILLE] {} : base SAF indisponible - {}", op, e.getMessage());
             throw new TertiaryUnavailableException("Base SAF momentanement indisponible", e);
         } catch (DataAccessException e) {
             if (TertiaryUnavailableException.estEnRestauration(e)) {

@@ -55,4 +55,15 @@ public class DossierCreditDto {
 
     /** Temps de lecture de chaque table, en millisecondes : la mesure vit avec la donnee. */
     private Map<String, Long> millisecondes;
+
+    /**
+     * Les sections que SAF n'a pas rendues, et pourquoi.
+     *
+     * <p>Une section qui echoue ne fait plus echouer le dossier entier. Mesure du 21/11/2026 :
+     * les ecritures comptables (CG_ASTO_DETALLE, cinquante millions de lignes, aucun index sur
+     * la date ni sur la reference) coupaient la connexion a chaque lecture — « Connection reset »
+     * — et l'ecran restait vide alors que les quatre autres tables etaient deja lues. Le dossier
+     * rend desormais ce qu'il a, et nomme ce qui manque.</p>
+     */
+    private Map<String, String> sectionsIndisponibles;
 }
