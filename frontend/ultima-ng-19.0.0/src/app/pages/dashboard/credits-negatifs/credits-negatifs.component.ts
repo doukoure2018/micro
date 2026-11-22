@@ -409,7 +409,18 @@ import { TooltipModule } from 'primeng/tooltip';
                 </p-tabPanel>
 
                 <!-- Écritures comptables -->
-                <p-tabPanel [header]="'Écritures comptables (' + (d.ecritures?.length || 0) + ')'">
+                <p-tabPanel [header]="d.ecrituresSuspendues ? 'Écritures comptables (suspendu)' : 'Écritures comptables (' + (d.ecritures?.length || 0) + ')'">
+                    @if (d.ecrituresSuspendues) {
+                    <div class="p-4 border-l-4 border-gray-400 bg-gray-50 rounded text-sm">
+                        <div class="font-semibold text-gray-800"><i class="pi pi-pause-circle mr-2"></i>Lecture suspendue</div>
+                        <p class="text-gray-600 mt-2 mb-0">
+                            La table <span class="font-mono">CG_ASTO_DETALLE</span> porte cinquante millions de lignes et n'a pas d'index sur la date ni sur la référence :
+                            la recherche du numéro de crédit dans le texte libre parcourt toute l'agence, puis trie, et rend un volume de lignes considérable.
+                            Elle est mise en attente pour ne pas peser sur la base, le temps de borner la requête.
+                        </p>
+                        <p class="text-gray-600 mt-2 mb-0">Les quatre autres tables du dossier restent complètes. Pour une écriture précise, passez par la comptabilité.</p>
+                    </div>
+                    } @else {
                     <p class="text-xs text-gray-500 mb-2">
                         Table <span class="font-mono">CG_ASTO_DETALLE</span>, rattachée par le numéro du crédit cité dans la référence de l'écriture. C'est ici qu'on retrouve l'écriture de régularisation.
                         <span *ngIf="!d.ecrituresCompletes" class="text-orange-600"> Plafond de lignes atteint.</span>
@@ -432,6 +443,7 @@ import { TooltipModule } from 'primeng/tooltip';
                         </ng-template>
                         <ng-template pTemplate="emptymessage"><tr><td colspan="8" class="text-center text-gray-500 py-4">Aucune écriture rattachée.</td></tr></ng-template>
                     </p-table>
+                    }
                 </p-tabPanel>
             </p-tabView>
             }
