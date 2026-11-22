@@ -87,4 +87,6 @@ export interface DossierCredit {
     millisecondes: Record<string, number> | null;
     /** Sections que SAF n'a pas rendues, et pourquoi : l'écran les nomme au lieu de rester vide. */
     sectionsIndisponibles: Record<string, string> | null;
+    /** Vrai quand la lecture des écritures comptables est suspendue par décision d'exploitation. */
+    ecrituresSuspendues: boolean;
 }
