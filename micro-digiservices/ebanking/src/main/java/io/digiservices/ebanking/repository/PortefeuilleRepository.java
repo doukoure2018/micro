@@ -10,6 +10,7 @@ import io.digiservices.clients.portefeuille.PortefeuilleIndicateursDto;
 import io.digiservices.ebanking.exception.TertiaryUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.QueryTimeoutException;
@@ -48,6 +49,19 @@ public class PortefeuilleRepository {
      * ecran de diagnostic ne doit pas faire tomber la plateforme.</p>
      */
     private final NamedParameterJdbcTemplate dossier;
+
+    /**
+     * Lire ou non les ecritures comptables du dossier. <b>Suspendu par defaut.</b>
+     *
+     * <p>{@code CG.CG_ASTO_DETALLE} porte cinquante millions de lignes et n'a d'index
+     * exploitable ni sur la date ni sur la reference ; la recherche en texte libre y impose un
+     * parcours complet de l'agence puis un tri, et rend un volume de lignes enorme. Mesure du
+     * 21/11/2026 : la connexion cassait a chaque lecture, et un simple comptage de la table
+     * depasse trois minutes. Decision DSIG : on surseoit tant que la requete n'est pas bornee.
+     * Les quatre autres tables suffisent a expliquer un solde.</p>
+     */
+    @Value("${saf.dossier.ecritures-actives:false}")
+    private boolean ecrituresActives;
 
     public PortefeuilleRepository(@Qualifier("jdbcTemplate") JdbcTemplate jdbcTemplate,
                                   @Qualifier("dossierJdbcTemplate") JdbcTemplate dossierJdbcTemplate) {
@@ -934,8 +948,10 @@ public class PortefeuilleRepository {
                     "Les mouvements du credit", () -> dossier.query(SQL_DOSSIER_MOUVEMENTS, p, LIGNE_BRUTE));
             List<java.util.Map<String, Object>> compte = section(millis, incidents, "compte",
                     "Les mouvements du compte courant", () -> dossier.query(SQL_DOSSIER_COMPTE, q, LIGNE_BRUTE));
-            List<java.util.Map<String, Object>> ecritures = section(millis, incidents, "ecritures",
-                    "Les ecritures comptables", () -> dossier.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE));
+            List<java.util.Map<String, Object>> ecritures = ecrituresActives
+                    ? section(millis, incidents, "ecritures",
+                            "Les ecritures comptables", () -> dossier.query(SQL_DOSSIER_ECRITURES, q, LIGNE_BRUTE))
+                    : List.of();
 
             // Le detail par requete, et pas seulement le total : le 19/11, le total disait
             // 6 min 33 sans dire laquelle des cinq les avait passees. On ne regle pas ce qu'on
@@ -943,7 +959,8 @@ public class PortefeuilleRepository {
             log.info("[DOSSIER] credit {}/{} : {} echeances, {} mouvements, {} lignes de compte, {} ecritures — {} ms {}{}",
                     codAgencia, numCredito, echeancier.size(), mouvements.size(), compte.size(), ecritures.size(),
                     millis.values().stream().mapToLong(Long::longValue).sum(), millis,
-                    incidents.isEmpty() ? "" : " — sections indisponibles : " + incidents.keySet());
+                    (ecrituresActives ? "" : " — ecritures suspendues (saf.dossier.ecritures-actives=false)")
+                            + (incidents.isEmpty() ? "" : " — sections indisponibles : " + incidents.keySet()));
 
             return io.digiservices.clients.portefeuille.DossierCreditDto.builder()
                     .codAgencia(codAgencia).numCredito(numCredito)
@@ -956,6 +973,7 @@ public class PortefeuilleRepository {
                     .mouvementsCompteComplets(compte.size() < max).ecrituresCompletes(ecritures.size() < max)
                     .millisecondes(millis)
                     .sectionsIndisponibles(incidents)
+                    .ecrituresSuspendues(!ecrituresActives)
                     .build();
         } finally {
             if (avant == null) {
