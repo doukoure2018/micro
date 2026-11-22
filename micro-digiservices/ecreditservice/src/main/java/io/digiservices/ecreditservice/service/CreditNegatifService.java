@@ -297,35 +297,10 @@ public class CreditNegatifService {
                 solde, ind);
     }
 
-    // ==================== Dossier du credit (DSIG, 29/10/2026) ====================
-
-    /**
-     * Le dossier SAF d'un credit negatif : les cinq tables du script d'extraction de la DSIG.
-     * C'est la qu'on lit pourquoi le solde est passe sous zero — les operations du credit portent
-     * le solde avant et apres chaque mouvement.
-     *
-     * <p>Lecture seule, dans la production, et rien n'est garde : un dossier doit montrer SAF et
-     * non une copie de SAF. Il s'ouvre pour une ligne ouverte comme pour une ligne deja close.</p>
-     */
-    public io.digiservices.clients.portefeuille.DossierCreditDto dossier(String uuid, Long id) {
-        User user = verifierDsig(uuid);
-        var cle = repository.cle(id).or(() -> repository.cleClose(id))
-                .orElseThrow(() -> new ApiException("Credit negatif introuvable"));
-        try {
-            var dossier = portefeuilleClient.getDossierCredit(cle.codAgencia(), cle.numCredito(), null);
-            log.info("[NEGATIFS] Dossier du credit {}/{} ouvert par user {}",
-                    cle.codAgencia(), cle.numCredito(), user.getUserId());
-            return dossier;
-        } catch (feign.FeignException.NotFound e) {
-            throw new ApiException("Credit introuvable dans SAF");
-        } catch (Exception e) {
-            throw new ApiException(safMuet("lecture du dossier"));
-        }
-    }
-
-    public byte[] exporterDossier(String uuid, Long id) throws java.io.IOException {
-        return io.digiservices.ecreditservice.utils.DossierCreditExcelUtils.classeur(dossier(uuid, id));
-    }
+    // Le dossier SAF d'un credit a ete retire de digi le 2026-11-22 (decision DSIG) : la lecture
+    // parcourait des dizaines de millions de lignes sans index utilisable et ne tenait pas sur la
+    // plateforme. Elle vit desormais dans l'outil de bureau rapprochement-encours, qui lit SAF en
+    // direct depuis le reseau interne. La detection horaire, les alertes et le suivi restent ici.
 
     /**
      * Qui peut agir : la DSIG, et elle seule. Deux verrous, parce qu'ils ne couvrent pas le
