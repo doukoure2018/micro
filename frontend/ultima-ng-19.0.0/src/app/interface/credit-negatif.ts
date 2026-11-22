@@ -67,26 +67,3 @@ export interface SituationCreditsNegatifs {
 }
 
 /** Le dossier SAF d'un crédit : les cinq tables du script d'extraction de la DSIG. */
-export interface DossierCredit {
-    codAgencia: string;
-    numCredito: number;
-    codCliente: string | null;
-    idCuenta: string | null;
-    fecApertura: string | null;
-    dateLecture: string;
-    trouve: boolean;
-    fiche: Record<string, any> | null;
-    echeancier: Record<string, any>[] | null;
-    mouvements: Record<string, any>[] | null;
-    mouvementsCompte: Record<string, any>[] | null;
-    ecritures: Record<string, any>[] | null;
-    echeancierComplet: boolean;
-    mouvementsComplets: boolean;
-    mouvementsCompteComplets: boolean;
-    ecrituresCompletes: boolean;
-    millisecondes: Record<string, number> | null;
-    /** Sections que SAF n'a pas rendues, et pourquoi : l'écran les nomme au lieu de rester vide. */
-    sectionsIndisponibles: Record<string, string> | null;
-    /** Vrai quand la lecture des écritures comptables est suspendue par décision d'exploitation. */
-    ecrituresSuspendues: boolean;
-}

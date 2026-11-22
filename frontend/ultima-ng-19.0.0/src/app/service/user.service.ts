@@ -2200,10 +2200,6 @@ export class UserService {
         return p;
     }
 
-    getDossierCreditNegatif$ = (id: number) =>
-        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/credits-negatifs/${id}/dossier`).pipe(catchError(this.handleError));
-    exportDossierCreditNegatif$ = (id: number) =>
-        this.http.get(`${this.server}/ecredit/credits-negatifs/${id}/dossier/export`, { responseType: 'blob', observe: 'response' });
 
     // Habilitations par departement (V178) : le porte-cles du compte connecte.
     getHabilitations$ = () => <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/habilitations/moi`).pipe(catchError(this.handleError));

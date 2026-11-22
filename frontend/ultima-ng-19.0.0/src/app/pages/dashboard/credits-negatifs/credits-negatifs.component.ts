@@ -1,4 +1,4 @@
-import { DossierCredit, LigneCreditNegatif, SituationCreditsNegatifs } from '@/interface/credit-negatif';
+import { LigneCreditNegatif, SituationCreditsNegatifs } from '@/interface/credit-negatif';
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
@@ -174,7 +174,6 @@ import { TooltipModule } from 'primeng/tooltip';
                                 </td>
                                 <td class="whitespace-nowrap">
                                     <button *ngIf="c.soldeApres === null" pButton icon="pi pi-search" class="p-button-text p-button-sm" [loading]="verificationLigne() === c.id" (click)="completerPreuve(c)" pTooltip="Lire le solde dans SAF aujourd'hui"></button>
-                                    <button pButton icon="pi pi-folder-open" class="p-button-text p-button-sm" [loading]="chargementDossier() === c.id" (click)="ouvrirDossier(c)" pTooltip="Dossier SAF du crédit : fiche, échéancier, opérations, compte courant, écritures"></button>
                                 </td>
                             </tr>
                         </ng-template>
@@ -238,7 +237,6 @@ import { TooltipModule } from 'primeng/tooltip';
                             <td class="whitespace-nowrap">
                                 <button *ngIf="!c.corrigeAt && !c.traiteAt" pButton icon="pi pi-user-plus" class="p-button-text p-button-sm" (click)="ouvrirSuivi(c)" pTooltip="Je m'en occupe"></button>
                                 <button *ngIf="!c.corrigeAt && c.traiteAt" pButton icon="pi pi-sync" class="p-button-text p-button-sm" [loading]="verificationLigne() === c.id" (click)="verifierUn(c)" pTooltip="Vérifier dans SAF maintenant"></button>
-                                <button pButton icon="pi pi-folder-open" class="p-button-text p-button-sm" [loading]="chargementDossier() === c.id" (click)="ouvrirDossier(c)" pTooltip="Dossier SAF du crédit : pourquoi le solde est passé sous zéro"></button>
                                 <button *ngIf="!c.corrigeAt && c.traiteAt" pButton icon="pi pi-times" class="p-button-text p-button-sm" (click)="retirerSuivi(c)" pTooltip="Retirer la prise en charge"></button>
                             </td>
                         </tr>
@@ -274,183 +272,6 @@ import { TooltipModule } from 'primeng/tooltip';
             </ng-template>
         </p-dialog>
 
-        <!-- ===================== Dossier SAF du crédit ===================== -->
-        <p-dialog [header]="titreDossier()" [(visible)]="afficherDossier" [modal]="true" [style]="{ width: '97vw', maxWidth: '1500px' }" [dismissableMask]="true">
-            @if (dossier(); as d) {
-            @if (!d.trouve) {
-            <p class="text-gray-500 py-4"><i class="pi pi-exclamation-triangle mr-2"></i>Ce crédit n'existe pas (ou plus) dans SAF aujourd'hui.</p>
-            } @else {
-            <div class="flex flex-wrap items-center gap-3 mb-3 text-sm">
-                <span class="text-gray-500">
-                    Lu dans la <strong>sauvegarde SAF</strong> le {{ d.dateLecture | date: 'dd/MM/yyyy' }} — elle décrit la veille, restaurée vers 07 h 15.
-                    Une imputation passée ce matin n'y figure pas encore : pour l'état du jour, utilisez « Vérifier dans SAF ».
-                </span>
-                <span class="text-gray-400" *ngIf="totalMillis() !== null">· {{ totalMillis() }} ms</span>
-                <button pButton icon="pi pi-file-excel" label="Exporter le dossier" class="p-button-success p-button-outlined p-button-sm ml-auto" [loading]="exportDossierEnCours()" (click)="exporterDossier()"></button>
-            </div>
-
-            <!-- Une table que SAF n'a pas rendue ne vide plus le dossier : elle est nommée ici. -->
-            @if (sectionsManquantes().length) {
-            <div class="mb-3 p-3 border-l-4 border-orange-400 bg-orange-50 rounded">
-                <div class="font-semibold text-orange-800 text-sm"><i class="pi pi-exclamation-triangle mr-2"></i>Dossier partiel : {{ sectionsManquantes().length }} table(s) non lue(s) dans SAF</div>
-                <div class="text-xs text-orange-700 mt-1" *ngFor="let m of sectionsManquantes()">{{ m }}</div>
-                <div class="text-xs text-orange-700 mt-1">Le reste du dossier est complet. Relancez la lecture dans quelques minutes pour obtenir les tables manquantes.</div>
-            </div>
-            }
-
-            <p-tabView>
-                <!-- Opérations du crédit : l'onglet qui répond à « pourquoi ce solde est négatif » -->
-                <p-tabPanel [header]="'Opérations du crédit (' + (d.mouvements?.length || 0) + ')'">
-                    <p class="text-xs text-gray-500 mb-2">
-                        Table <span class="font-mono">PR_MOVIMIENTOS</span>. Les colonnes « solde avant » et « solde après » sont la valeur antérieure et la valeur actuelle que SAF enregistre à chaque mouvement :
-                        la ligne surlignée est celle où le solde passe sous zéro.
-                        <span *ngIf="!d.mouvementsComplets" class="text-orange-600"> Plafond de lignes atteint : le dossier est tronqué.</span>
-                    </p>
-                    <p-table [value]="d.mouvements || []" styleClass="p-datatable-sm" [paginator]="(d.mouvements?.length || 0) > 30" [rows]="30" [scrollable]="true">
-                        <ng-template pTemplate="header">
-                            <tr>
-                                <th>N°</th><th>Date</th><th>Transaction</th><th class="text-right">Montant</th>
-                                <th class="text-right">Capital</th><th class="text-right">Intérêts</th><th class="text-right">Pénalités</th>
-                                <th class="text-right">Solde avant</th><th class="text-right">Solde après</th><th>Observation</th>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-m>
-                            <tr [class.bg-red-50]="bascule(m)">
-                                <td class="font-mono text-xs">{{ m.NUM_MOVIMIENTO }}</td>
-                                <td class="text-xs">{{ jour(m.FEC_MOVIMIENTO) }}</td>
-                                <td class="text-xs">{{ m.TIP_TRANSACCION }}<span *ngIf="m.SUB_TIP_TRANSACCION">/{{ m.SUB_TIP_TRANSACCION }}</span></td>
-                                <td class="text-right">{{ m.MON_MOVIMIENTO | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ m.MON_PRINCIPAL | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ m.MON_INT | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ m.MON_MORA | number: '1.0-2' }}</td>
-                                <td class="text-right text-gray-600">{{ m.VAL_ANTERIOR | number: '1.0-2' }}</td>
-                                <td class="text-right font-semibold" [class.text-red-600]="m.VAL_ACTUAL < 0">{{ m.VAL_ACTUAL | number: '1.0-2' }}</td>
-                                <td class="text-xs">
-                                    {{ m.OBSERVACIONES }}
-                                    <span *ngIf="bascule(m)" class="text-red-600 font-semibold">· le solde passe sous zéro ici</span>
-                                </td>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="emptymessage"><tr><td colspan="10" class="text-center text-gray-500 py-4">Aucune opération.</td></tr></ng-template>
-                    </p-table>
-                </p-tabPanel>
-
-                <!-- Fiche -->
-                <p-tabPanel header="Fiche du crédit">
-                    <div class="flex items-center gap-3 mb-2">
-                        <p-selectButton [options]="optionsFiche" [ngModel]="ficheComplete() ? 'tout' : 'resume'" (ngModelChange)="ficheComplete.set($event === 'tout')" optionLabel="label" optionValue="value" [allowEmpty]="false"></p-selectButton>
-                        <span class="text-xs text-gray-500">Table <span class="font-mono">PR_CREDITOS</span>, {{ nbColonnesFiche() }} colonnes au total.</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-1">
-                        <div *ngFor="let e of champsFiche()" class="flex justify-between border-b border-gray-100 py-1 text-sm">
-                            <span class="text-gray-500 font-mono text-xs pr-2">{{ e.cle }}</span>
-                            <span class="text-right font-medium">{{ valeur(e.valeur) }}</span>
-                        </div>
-                    </div>
-                </p-tabPanel>
-
-                <!-- Échéancier -->
-                <p-tabPanel [header]="'Échéancier (' + (d.echeancier?.length || 0) + ')'">
-                    <p class="text-xs text-gray-500 mb-2">Table <span class="font-mono">PR_PLAN_PAGOS</span>.</p>
-                    <p-table [value]="d.echeancier || []" styleClass="p-datatable-sm" [paginator]="(d.echeancier?.length || 0) > 30" [rows]="30" [scrollable]="true">
-                        <ng-template pTemplate="header">
-                            <tr>
-                                <th>N°</th><th>Échéance</th><th class="text-right">Montant</th><th class="text-right">Capital</th>
-                                <th class="text-right">Intérêts</th><th class="text-right">Reste capital</th><th class="text-right">Reste intérêts</th>
-                                <th class="text-right">Solde crédit</th><th>Réglée le</th><th>État</th>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-e>
-                            <tr>
-                                <td class="font-mono text-xs">{{ e.NUM_CUOTA }}</td>
-                                <td class="text-xs">{{ jour(e.FEC_CUOTA) }}</td>
-                                <td class="text-right">{{ e.MON_CUOTA | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ e.MON_PRINCIPAL | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ e.MON_INT | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ e.SAL_PRINCIPAL | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ e.SAL_INT | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ e.SAL_CREDITO | number: '1.0-2' }}</td>
-                                <td class="text-xs">{{ jour(e.FEC_CANCELACION) }}</td>
-                                <td class="text-xs">{{ e.IND_ESTADO }}</td>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="emptymessage"><tr><td colspan="10" class="text-center text-gray-500 py-4">Aucune échéance.</td></tr></ng-template>
-                    </p-table>
-                </p-tabPanel>
-
-                <!-- Compte courant -->
-                <p-tabPanel [header]="'Compte courant (' + (d.mouvementsCompte?.length || 0) + ')'">
-                    <p class="text-xs text-gray-500 mb-2">
-                        Table <span class="font-mono">CC_MOVIMTO_MENSUAL</span>, rattachée par le numéro du crédit cité dans le libellé, et par lui seul — comme le script
-                        d'extraction de la DSIG : tout le réseau est balayé, y compris une autre agence et un autre compte que celui du crédit
-                        (<span class="font-mono">{{ d.idCuenta || '—' }}</span>). Ce n'est donc pas l'historique de ce compte : un mouvement qui ne cite pas le crédit
-                        n'apparaît pas, et une absence n'est pas une preuve.
-                        <span *ngIf="!d.mouvementsCompteComplets" class="text-orange-600"> Plafond de lignes atteint.</span>
-                    </p>
-                    <p-table [value]="d.mouvementsCompte || []" styleClass="p-datatable-sm" [paginator]="(d.mouvementsCompte?.length || 0) > 30" [rows]="30" [scrollable]="true">
-                        <ng-template pTemplate="header">
-                            <tr><th>N°</th><th>Date</th><th>Agence</th><th>Compte</th><th>Transaction</th><th class="text-right">Montant</th><th>Document</th><th>Libellé</th><th>Usager</th></tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-m>
-                            <tr>
-                                <td class="font-mono text-xs">{{ m.NUM_MOVIMIENTO }}</td>
-                                <td class="text-xs">{{ jour(m.FEC_MOVIMIENTO) }}</td>
-                                <td class="font-mono text-xs" [class.text-orange-600]="m.COD_AGENCIA !== d.codAgencia">{{ m.COD_AGENCIA }}</td>
-                                <td class="font-mono text-xs" [class.text-orange-600]="m.NUM_CUENTA !== d.idCuenta">{{ m.NUM_CUENTA }}</td>
-                                <td class="text-xs">{{ m.TIP_TRANSACCION }}<span *ngIf="m.SUBTIP_TRANSAC">/{{ m.SUBTIP_TRANSAC }}</span></td>
-                                <td class="text-right">{{ m.MON_MOVIMIENTO | number: '1.0-2' }}</td>
-                                <td class="text-xs">{{ m.NUM_DOCUMENTO }}</td>
-                                <td class="text-xs">{{ m.DES_MOVIMIENTO }}</td>
-                                <td class="text-xs">{{ m.COD_USUARIO }}</td>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="emptymessage"><tr><td colspan="9" class="text-center text-gray-500 py-4">Aucun mouvement rattaché.</td></tr></ng-template>
-                    </p-table>
-                </p-tabPanel>
-
-                <!-- Écritures comptables -->
-                <p-tabPanel [header]="d.ecrituresSuspendues ? 'Écritures comptables (suspendu)' : 'Écritures comptables (' + (d.ecritures?.length || 0) + ')'">
-                    @if (d.ecrituresSuspendues) {
-                    <div class="p-4 border-l-4 border-gray-400 bg-gray-50 rounded text-sm">
-                        <div class="font-semibold text-gray-800"><i class="pi pi-pause-circle mr-2"></i>Lecture suspendue</div>
-                        <p class="text-gray-600 mt-2 mb-0">
-                            La table <span class="font-mono">CG_ASTO_DETALLE</span> porte cinquante millions de lignes et n'a pas d'index sur la date ni sur la référence :
-                            la recherche du numéro de crédit dans le texte libre parcourt toute l'agence, puis trie, et rend un volume de lignes considérable.
-                            Elle est mise en attente pour ne pas peser sur la base, le temps de borner la requête.
-                        </p>
-                        <p class="text-gray-600 mt-2 mb-0">Les quatre autres tables du dossier restent complètes. Pour une écriture précise, passez par la comptabilité.</p>
-                    </div>
-                    } @else {
-                    <p class="text-xs text-gray-500 mb-2">
-                        Table <span class="font-mono">CG_ASTO_DETALLE</span>, rattachée par le numéro du crédit cité dans la référence de l'écriture. C'est ici qu'on retrouve l'écriture de régularisation.
-                        <span *ngIf="!d.ecrituresCompletes" class="text-orange-600"> Plafond de lignes atteint.</span>
-                    </p>
-                    <p-table [value]="d.ecritures || []" styleClass="p-datatable-sm" [paginator]="(d.ecritures?.length || 0) > 30" [rows]="30" [scrollable]="true">
-                        <ng-template pTemplate="header">
-                            <tr><th>Écriture</th><th>Ligne</th><th>Date</th><th>Compte comptable</th><th class="text-right">Débit</th><th class="text-right">Crédit</th><th>Libellé</th><th>Référence</th></tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-e>
-                            <tr>
-                                <td class="font-mono text-xs">{{ e.NUM_ASIENTO }}</td>
-                                <td class="text-xs">{{ e.NUM_LINEA }}</td>
-                                <td class="text-xs">{{ jour(e.FEC_MOVIMIENTO) }}</td>
-                                <td class="font-mono text-xs">{{ e.CUENTA_CONTABLE }}</td>
-                                <td class="text-right">{{ e.DEBITO | number: '1.0-2' }}</td>
-                                <td class="text-right">{{ e.CREDITO | number: '1.0-2' }}</td>
-                                <td class="text-xs">{{ e.DETALLE }}</td>
-                                <td class="text-xs">{{ e.REFERENCIA }}</td>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="emptymessage"><tr><td colspan="8" class="text-center text-gray-500 py-4">Aucune écriture rattachée.</td></tr></ng-template>
-                    </p-table>
-                    }
-                </p-tabPanel>
-            </p-tabView>
-            }
-            } @else {
-            <p class="text-gray-500 py-4">Lecture du dossier dans SAF…</p>
-            }
-        </p-dialog>
     `
 })
 export class CreditsNegatifsComponent implements OnInit {
@@ -577,56 +398,11 @@ export class CreditsNegatifsComponent implements OnInit {
     verificationEnCours = signal(false);
     verificationLigne = signal<number | null>(null);
 
-    // ---------------- Dossier SAF du credit (29/10/2026)
-    afficherDossier = false;
-    dossier = signal<DossierCredit | null>(null);
-    chargementDossier = signal<number | null>(null);
-    exportDossierEnCours = signal(false);
-    ligneDossier = signal<LigneCreditNegatif | null>(null);
-    ficheComplete = signal(false);
-    optionsFiche = [
-        { label: 'Champs utiles', value: 'resume' },
-        { label: 'Toutes les colonnes', value: 'tout' }
-    ];
+    // Le dossier SAF d'un credit a quitte digi le 2026-11-22 (decision DSIG) : la lecture des
+    // cinq tables parcourait des dizaines de millions de lignes sans index et ne tenait pas sur
+    // la plateforme. Elle vit dans l'outil de bureau rapprochement-encours, qui lit SAF depuis
+    // le reseau interne. Cette page garde la detection, les alertes, la verification et le suivi.
 
-    /** Les champs de la fiche qui servent au diagnostic d'un solde negatif, dans cet ordre. */
-    private static readonly CHAMPS_UTILES = [
-        'NUM_CREDITO', 'COD_CLIENTE', 'COD_AGENCIA', 'TIP_CREDITO', 'IND_ESTADO', 'ID_CUENTA',
-        'MON_CREDITO', 'MON_SALDO', 'MON_DESEMBOLSADO', 'MON_PAGADO_PRINCIPAL', 'MON_PAGADO_INTERESES',
-        'MON_INT_ACUMULADO', 'MON_INT_SUSPENSO', 'MON_INT_MORA_ACUMULA', 'MON_PROVISION',
-        'MON_SUSPEN_PRINCIPAL', 'MON_SUSPEN_INTERESES', 'MON_CUOTA', 'CANT_CUOTAS', 'PLAZO_CREDITO',
-        'FEC_APERTURA', 'FEC_VENCIMIENTO', 'FEC_CANCELACION', 'FEC_ULT_PAGO_PRINCIPAL',
-        'FEC_ULT_PAGO_INTERESES', 'FEC_ULT_DESEMBOLSO', 'FEC_RENOVACION',
-        'COD_USUARIO', 'COD_EJECUTIVO', 'COD_OFICIAL', 'IND_BLOQUEO', 'COD_ESTADO_CONTABLE',
-        'COD_TIPO_RAZON_CANCELACION', 'COD_TIPO_RAZON_ANULACION', 'OBSERVACIONES'
-    ];
-
-    titreDossier = computed(() => {
-        const l = this.ligneDossier();
-        return l ? `Dossier du crédit ${l.numCredito} — ${l.nomCliente}` : 'Dossier du crédit';
-    });
-
-    nbColonnesFiche = computed(() => Object.keys(this.dossier()?.fiche || {}).length);
-
-    /** Les tables que SAF n'a pas rendues, en clair. Vide quand le dossier est complet. */
-    sectionsManquantes = computed(() => Object.values(this.dossier()?.sectionsIndisponibles || {}));
-
-    totalMillis = computed(() => {
-        const m = this.dossier()?.millisecondes;
-        return m ? Object.values(m).reduce((s, v) => s + v, 0) : null;
-    });
-
-    /** La fiche en couples lisibles : les champs utiles, ou toutes les colonnes de la table. */
-    champsFiche = computed<{ cle: string; valeur: any }[]>(() => {
-        const f = this.dossier()?.fiche;
-        if (!f) return [];
-        if (this.ficheComplete()) {
-            return Object.keys(f).map((cle) => ({ cle, valeur: f[cle] }));
-        }
-        return CreditsNegatifsComponent.CHAMPS_UTILES.filter((cle) => cle in f).map((cle) => ({ cle, valeur: f[cle] }));
-    });
-
-    /** Pourquoi une ligne n'a pas de solde fige : il n'y avait rien a figer, ou la cloture est trop ancienne. */
     motifSansSoldeCorrige(c: LigneCreditNegatif): string {
         if (c.conclusion === 'CLOS_SAF') {
             return "Le crédit a disparu de SAF : il n'y a pas eu de régularisation à figer";
@@ -655,54 +431,6 @@ export class CreditsNegatifsComponent implements OnInit {
         if (typeof v === 'number') return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(v);
         if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) return this.jour(v);
         return String(v);
-    }
-
-    ouvrirDossier(c: LigneCreditNegatif): void {
-        this.ligneDossier.set(c);
-        this.dossier.set(null);
-        this.ficheComplete.set(false);
-        this.afficherDossier = true;
-        this.chargementDossier.set(c.id);
-        this.userService
-            .getDossierCreditNegatif$(c.id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (r: IResponse) => {
-                    this.dossier.set(((r.data as any)?.dossier as DossierCredit) || null);
-                    this.chargementDossier.set(null);
-                },
-                error: (err) => {
-                    this.chargementDossier.set(null);
-                    this.afficherDossier = false;
-                    this.messageService.add({ severity: 'error', summary: 'Dossier', detail: err || 'Lecture SAF impossible', life: 7000 });
-                }
-            });
-    }
-
-    exporterDossier(): void {
-        const l = this.ligneDossier();
-        if (!l) return;
-        this.exportDossierEnCours.set(true);
-        this.userService
-            .exportDossierCreditNegatif$(l.id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (reponse: HttpResponse<Blob>) => {
-                    this.exportDossierEnCours.set(false);
-                    const disposition = reponse.headers.get('Content-Disposition') || '';
-                    const nom = /filename="?([^";]+)"?/.exec(disposition)?.[1] || `Dossier_credit_${l.numCredito}.xlsx`;
-                    const url = URL.createObjectURL(reponse.body as Blob);
-                    const lien = document.createElement('a');
-                    lien.href = url;
-                    lien.download = nom;
-                    lien.click();
-                    URL.revokeObjectURL(url);
-                },
-                error: () => {
-                    this.exportDossierEnCours.set(false);
-                    this.messageService.add({ severity: 'error', summary: 'Export', detail: "Échec de l'export du dossier", life: 6000 });
-                }
-            });
     }
 
     verifierUn(c: LigneCreditNegatif): void {
