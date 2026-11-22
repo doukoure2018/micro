@@ -66,4 +66,15 @@ public class DossierCreditDto {
      * rend desormais ce qu'il a, et nomme ce qui manque.</p>
      */
     private Map<String, String> sectionsIndisponibles;
+
+    /**
+     * Les ecritures comptables sont-elles suspendues par decision d'exploitation ?
+     *
+     * <p>A distinguer d'une panne : la lecture parcourt cinquante millions de lignes de
+     * {@code CG_ASTO_DETALLE} sans index utilisable, pour un volume de lignes rendues enorme.
+     * Decision DSIG du 21/11/2026 : on surseoit, le reste du dossier suffit a comprendre un
+     * solde. Reglage {@code saf.dossier.ecritures-actives}, a remettre a vrai le jour ou la
+     * requete sera bornee.</p>
+     */
+    private boolean ecrituresSuspendues;
 }
