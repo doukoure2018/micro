@@ -86,7 +86,8 @@ interface PointSerie {
                 </div>
                 <div class="flex items-center gap-2">
                     <p-select [options]="modules" [(ngModel)]="module" optionLabel="label" optionValue="value"
-                        (onChange)="charger()" styleClass="w-56"></p-select>
+                        (onChange)="charger()" styleClass="w-56"
+                        pTooltip="Le module du tableau et des indicateurs ; la courbe montre les trois" tooltipPosition="bottom"></p-select>
                     <p-select [options]="fenetres" [(ngModel)]="jours" optionLabel="label" optionValue="value"
                         (onChange)="chargerCourbe()" styleClass="w-40"></p-select>
                     <button pButton icon="pi pi-refresh" label="Actualiser" class="p-button-outlined p-button-sm"
@@ -150,8 +151,8 @@ interface PointSerie {
             <!-- La courbe du réseau -->
             <div class="border rounded p-3 mb-4">
                 <div class="flex items-center justify-between mb-1">
-                    <div class="text-sm font-medium">Écart total du réseau, jour par jour</div>
-                    <div class="text-xs text-gray-500">{{ courbe().length }} photo(s) · les jours incomplets sont marqués en orange</div>
+                    <div class="text-sm font-medium">Écart total du réseau, jour par jour — les trois modules</div>
+                    <div class="text-xs text-gray-500">les jours incomplets sont marqués en orange · un module sans photo laisse un trou, jamais un zéro</div>
                 </div>
                 <p-chart type="line" [data]="graphReseau()" [options]="optionsCourbe" height="260px"></p-chart>
             </div>
@@ -200,8 +201,8 @@ interface PointSerie {
             <div class="flex justify-center py-6"><p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner></div>
             } @else {
             <div class="border rounded p-3 mb-4">
-                <div class="text-sm font-medium mb-1">Écart de ce point de service, jour par jour</div>
-                <p-chart type="line" [data]="graphPoint()" [options]="optionsCourbe" height="220px"></p-chart>
+                <div class="text-sm font-medium mb-1">Écart de ce point de service, jour par jour ({{ libelleModule() }})</div>
+                <p-chart type="line" [data]="graphPoint()" [options]="optionsPoint" height="220px"></p-chart>
             </div>
             <div class="text-sm font-medium mb-2">Comptes comptables au {{ photo()?.jour | date: 'dd/MM/yyyy' }}</div>
             <p-table [value]="comptes()" styleClass="p-datatable-sm" [scrollable]="true">
@@ -265,7 +266,8 @@ export class EvolutionEcartsComponent {
     readonly chargement = signal(false);
     readonly photo = signal<PointJour | null>(null);
     readonly points = signal<LignePhoto[]>([]);
-    readonly courbe = signal<PointJour[]>([]);
+    /** Une courbe par module : les trois se lisent ensemble. */
+    readonly courbes = signal<Record<string, PointJour[]>>({});
 
     afficherPoint = false;
     readonly chargementPoint = signal(false);
@@ -275,37 +277,70 @@ export class EvolutionEcartsComponent {
 
     /** Le jour précédent de la courbe : c'est lui qui donne la variation du réseau. */
     readonly variationReseau = computed<number | null>(() => {
-        const serie = this.courbe();
+        const serie = this.courbes()[this.module] || [];
         if (serie.length < 2) return null;
         const dernier = serie[serie.length - 1];
         const avant = serie[serie.length - 2];
         return dernier.ecartTotal - avant.ecartTotal;
     });
 
+    /** Le détail ne porte qu'une série : sa légende n'apprend rien. */
+    readonly optionsPoint = {
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { ticks: { callback: (v: any) => new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(v) } }
+        }
+    };
+
+    readonly libelleModule = computed(() => this.modules.find((m) => m.value === this.module)?.label || this.module);
+
     readonly titrePoint = computed(() => {
         const p = this.pointChoisi();
         return p ? `${p.libellePoint || p.codAgencia} (${p.codAgencia})` : 'Point de service';
     });
 
-    /** Un jour incomplet est marqué : sa baisse ne veut pas dire une amélioration. */
+    /**
+     * Les trois modules sur un même graphe, une ligne chacun.
+     *
+     * Les trois écarts se lisent ensemble ou pas du tout : un écart qui passe des comptes
+     * clients aux dépôts à terme ne se voit sur aucune courbe prise isolément. L'axe des jours
+     * est l'union des jours photographiés ; un module sans photo ce jour-là laisse un trou
+     * (`null`), jamais un zéro, qui se lirait comme une concordance.
+     *
+     * Un jour incomplet porte un point orange plus gros : sa baisse ne veut pas dire une
+     * amélioration, elle peut venir de points de service non lus.
+     */
     readonly graphReseau = computed(() => {
-        const serie = this.courbe();
+        const courbes = this.courbes();
+        const jours = [...new Set(this.modules.flatMap((m) => (courbes[m.value] || []).map((p) => p.jour)))].sort();
         return {
-            labels: serie.map((p) => this.jourCourt(p.jour)),
-            datasets: [
-                {
-                    label: 'Écart total (GNF)',
-                    data: serie.map((p) => p.ecartTotal),
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
-                    pointBackgroundColor: serie.map((p) => (p.complete ? '#2563eb' : '#f97316')),
-                    pointRadius: serie.map((p) => (p.complete ? 3 : 6)),
-                    fill: true,
+            labels: jours.map((j) => this.jourCourt(j)),
+            datasets: this.modules.map((m) => {
+                const serie = courbes[m.value] || [];
+                const parJour = new Map(serie.map((p) => [p.jour, p]));
+                const couleur = this.COULEURS[m.value];
+                return {
+                    label: m.label,
+                    data: jours.map((j) => (parJour.has(j) ? parJour.get(j)!.ecartTotal : null)),
+                    borderColor: couleur,
+                    backgroundColor: couleur,
+                    pointBackgroundColor: jours.map((j) => (parJour.get(j)?.complete === false ? '#f97316' : couleur)),
+                    pointRadius: jours.map((j) => (parJour.has(j) ? (parJour.get(j)!.complete ? 3 : 6) : 0)),
+                    spanGaps: true,
+                    fill: false,
                     tension: 0.25
-                }
-            ]
+                };
+            })
         };
     });
+
+    /** Une couleur par module, la même partout : on compare trois lignes, pas trois écrans. */
+    readonly COULEURS: Record<string, string> = {
+        COMPTES: '#2563eb',
+        CREDITS: '#15803d',
+        DAT: '#b45309'
+    };
 
     readonly graphPoint = computed(() => {
         const serie = this.seriePoint();
@@ -324,9 +359,10 @@ export class EvolutionEcartsComponent {
         };
     });
 
+    /** Trois séries : la légende est nécessaire pour savoir laquelle est laquelle. */
     readonly optionsCourbe = {
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: { legend: { display: true, position: 'bottom' } },
         scales: {
             y: { ticks: { callback: (v: any) => new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(v) } }
         }
@@ -362,14 +398,17 @@ export class EvolutionEcartsComponent {
             });
     }
 
+    /** Les trois courbes, chargées indépendamment : un module sans photo n'empêche pas les autres. */
     chargerCourbe(): void {
-        this.userService
-            .getCourbeEcarts$(this.module, this.jours)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-                next: (r: IResponse) => this.courbe.set((r.data as any)?.courbe || []),
-                error: () => this.courbe.set([])
-            });
+        for (const m of this.modules) {
+            this.userService
+                .getCourbeEcarts$(m.value, this.jours)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (r: IResponse) => this.courbes.update((c) => ({ ...c, [m.value]: (r.data as any)?.courbe || [] })),
+                    error: () => this.courbes.update((c) => ({ ...c, [m.value]: [] }))
+                });
+        }
     }
 
     ouvrirPoint(ligne: LignePhoto): void {
