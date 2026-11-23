@@ -591,6 +591,19 @@ export class AppMenu {
                 routerLink: ['/dashboards/comptes-hors-agence']
             });
         }
+        // Évolution des écarts de rapprochement (V217) : la courbe des écarts figés chaque matin
+        // par l'outil de bureau. Sa rubrique est la sienne (V218) et non CREDITS_NEGATIFS : la DG
+        // n'a pas cette dernière, et la lui donner lui ouvrirait un écran d'anomalies techniques
+        // qui ne lui a pas été demandé. EVOLUTION_ECARTS va à la DG, la DE, l'inspection (DI),
+        // l'Audit, et la DSIG par ses départements Opérationnel et Responsable ; AUDIT_CAISSE
+        // ouvre aussi l'écran, puisque l'Audit entre par son propre groupe de menu.
+        if (this.peutUne('EVOLUTION_ECARTS', 'AUDIT_CAISSE')) {
+            items.push({
+                label: 'Évolution des écarts',
+                icon: 'pi pi-fw pi-chart-line',
+                routerLink: ['/dashboards/evolution-ecarts']
+            });
+        }
         // Synthese hebdomadaire de direction (V198) : le courriel du lundi, relisible a l'ecran.
         if (this.peut('SYNTHESE_DIRECTION')) {
             items.push({
