@@ -1713,6 +1713,18 @@ export class UserService {
     getSituationEcarts$ = (module: string, jour?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/situation`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
     /** Les comptes comptables d'un point de service, pour la photo affichee. */
+    /** Les variations entre deux photos : ce qui a bougé, par compte comptable et par couple (PS, compte). */
+    getVariationsEcarts$ = (module: string, jour?: string, reference?: string, seuil?: number) => {
+        const params: Record<string, string> = { module };
+        if (jour) params['jour'] = jour;
+        if (reference) params['reference'] = reference;
+        if (seuil !== undefined && seuil !== null) params['seuil'] = String(seuil);
+        return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/variations`, { params }).pipe(catchError(this.handleError));
+    };
+
+    getJoursEcarts$ = (module: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
+
     getComptesEcarts$ = (module: string, codAgencia: string, jour?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
     /** La courbe d'un point de service. */
