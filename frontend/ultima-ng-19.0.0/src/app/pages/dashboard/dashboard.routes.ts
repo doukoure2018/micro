@@ -205,6 +205,12 @@ export default [
         loadComponent: () => import('./comptes-hors-agence/comptes-hors-agence.component').then((c) => c.ComptesHorsAgenceComponent)
     },
     {
+        path: 'evolution-ecarts',
+        canActivate: [HabilitationGuard],
+        data: { breadcrumb: 'Évolution des écarts', rubriques: ['CREDITS_NEGATIFS', 'AUDIT_CAISSE'] },
+        loadComponent: () => import('./evolution-ecarts/evolution-ecarts.component').then((c) => c.EvolutionEcartsComponent)
+    },
+    {
         path: 'synthese-direction',
         canActivate: [HabilitationGuard],
         data: { breadcrumb: 'Synthèse de direction', rubrique: 'SYNTHESE_DIRECTION' },
