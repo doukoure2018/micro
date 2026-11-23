@@ -37,8 +37,9 @@ class PhotoEcartServiceTest {
     private final PhotoEcartRepository repository = Mockito.mock(PhotoEcartRepository.class);
     private final PerimetreSafService perimetreService = Mockito.mock(PerimetreSafService.class);
     private final HabilitationService habilitations = Mockito.mock(HabilitationService.class);
+    private final SuiviVariationService suivi = Mockito.mock(SuiviVariationService.class);
     private final PhotoEcartService service =
-            new PhotoEcartService(repository, perimetreService, habilitations);
+            new PhotoEcartService(repository, perimetreService, habilitations, suivi);
 
     private static final String UUID_DSIG = "uuid-dsig";
 

@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PhotoRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointJour;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointSerieDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SituationJourDto;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SuiviDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationCompteDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationCoupleDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationsDto;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static io.digiservices.ecreditservice.dto.PhotoEcartDtos.MODULES;
 
@@ -46,6 +48,7 @@ public class PhotoEcartService {
     private final PhotoEcartRepository repository;
     private final PerimetreSafService perimetreService;
     private final HabilitationService habilitations;
+    private final SuiviVariationService suivi;
 
     // ======================= Ecriture, par l'outil de bureau =======================
 
@@ -72,7 +75,14 @@ public class PhotoEcartService {
             // deréglée sur le poste. Un jour de marge couvre les fuseaux.
             throw new ApiException("Photo datee du futur (" + photo.jour() + ") : verifiez l'horloge du poste");
         }
-        return repository.enregistrer(photo);
+        long id = repository.enregistrer(photo);
+        // La photo ferme les fiches de correction, pas la main (V220) : les fiches « corrigee dans
+        // SAF » du module sont confrontees a ce que cette photo voit du couple.
+        int decisions = suivi.verifierApresPhoto(photo.module(), photo.jour());
+        if (decisions > 0) {
+            log.info("[PHOTO ECARTS] {} {} : {} fiche(s) de suivi verifiee(s)", photo.jour(), photo.module(), decisions);
+        }
+        return id;
     }
 
     // ======================= Lecture, par les ecrans =======================
@@ -158,8 +168,15 @@ public class PhotoEcartService {
                     + photo.jour() + ")");
         }
         List<String> codes = perimetre.toutReseau() ? null : List.copyOf(perimetre.codes());
+        Map<String, SuiviDto> fiches = suivi.vivantesParCouple(m);
         List<VariationCoupleDto> couples = VariationEcarts.classerTous(
-                repository.couplesDeuxPhotos(m, photo.jour(), ref.jour(), codes), s);
+                        repository.couplesDeuxPhotos(m, photo.jour(), ref.jour(), codes), s)
+                .stream()
+                .map(v -> {
+                    SuiviDto f = fiches.get(v.codAgencia() + "|" + v.compteComptable());
+                    return f == null ? v : v.avecSuivi(f.id(), f.etat());
+                })
+                .toList();
         List<VariationCompteDto> comptes = VariationEcarts.parCompte(couples);
         return new VariationsDto(photo, ref, s,
                 repository.pointsCompares(m, photo.jour(), ref.jour(), codes),
