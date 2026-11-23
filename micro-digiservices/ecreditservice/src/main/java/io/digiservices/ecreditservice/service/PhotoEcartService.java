@@ -41,6 +41,7 @@ public class PhotoEcartService {
 
     private final PhotoEcartRepository repository;
     private final PerimetreSafService perimetreService;
+    private final HabilitationService habilitations;
 
     // ======================= Ecriture, par l'outil de bureau =======================
 
@@ -72,9 +73,24 @@ public class PhotoEcartService {
 
     // ======================= Lecture, par les ecrans =======================
 
+    /**
+     * Qui a le droit d'ouvrir l'ecran, et jusqu'ou il voit.
+     *
+     * <p>Deux verrous, qui ne repondent pas a la meme question. La RUBRIQUE dit si ce compte a
+     * droit a cet ecran : {@code EVOLUTION_ECARTS} pour la DG, la DE, l'inspection, la DSIG et
+     * son departement operationnel (V218), ou {@code AUDIT_CAISSE} pour l'Audit, qui ouvre deja
+     * les ecrans de caisse. Le PERIMETRE dit quelles lignes il voit : tout le reseau pour ces
+     * directions, sa delegation pour un DR, son agence pour un DA.</p>
+     */
+    private Perimetre habiliter(String uuid) {
+        habilitations.exigerUneDe(uuid, HabilitationService.EVOLUTION_ECARTS,
+                HabilitationService.AUDIT_CAISSE);
+        return perimetreService.perimetreDe(uuid);
+    }
+
     /** La courbe du reseau : un module, les N derniers jours. */
     public List<PointJour> courbe(String uuid, String module, Integer jours) {
-        perimetreService.perimetreDe(uuid);        // refuse un compte sans habilitation
+        habiliter(uuid);
         return repository.courbe(verifierModule(module), borner(jours));
     }
 
@@ -85,7 +101,7 @@ public class PhotoEcartService {
      * agence. Les lignes, elles, sont bornees a son perimetre.</p>
      */
     public SituationJourDto situation(String uuid, String module, LocalDate jour) {
-        Perimetre perimetre = perimetreService.perimetreDe(uuid);
+        Perimetre perimetre = habiliter(uuid);
         String m = verifierModule(module);
         PointJour photo = repository.photo(m, jour);
         if (photo == null) {
@@ -111,14 +127,14 @@ public class PhotoEcartService {
 
     /** Les jours photographies, pour le selecteur de date de l'ecran. */
     public List<LocalDate> joursConnus(String uuid, String module) {
-        perimetreService.perimetreDe(uuid);
+        habiliter(uuid);
         return repository.joursConnus(verifierModule(module), JOURS_MAX);
     }
 
     // ======================= Gardes =======================
 
     private void exigerDansLePerimetre(String uuid, String codAgencia) {
-        Perimetre perimetre = perimetreService.perimetreDe(uuid);
+        Perimetre perimetre = habiliter(uuid);
         if (codAgencia == null || codAgencia.isBlank()) {
             throw new ApiException("Point de service non precise");
         }

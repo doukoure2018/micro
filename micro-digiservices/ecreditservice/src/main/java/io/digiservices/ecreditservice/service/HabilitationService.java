@@ -41,6 +41,8 @@ public class HabilitationService {
     public static final String FICHE_RAPPROCHEMENT = "FICHE_RAPPROCHEMENT";
     public static final String RAPPROCHEMENT_CAISSE = "RAPPROCHEMENT_CAISSE";
     public static final String CREDITS_NEGATIFS = "CREDITS_NEGATIFS";
+    /** V218 : la courbe des ecarts de rapprochement, distincte des credits negatifs. */
+    public static final String EVOLUTION_ECARTS = "EVOLUTION_ECARTS";
     public static final String CLIENTS_SOCIETARIAT = "CLIENTS_SOCIETARIAT";
     public static final String ASSAINISSEMENT = "ASSAINISSEMENT";
     /** Verification des pieces, detachee de CLIENTS_SOCIETARIAT le 28/10/2026 (V186). */
