@@ -320,6 +320,8 @@ services:
       # et demandes du tableau de bord DE). Meme valeur que la cle avec laquelle agriculteurservice
       # appelle le perimetre agricole, donc rien a ajouter dans .env.prod. Vide => 401 (fail-closed).
       ECREDIT_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}
+      # Cle de l'outil de bureau pour pousser ses photos d'ecarts (V217) ; vide = envoi refuse.
+      ECREDIT_RAPPROCHEMENT_API_KEY: ${ECREDIT_RAPPROCHEMENT_API_KEY:-}
       # Cle presentee par ecreditservice pour appeler /ebanking/agri/** (photo mensuelle du
       # portefeuille agricole, point 6 du tableau de bord DE).
       EBANKING_AGRI_API_KEY: ${EBANKING_AGRI_API_KEY:-}

@@ -206,6 +206,12 @@ feign:
 ecredit:
   agri:
     api-key: ${ECREDIT_AGRI_API_KEY:}
+  # Cle presentee par l'OUTIL DE BUREAU pour pousser ses photos d'ecarts (V217), sur
+  # /ecredit/rapprochement/photo/**. La tache planifiee du poste DSIG tourne a 7 h 45 sans
+  # compte connecte : il n'y a aucun jeton d'utilisateur a porter. Defaut vide => fail-closed
+  # (401), jamais d'ouverture par omission.
+  rapprochement:
+    api-key: ${ECREDIT_RAPPROCHEMENT_API_KEY:}
 
 # Cle presentee par ecreditservice pour appeler le perimetre agricole d'ebanking
 # (photo mensuelle du portefeuille). Meme cle que celle d'agriculteurservice.

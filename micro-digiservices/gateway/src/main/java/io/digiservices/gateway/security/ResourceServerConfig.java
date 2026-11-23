@@ -37,7 +37,15 @@ public class ResourceServerConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests( authorize -> authorize
-                        .requestMatchers("/actuator/health","/actuator/health/**","/actuator/info","/user/register/**", "/user/verify/account/**","/user/verify/password/**", "/user/resetpassword/**", "/user/image/**","/ebanking/search/**","/ebanking/typeCredit/**","/ecredit/addDemandeInd/**","/ecredit/docs/**","/ecredit/files/**","user/getUser/**","/ecredit/search/**","/ecredit/newDemandeInd/**","/ecredit/edg/**","/ecredit/public/**","/agents/**").permitAll()
+                        // « permitAll » ici veut dire « sans jeton OAuth2 a la passerelle », jamais
+                        // « sans controle » : chacun de ces chemins porte sa propre garde dans son
+                        // service. /ecredit/rapprochement/photo/** (V217) est l'envoi des photos
+                        // d'ecarts par l'outil de bureau, dont la tache planifiee de 7 h 45 tourne
+                        // sans aucun compte connecte ; il est protege par cle API dans
+                        // ecreditservice (PhotoIngestionApiKeyFilter), qui refuse tout quand aucune
+                        // cle n'est configuree. La LECTURE de ces photos n'est pas dans cette liste :
+                        // elle reste derriere le jeton, bornee au perimetre du compte.
+                        .requestMatchers("/actuator/health","/actuator/health/**","/actuator/info","/user/register/**", "/user/verify/account/**","/user/verify/password/**", "/user/resetpassword/**", "/user/image/**","/ebanking/search/**","/ebanking/typeCredit/**","/ecredit/addDemandeInd/**","/ecredit/docs/**","/ecredit/files/**","user/getUser/**","/ecredit/search/**","/ecredit/newDemandeInd/**","/ecredit/edg/**","/ecredit/public/**","/ecredit/rapprochement/photo/**","/agents/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .accessDeniedHandler(new GatewayAccessDeniedHandler())
