@@ -426,7 +426,7 @@ interface Variations {
                                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
                                                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
-                                                [disabled]="module !== 'COMPTES'" [pTooltip]="module === 'COMPTES' ? 'Copier la commande qui ouvre les opérations dans l’outil de rapprochement' : 'Opérations : comptes clients seulement (lot 4 pour crédits et DAT)'"
+                                                pTooltip="Copier la commande qui ouvre les opérations dans l’outil de rapprochement"
                                                 (click)="copierCommande(v)"></button>
                                         </td>
                                     </tr>
@@ -474,7 +474,7 @@ interface Variations {
                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
-                                [disabled]="module !== 'COMPTES'" [pTooltip]="module === 'COMPTES' ? 'Copier la commande qui ouvre les opérations dans l’outil de rapprochement' : 'Opérations : comptes clients seulement (lot 4 pour crédits et DAT)'"
+                                pTooltip="Copier la commande qui ouvre les opérations dans l’outil de rapprochement"
                                 (click)="copierCommande(v)"></button>
                         </td>
                     </tr>
@@ -920,7 +920,9 @@ export class EvolutionEcartsComponent {
     /**
      * La passerelle vers l'outil de rapprochement (lot 3) : digi s'arrête au compte comptable,
      * l'outil lit les opérations depuis le réseau interne. On copie la commande prête à coller ;
-     * la fenêtre est celle des deux photos comparées.
+     * la fenêtre est celle des deux photos comparées. Les trois modules descendent à l'opération
+     * depuis la v1.13.0 de l'outil : comptes clients (module 5), crédits (numéro d'écriture), DAT
+     * (émission et paiement).
      */
     /** Le résumé des opérations poussé par l'outil (lot 4), en une ligne ; « — » quand il n'a pas été lu. */
     resumeOperations(v: VariationCouple): string {
@@ -940,7 +942,7 @@ export class EvolutionEcartsComponent {
     copierCommande(v: VariationCouple): void {
         const ref = this.variations()?.reference?.jour;
         const jour = this.variations()?.photo?.jour;
-        const commande = `python main.py --variation ${v.codAgencia}/${v.compteComptable} --du ${ref} --au ${jour}`;
+        const commande = `python main.py --variation ${v.codAgencia}/${v.compteComptable} --du ${ref} --au ${jour}` + (this.module === 'COMPTES' ? '' : ` --module ${this.module}`);
         const fini = () => this.messageService.add({ severity: 'info', summary: 'Commande copiée', detail: commande, life: 9000 });
         if (navigator.clipboard?.writeText) {
             navigator.clipboard.writeText(commande).then(fini, () => this.messageService.add({ severity: 'warn', summary: 'Copie impossible', detail: commande, life: 12000 }));
