@@ -58,7 +58,7 @@ class PhotoEcartServiceTest {
                 new BigDecimal("1641471534"), new BigDecimal("-1565971664"),
                 13, 5, 8, 185, 185, null, "tache planifiee",
                 List.of(new LigneRecue("612", "CAISSE DE BOFFA", "61", "BOFFA", "6", "BASSE GUINEE",
-                        "", null, 3688, ecart, null, null, "ECART")));
+                        "", null, 3688, ecart, null, null, "ECART", null)));
     }
 
     @Test

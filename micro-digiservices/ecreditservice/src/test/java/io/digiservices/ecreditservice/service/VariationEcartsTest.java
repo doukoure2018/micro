@@ -32,7 +32,7 @@ class VariationEcartsTest {
                 ecartJ == null ? null : d(ecartJ), clientJ == null ? null : d(clientJ),
                 comptaJ == null ? null : d(comptaJ), etatJ, ecartJ != null,
                 ecartR == null ? null : d(ecartR), clientR == null ? null : d(clientR),
-                comptaR == null ? null : d(comptaR), etatR, ecartR != null);
+                comptaR == null ? null : d(comptaR), etatR, ecartR != null, null);
     }
 
     @Test

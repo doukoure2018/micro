@@ -63,7 +63,28 @@ public final class PhotoEcartDtos {
             BigDecimal ecart,
             BigDecimal soldeClient,
             BigDecimal soldeComptable,
-            String etat) {
+            String etat,
+            /** Lot 4 : le resume des operations qui portent la variation du couple, ou null. */
+            ExplicationRecue explication) {
+    }
+
+    /**
+     * Le resume des operations de la fenetre [fenetreDu, fenetreAu[ qui portent la variation
+     * d'un couple (V221). Calcule par l'outil le matin, pour les comptes clients ; absent quand
+     * le budget de temps n'a pas permis de lire le point de service.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ExplicationRecue(
+            LocalDate fenetreDu,
+            LocalDate fenetreAu,
+            Integer nbOperations,
+            Integer nbAnomalies,
+            BigDecimal montantAnomalies,
+            Integer nbSansEcriture,
+            BigDecimal montantSansEcriture,
+            Integer nbSansMouvement,
+            BigDecimal montantSansMouvement,
+            String operationDominante) {
     }
 
     /** Un point de la courbe : le reseau, un jour, un module. */
@@ -140,7 +161,9 @@ public final class PhotoEcartDtos {
             BigDecimal soldeClientReference,
             BigDecimal soldeComptableReference,
             String etatReference,
-            boolean presentReference) {
+            boolean presentReference,
+            /** Le resume des operations porte par la ligne du jour (V221), ou null. */
+            ExplicationRecue operations) {
     }
 
     /** Une variation : un couple dont l'ecart a change entre les deux photos, classe et explique. */
@@ -167,12 +190,14 @@ public final class PhotoEcartDtos {
             String explication,
             /** La fiche de suivi vivante du couple (V220), ou null. */
             Long suiviId,
-            String suiviEtat) {
+            String suiviEtat,
+            /** Le resume des operations de la fenetre (V221), ou null quand l'outil ne l'a pas lu. */
+            ExplicationRecue operations) {
 
         public VariationCoupleDto avecSuivi(Long id, String etat) {
             return new VariationCoupleDto(codAgencia, libellePoint, libelleAgence, libelleDelegation,
                     compteComptable, produits, ecartReference, ecartJour, variation, variationClient,
-                    variationComptable, etatReference, etatJour, statut, cote, explication, id, etat);
+                    variationComptable, etatReference, etatJour, statut, cote, explication, id, etat, operations);
         }
     }
 

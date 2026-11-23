@@ -1,6 +1,7 @@
 package io.digiservices.ecreditservice.repository;
 
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CoupleDeuxPhotos;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.ExplicationRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LignePhotoDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LigneRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PhotoRecue;
@@ -95,14 +96,21 @@ public class PhotoEcartRepository {
 
         List<LigneRecue> lignes = photo.lignes() == null ? List.of() : photo.lignes();
         for (LigneRecue l : lignes) {
+            ExplicationRecue e = l.explication();
             jdbcClient.sql("""
                             INSERT INTO rapprochement_photo_ligne (
                                 photo_id, cod_agencia, libelle_point, cod_agence, libelle_agence,
                                 cod_delegation, libelle_delegation, compte_comptable, produits,
-                                nb_comptes, ecart, solde_client, solde_comptable, etat)
+                                nb_comptes, ecart, solde_client, solde_comptable, etat,
+                                fenetre_du, fenetre_au, nb_operations, nb_anomalies, montant_anomalies,
+                                nb_sans_ecriture, montant_sans_ecriture, nb_sans_mouvement,
+                                montant_sans_mouvement, operation_dominante)
                             VALUES (:photoId, :codAgencia, :libellePoint, :codAgence, :libelleAgence,
                                     :codDelegation, :libelleDelegation, COALESCE(:compte, ''), :produits,
-                                    :nbComptes, :ecart, :soldeClient, :soldeComptable, :etat)
+                                    :nbComptes, :ecart, :soldeClient, :soldeComptable, :etat,
+                                    :fenetreDu, :fenetreAu, :nbOperations, :nbAnomalies, :montantAnomalies,
+                                    :nbSansEcriture, :montantSansEcriture, :nbSansMouvement,
+                                    :montantSansMouvement, :operationDominante)
                             ON CONFLICT (photo_id, cod_agencia, compte_comptable) DO NOTHING
                             """)
                     .param("photoId", id)
@@ -119,6 +127,17 @@ public class PhotoEcartRepository {
                     .param("soldeClient", l.soldeClient())
                     .param("soldeComptable", l.soldeComptable())
                     .param("etat", l.etat())
+                    .param("fenetreDu", e == null ? null : e.fenetreDu())
+                    .param("fenetreAu", e == null ? null : e.fenetreAu())
+                    .param("nbOperations", e == null ? null : e.nbOperations())
+                    .param("nbAnomalies", e == null ? null : e.nbAnomalies())
+                    .param("montantAnomalies", e == null ? null : e.montantAnomalies())
+                    .param("nbSansEcriture", e == null ? null : e.nbSansEcriture())
+                    .param("montantSansEcriture", e == null ? null : e.montantSansEcriture())
+                    .param("nbSansMouvement", e == null ? null : e.nbSansMouvement())
+                    .param("montantSansMouvement", e == null ? null : e.montantSansMouvement())
+                    .param("operationDominante", e == null || e.operationDominante() == null ? null
+                            : e.operationDominante().length() > 120 ? e.operationDominante().substring(0, 120) : e.operationDominante())
                     .update();
         }
         log.info("[PHOTO ECARTS] {} {} : ecart {} sur {}/{} point(s) de service, {} ligne(s) de detail",
@@ -340,7 +359,10 @@ public class PhotoEcartRepository {
                                (j.photo_id IS NOT NULL) AS present_jour,
                                r.ecart AS ecart_ref, r.solde_client AS client_ref,
                                r.solde_comptable AS comptable_ref, r.etat AS etat_ref,
-                               (r.photo_id IS NOT NULL) AS present_ref
+                               (r.photo_id IS NOT NULL) AS present_ref,
+                               j.fenetre_du, j.fenetre_au, j.nb_operations, j.nb_anomalies, j.montant_anomalies,
+                               j.nb_sans_ecriture, j.montant_sans_ecriture, j.nb_sans_mouvement,
+                               j.montant_sans_mouvement, j.operation_dominante
                         FROM j
                         FULL OUTER JOIN r ON r.cod_agencia = j.cod_agencia
                                          AND r.compte_comptable = j.compte_comptable
@@ -369,8 +391,22 @@ public class PhotoEcartRepository {
                         rs.getBigDecimal("client_ref"),
                         rs.getBigDecimal("comptable_ref"),
                         rs.getString("etat_ref"),
-                        rs.getBoolean("present_ref")))
+                        rs.getBoolean("present_ref"),
+                        explication(rs)))
                 .list();
+    }
+
+    /** Le resume des operations (V221) quand la ligne du jour en porte un ; null sinon. */
+    private static ExplicationRecue explication(ResultSet rs) throws SQLException {
+        if (rs.getObject("nb_operations") == null && rs.getObject("fenetre_du") == null) {
+            return null;
+        }
+        return new ExplicationRecue(
+                rs.getObject("fenetre_du", LocalDate.class), rs.getObject("fenetre_au", LocalDate.class),
+                entier(rs, "nb_operations"), entier(rs, "nb_anomalies"), rs.getBigDecimal("montant_anomalies"),
+                entier(rs, "nb_sans_ecriture"), rs.getBigDecimal("montant_sans_ecriture"),
+                entier(rs, "nb_sans_mouvement"), rs.getBigDecimal("montant_sans_mouvement"),
+                rs.getString("operation_dominante"));
     }
 
     /** Les points de service presents dans une seule des deux photos, dans le perimetre. */
