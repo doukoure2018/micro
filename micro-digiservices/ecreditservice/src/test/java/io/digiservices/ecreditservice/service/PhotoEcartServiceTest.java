@@ -36,7 +36,9 @@ class PhotoEcartServiceTest {
 
     private final PhotoEcartRepository repository = Mockito.mock(PhotoEcartRepository.class);
     private final PerimetreSafService perimetreService = Mockito.mock(PerimetreSafService.class);
-    private final PhotoEcartService service = new PhotoEcartService(repository, perimetreService);
+    private final HabilitationService habilitations = Mockito.mock(HabilitationService.class);
+    private final PhotoEcartService service =
+            new PhotoEcartService(repository, perimetreService, habilitations);
 
     private static final String UUID_DSIG = "uuid-dsig";
 
@@ -117,6 +119,28 @@ class PhotoEcartServiceTest {
         verify(repository, times(2)).courbe("COMPTES", PhotoEcartService.JOURS_COURBE);
         verify(repository).courbe("COMPTES", PhotoEcartService.JOURS_MAX);
         verify(repository).courbe("COMPTES", 7);
+    }
+
+    @Test
+    @DisplayName("sans la rubrique, l'ecran est ferme avant meme de regarder le perimetre")
+    void rubriqueExigee() {
+        reseau();
+        doThrow(new ApiException("Ecran non autorise")).when(habilitations)
+                .exigerUneDe(anyString(), any(String[].class));
+        assertThrows(ApiException.class, () -> service.courbe(UUID_DSIG, "COMPTES", 30));
+        assertThrows(ApiException.class, () -> service.situation(UUID_DSIG, "COMPTES", null));
+        assertThrows(ApiException.class, () -> service.joursConnus(UUID_DSIG, "COMPTES"));
+        assertThrows(ApiException.class, () -> service.comptesDuPoint(UUID_DSIG, "COMPTES", null, "612"));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("la rubrique des ecarts et celle de l'Audit ouvrent toutes deux l'ecran")
+    void deuxRubriquesOuvrent() {
+        reseau();
+        when(repository.courbe(anyString(), anyInt())).thenReturn(List.of());
+        service.courbe(UUID_DSIG, "COMPTES", 30);
+        verify(habilitations).exigerUneDe(UUID_DSIG, "EVOLUTION_ECARTS", "AUDIT_CAISSE");
     }
 
     @Test
