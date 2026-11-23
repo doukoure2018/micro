@@ -207,7 +207,7 @@ export default [
     {
         path: 'evolution-ecarts',
         canActivate: [HabilitationGuard],
-        data: { breadcrumb: 'Évolution des écarts', rubriques: ['CREDITS_NEGATIFS', 'AUDIT_CAISSE'] },
+        data: { breadcrumb: 'Évolution des écarts', rubriques: ['EVOLUTION_ECARTS', 'AUDIT_CAISSE'] },
         loadComponent: () => import('./evolution-ecarts/evolution-ecarts.component').then((c) => c.EvolutionEcartsComponent)
     },
     {
