@@ -8,8 +8,10 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
 import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
@@ -56,6 +58,64 @@ interface PointSerie {
     nbComptes?: number;
 }
 
+/** Une variation : un couple (point de service, compte comptable) dont l'écart a changé entre deux photos. */
+interface VariationCouple {
+    codAgencia: string;
+    libellePoint?: string;
+    libelleAgence?: string;
+    libelleDelegation?: string;
+    compteComptable: string;
+    produits?: string;
+    ecartReference?: number | null;
+    ecartJour?: number | null;
+    variation: number;
+    variationClient?: number;
+    variationComptable?: number;
+    etatReference?: string;
+    etatJour?: string;
+    statut: string;
+    cote?: string | null;
+    explication?: string;
+}
+
+/** Un compte comptable, tous points de service confondus. */
+interface VariationCompte {
+    compteComptable: string;
+    produits?: string;
+    nbPoints: number;
+    variationNette: number;
+    variationAbsolue: number;
+    coteDominant?: string | null;
+    nbApparus: number;
+    nbAggraves: number;
+    nbReduits: number;
+    nbResolus: number;
+    nbNouvelles: number;
+    nbDisparues: number;
+    nbMouvements: number;
+}
+
+interface PointExclu {
+    codAgencia: string;
+    libellePoint?: string;
+    dansJour: boolean;
+    dansReference: boolean;
+}
+
+interface Variations {
+    photo: PointJour | null;
+    reference: PointJour | null;
+    seuil: number;
+    pointsCompares: number;
+    pointsExclus: PointExclu[];
+    nbCouples: number;
+    sommeAggravations?: number | null;
+    sommeResolutions?: number | null;
+    partCinqPremiers?: number | null;
+    comptes: VariationCompte[];
+    couples: VariationCouple[];
+}
+
 /**
  * Évolution des écarts de rapprochement (V217).
  *
@@ -71,7 +131,7 @@ interface PointSerie {
 @Component({
     selector: 'app-evolution-ecarts',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, DialogModule, ProgressSpinnerModule, SelectModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, DialogModule, InputNumberModule, ProgressSpinnerModule, SelectModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -84,7 +144,9 @@ interface PointSerie {
                         l'outil de rapprochement. Une photo par jour et par module : la dernière de la journée fait foi.
                     </p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <p-selectButton [options]="vues" [(ngModel)]="vue" optionLabel="label" optionValue="value" [allowEmpty]="false"
+                        (onChange)="changerVue()"></p-selectButton>
                     <p-select [options]="modules" [(ngModel)]="module" optionLabel="label" optionValue="value"
                         (onChange)="charger()" styleClass="w-56"
                         pTooltip="Le module du tableau et des indicateurs ; la courbe montre les trois" tooltipPosition="bottom"></p-select>
@@ -157,6 +219,7 @@ interface PointSerie {
                 <p-chart type="line" [data]="graphReseau()" [options]="optionsCourbe" height="260px"></p-chart>
             </div>
 
+            @if (vue === 'JOUR') {
             <!-- Le tableau du jour -->
             <div class="flex items-center justify-between mb-2">
                 <h3 class="text-base font-semibold m-0">Points de service au {{ photo()!.jour | date: 'dd/MM/yyyy' }}</h3>
@@ -192,6 +255,175 @@ interface PointSerie {
                     <tr><td colspan="8" class="text-center text-gray-500 py-4">Aucun point de service dans votre périmètre pour cette photo.</td></tr>
                 </ng-template>
             </p-table>
+            } @else {
+            <!-- L'onglet Variations : entrer par ce qui a bougé -->
+            <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
+                <div>
+                    <h3 class="text-base font-semibold m-0">Ce qui a bougé entre deux photos</h3>
+                    <div class="text-xs text-gray-500 mt-1">
+                        @if (variations()?.reference) {
+                        du {{ variations()!.reference!.jour | date: 'dd/MM/yyyy' }} au {{ variations()!.photo!.jour | date: 'dd/MM/yyyy' }}
+                        · {{ variations()!.pointsCompares }} point(s) de service comparés
+                        · variations sous {{ variations()!.seuil | number: '1.0-0' }} GNF masquées
+                        } @else {
+                        la photo précédente sert de référence ; choisissez un autre jour pour lire une semaine d'un coup
+                        }
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <p-select [options]="joursReference()" [(ngModel)]="reference" optionLabel="label" optionValue="value"
+                        placeholder="Photo précédente" [showClear]="true" (onChange)="chargerVariations()" styleClass="w-48"
+                        pTooltip="La photo à laquelle comparer le jour lu" tooltipPosition="bottom"></p-select>
+                    <p-inputNumber [(ngModel)]="seuil" [min]="0" [useGrouping]="true" suffix=" GNF" inputStyleClass="w-36"
+                        (onBlur)="chargerVariations()" pTooltip="Variation en dessous de laquelle un couple ne s'affiche pas" tooltipPosition="bottom"></p-inputNumber>
+                    <p-selectButton [options]="vuesVariations" [(ngModel)]="vueVariations" optionLabel="label" optionValue="value" [allowEmpty]="false"></p-selectButton>
+                    <button pButton icon="pi pi-refresh" class="p-button-outlined p-button-sm" [loading]="chargementVariations()" (click)="chargerVariations()"></button>
+                </div>
+            </div>
+
+            @if (chargementVariations()) {
+            <div class="flex justify-center py-8"><p-progressSpinner styleClass="w-3rem h-3rem"></p-progressSpinner></div>
+            } @else if (!variations()?.reference) {
+            <div class="p-4 border-l-4 border-gray-400 bg-gray-50 rounded text-sm">
+                <div class="font-semibold text-gray-800"><i class="pi pi-info-circle mr-2"></i>Rien à comparer encore</div>
+                <p class="text-gray-600 mt-2 mb-0">Une seule photo existe pour ce module. La première variation se lira dès la photo suivante.</p>
+            </div>
+            } @else {
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500">Couples qui bougent</div>
+                    <div class="text-2xl font-semibold">{{ variations()!.nbCouples }}</div>
+                    <div class="text-xs text-gray-500">(point de service, compte comptable)</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500">Écarts qui se creusent</div>
+                    <div class="text-2xl font-semibold text-red-600">{{ (variations()!.sommeAggravations || 0) | number: '1.2-2' }}</div>
+                    <div class="text-xs text-gray-500">GNF, en valeur absolue</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500">Écarts qui se résorbent</div>
+                    <div class="text-2xl font-semibold text-green-700">{{ (variations()!.sommeResolutions || 0) | number: '1.2-2' }}</div>
+                    <div class="text-xs text-gray-500">GNF, en valeur absolue</div>
+                </div>
+                <div class="border rounded p-3">
+                    <div class="text-xs text-gray-500">Part des 5 premiers comptes</div>
+                    <div class="text-2xl font-semibold">
+                        {{ variations()!.partCinqPremiers === null || variations()!.partCinqPremiers === undefined ? '—' : (variations()!.partCinqPremiers! | percent: '1.0-0') }}
+                    </div>
+                    <div class="text-xs text-gray-500">de la variation absolue du réseau</div>
+                </div>
+            </div>
+
+            @if (variations()!.pointsExclus.length) {
+            <div class="mb-3 p-3 border-l-4 border-orange-400 bg-orange-50 rounded text-sm text-orange-800">
+                <i class="pi pi-exclamation-triangle mr-2"></i>
+                {{ variations()!.pointsExclus.length }} point(s) de service présents dans une seule des deux photos sont comptés à part et absents
+                des tableaux : une disparition due à une photo incomplète n'est pas une correction.
+                <span class="text-xs" [pTooltip]="libellePointsExclus()" tooltipPosition="bottom"><u>Lesquels ?</u></span>
+            </div>
+            }
+
+            @if (vueVariations === 'COMPTE') {
+            <p-table [value]="variations()!.comptes" dataKey="compteComptable" styleClass="p-datatable-sm" [scrollable]="true"
+                [paginator]="variations()!.comptes.length > 25" [rows]="25" [expandedRowKeys]="comptesDeplies">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th style="width: 3rem"></th>
+                        <th>Compte comptable</th><th>Produits</th>
+                        <th class="text-right">PS qui bougent</th>
+                        <th class="text-right">Variation nette (GNF)</th>
+                        <th class="text-right">Variation absolue (GNF)</th>
+                        <th>Côté dominant</th>
+                        <th class="text-right" pTooltip="apparus / aggravés / réduits / résolus">App. / Agg. / Réd. / Rés.</th>
+                        <th class="text-right" pTooltip="lignes nouvelles / disparues / mouvements">Nouv. / Disp. / Mouv.</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-c let-expanded="expanded">
+                    <tr>
+                        <td><button type="button" pButton [pRowToggler]="c" class="p-button-text p-button-rounded p-button-plain p-button-sm"
+                                [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></button></td>
+                        <td class="font-mono text-xs font-semibold">{{ c.compteComptable }}</td>
+                        <td class="text-xs">{{ c.produits || '—' }}</td>
+                        <td class="text-right">{{ c.nbPoints }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="c.variationNette > 0" [class.text-green-700]="c.variationNette < 0">{{ c.variationNette | number: '1.2-2' }}</td>
+                        <td class="text-right">{{ c.variationAbsolue | number: '1.2-2' }}</td>
+                        <td><p-tag [value]="c.coteDominant || '—'" [severity]="severiteCote(c.coteDominant)"></p-tag></td>
+                        <td class="text-right text-sm"><span class="text-red-600">{{ c.nbApparus }}</span> / <span class="text-red-600">{{ c.nbAggraves }}</span> / <span class="text-green-700">{{ c.nbReduits }}</span> / <span class="text-green-700">{{ c.nbResolus }}</span></td>
+                        <td class="text-right text-sm">{{ c.nbNouvelles }} / {{ c.nbDisparues }} / {{ c.nbMouvements }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="expandedrow" let-c>
+                    <tr>
+                        <td colspan="9" class="bg-gray-50 p-2">
+                            <p-table [value]="couplesParCompte().get(c.compteComptable) || []" styleClass="p-datatable-sm" [scrollable]="true">
+                                <ng-template pTemplate="header">
+                                    <tr>
+                                        <th>Point de service</th><th>Agence</th>
+                                        <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
+                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Explication</th>
+                                    </tr>
+                                </ng-template>
+                                <ng-template pTemplate="body" let-v>
+                                    <tr>
+                                        <td class="text-sm">{{ v.libellePoint || v.codAgencia }}<span class="text-xs text-gray-500"> ({{ v.codAgencia }})</span></td>
+                                        <td class="text-xs">{{ v.libelleAgence || '—' }}</td>
+                                        <td class="text-right text-sm">{{ v.ecartReference === null || v.ecartReference === undefined ? '—' : (v.ecartReference | number: '1.2-2') }}</td>
+                                        <td class="text-right text-sm">{{ v.ecartJour === null || v.ecartJour === undefined ? '—' : (v.ecartJour | number: '1.2-2') }}</td>
+                                        <td class="text-right font-semibold" [class.text-red-600]="v.variation > 0" [class.text-green-700]="v.variation < 0">{{ v.variation | number: '1.2-2' }}</td>
+                                        <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
+                                        <td class="text-xs">{{ v.cote || '—' }}</td>
+                                        <td class="text-xs text-gray-600">{{ v.explication }}</td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="9" class="text-center text-gray-500 py-4">Aucun compte comptable n'a bougé au-dessus du seuil entre ces deux photos.</td></tr>
+                </ng-template>
+            </p-table>
+            } @else {
+            <div class="flex items-center gap-2 mb-2">
+                <p-select [options]="statuts" [(ngModel)]="statutFiltre" placeholder="Tous les statuts" [showClear]="true" styleClass="w-56" (onChange)="statutFiltreSignal.set(statutFiltre)"></p-select>
+                <span class="text-xs text-gray-500">{{ couplesFiltres().length }} couple(s) · les plus grosses variations d'abord</span>
+            </div>
+            <p-table [value]="couplesFiltres()" styleClass="p-datatable-sm" [scrollable]="true" [paginator]="couplesFiltres().length > 25" [rows]="25">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Délégation</th><th>Agence</th><th>Point de service</th><th>Compte comptable</th>
+                        <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
+                        <th class="text-right">Variation</th><th class="text-right">Δ client</th><th class="text-right">Δ comptabilité</th>
+                        <th>Statut</th><th>Côté</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-v>
+                    <tr [pTooltip]="v.explication" tooltipPosition="top">
+                        <td class="text-xs">{{ v.libelleDelegation || '—' }}</td>
+                        <td class="text-xs">{{ v.libelleAgence || '—' }}</td>
+                        <td class="text-sm font-medium">{{ v.libellePoint || v.codAgencia }}<span class="text-xs text-gray-500"> ({{ v.codAgencia }})</span></td>
+                        <td class="font-mono text-xs">{{ v.compteComptable }}</td>
+                        <td class="text-right text-sm">{{ v.ecartReference === null || v.ecartReference === undefined ? '—' : (v.ecartReference | number: '1.2-2') }}</td>
+                        <td class="text-right text-sm">{{ v.ecartJour === null || v.ecartJour === undefined ? '—' : (v.ecartJour | number: '1.2-2') }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="v.variation > 0" [class.text-green-700]="v.variation < 0">{{ v.variation | number: '1.2-2' }}</td>
+                        <td class="text-right text-sm">{{ v.variationClient === null || v.variationClient === undefined ? '—' : (v.variationClient | number: '1.2-2') }}</td>
+                        <td class="text-right text-sm">{{ v.variationComptable === null || v.variationComptable === undefined ? '—' : (v.variationComptable | number: '1.2-2') }}</td>
+                        <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
+                        <td class="text-xs">{{ v.cote || '—' }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="11" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
+                </ng-template>
+            </p-table>
+            }
+            <p class="text-xs text-gray-500 mt-3 mb-0">
+                Le côté dit quel solde a bougé : « client seul » oriente vers des mouvements sans écriture, « comptabilité seule » vers une
+                écriture manuelle ou passée sur un autre compte. Pour voir les opérations, ouvrez le point de service et le compte dans l'outil
+                de rapprochement sur la fenêtre entre les deux photos.
+            </p>
+            }
+            }
             }
         </div>
 
@@ -260,8 +492,62 @@ export class EvolutionEcartsComponent {
         { label: '1 an', value: 365 }
     ];
 
+    readonly vues = [
+        { label: 'Situation du jour', value: 'JOUR' },
+        { label: 'Variations', value: 'VARIATIONS' }
+    ];
+    readonly vuesVariations = [
+        { label: 'Par compte comptable', value: 'COMPTE' },
+        { label: 'Par point de service', value: 'COUPLE' }
+    ];
+    readonly statuts = ['Écart apparu', 'Écart aggravé', 'Écart réduit', 'Écart résolu', 'Ligne nouvelle', 'Ligne disparue', 'Mouvement'];
+
     module = 'COMPTES';
     jours = 30;
+    vue: 'JOUR' | 'VARIATIONS' = 'JOUR';
+    vueVariations: 'COMPTE' | 'COUPLE' = 'COMPTE';
+    /** Le jour de la photo de référence ; null = la photo précédente. */
+    reference: string | null = null;
+    /** Variation absolue en dessous de laquelle un couple ne s'affiche pas (seuil d'écart mineur de l'outil). */
+    seuil = 1000;
+    statutFiltre: string | null = null;
+    comptesDeplies: Record<string, boolean> = {};
+
+    readonly chargementVariations = signal(false);
+    readonly variations = signal<Variations | null>(null);
+    readonly joursConnus = signal<string[]>([]);
+
+    /** Les jours proposés comme référence : ceux d'avant la photo lue. */
+    readonly joursReference = computed(() => {
+        const courant = this.photo()?.jour;
+        return this.joursConnus()
+            .filter((j) => !courant || j < courant)
+            .map((j) => ({ label: this.jourLong(j), value: j }));
+    });
+
+    /** Les couples d'un compte, calculés une fois : jamais un tableau neuf par rendu. */
+    readonly couplesParCompte = computed(() => {
+        const parCompte = new Map<string, VariationCouple[]>();
+        for (const v of this.variations()?.couples || []) {
+            const liste = parCompte.get(v.compteComptable) || [];
+            liste.push(v);
+            parCompte.set(v.compteComptable, liste);
+        }
+        return parCompte;
+    });
+
+    readonly couplesFiltres = computed(() => {
+        const couples = this.variations()?.couples || [];
+        const statut = this.statutFiltreSignal();
+        return statut ? couples.filter((v) => v.statut === statut) : couples;
+    });
+    readonly statutFiltreSignal = signal<string | null>(null);
+
+    readonly libellePointsExclus = computed(() =>
+        (this.variations()?.pointsExclus || [])
+            .map((p) => `${p.libellePoint || p.codAgencia} (${p.codAgencia}) : ${p.dansJour ? 'absent de la référence' : 'absent du jour'}`)
+            .join(' · ')
+    );
 
     readonly chargement = signal(false);
     readonly photo = signal<PointJour | null>(null);
@@ -376,6 +662,61 @@ export class EvolutionEcartsComponent {
         return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : '';
     }
 
+    private jourLong(iso: string): string {
+        return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : '';
+    }
+
+    changerVue(): void {
+        if (this.vue === 'VARIATIONS' && !this.variations()) {
+            this.chargerVariations();
+        }
+    }
+
+    severiteStatut(statut: string): 'success' | 'danger' | 'warn' | 'info' | 'secondary' {
+        if (statut === 'Écart apparu' || statut === 'Écart aggravé') return 'danger';
+        if (statut === 'Écart résolu' || statut === 'Écart réduit') return 'success';
+        if (statut === 'Ligne nouvelle' || statut === 'Ligne disparue') return 'warn';
+        return 'secondary';
+    }
+
+    severiteCote(cote?: string | null): 'info' | 'warn' | 'secondary' | 'contrast' {
+        if (cote === 'Client seul') return 'info';
+        if (cote === 'Comptabilité seule') return 'warn';
+        if (cote === 'Les deux côtés') return 'contrast';
+        return 'secondary';
+    }
+
+    /** Les variations entre la photo lue et sa référence, dans le périmètre du compte connecté. */
+    chargerVariations(): void {
+        this.statutFiltreSignal.set(this.statutFiltre);
+        this.chargementVariations.set(true);
+        this.comptesDeplies = {};
+        this.userService
+            .getVariationsEcarts$(this.module, undefined, this.reference || undefined, this.seuil ?? 1000)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.variations.set((r.data as any)?.variations || null);
+                    this.chargementVariations.set(false);
+                },
+                error: (err: any) => {
+                    this.chargementVariations.set(false);
+                    this.variations.set(null);
+                    this.messageService.add({ severity: 'error', summary: 'Variations indisponibles', detail: err || '', life: 7000 });
+                }
+            });
+    }
+
+    private chargerJours(): void {
+        this.userService
+            .getJoursEcarts$(this.module)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.joursConnus.set((r.data as any)?.jours || []),
+                error: () => this.joursConnus.set([])
+            });
+    }
+
     charger(): void {
         this.chargement.set(true);
         this.userService
@@ -388,6 +729,12 @@ export class EvolutionEcartsComponent {
                     this.points.set(situation?.points || []);
                     this.chargement.set(false);
                     this.chargerCourbe();
+                    this.chargerJours();
+                    this.reference = null;
+                    this.variations.set(null);
+                    if (this.vue === 'VARIATIONS') {
+                        this.chargerVariations();
+                    }
                 },
                 error: (err: any) => {
                     this.chargement.set(false);
