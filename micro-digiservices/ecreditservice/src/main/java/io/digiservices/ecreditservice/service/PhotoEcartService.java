@@ -5,6 +5,9 @@ import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PhotoRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointJour;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointSerieDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SituationJourDto;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationCompteDto;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationCoupleDto;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationsDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PhotoEcartRepository;
 import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
@@ -13,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -123,6 +127,48 @@ public class PhotoEcartService {
                                            Integer jours) {
         exigerDansLePerimetre(uuid, codAgencia);
         return repository.seriePoint(verifierModule(module), codAgencia, borner(jours));
+    }
+
+    /**
+     * Les variations entre deux photos : les couples (point de service, compte comptable) dont
+     * l'ecart a change, classes et agreges par compte. L'entree « par la variation » demandee
+     * le 23/11/2026.
+     *
+     * @param jour      la photo lue ; nul = la plus recente
+     * @param reference la photo de reference ; nulle = la photo precedente du meme module (un lundi
+     *                  se compare au vendredi)
+     * @param seuil     variation absolue en dessous de laquelle un couple ne s'affiche pas ; nul = le
+     *                  seuil d'ecart mineur de l'outil
+     */
+    public VariationsDto variations(String uuid, String module, LocalDate jour, LocalDate reference,
+                                    BigDecimal seuil) {
+        Perimetre perimetre = habiliter(uuid);
+        String m = verifierModule(module);
+        BigDecimal s = seuil == null || seuil.signum() < 0 ? VariationEcarts.SEUIL_DEFAUT : seuil;
+        PointJour photo = repository.photo(m, jour);
+        if (photo == null) {
+            return new VariationsDto(null, null, s, 0, List.of(), 0, null, null, null, List.of(), List.of());
+        }
+        PointJour ref = reference == null ? repository.photoPrecedente(m, photo.jour()) : repository.photo(m, reference);
+        if (ref == null) {
+            return new VariationsDto(photo, null, s, 0, List.of(), 0, null, null, null, List.of(), List.of());
+        }
+        if (!ref.jour().isBefore(photo.jour())) {
+            throw new ApiException("La photo de reference (" + ref.jour() + ") doit etre anterieure a la photo lue ("
+                    + photo.jour() + ")");
+        }
+        List<String> codes = perimetre.toutReseau() ? null : List.copyOf(perimetre.codes());
+        List<VariationCoupleDto> couples = VariationEcarts.classerTous(
+                repository.couplesDeuxPhotos(m, photo.jour(), ref.jour(), codes), s);
+        List<VariationCompteDto> comptes = VariationEcarts.parCompte(couples);
+        return new VariationsDto(photo, ref, s,
+                repository.pointsCompares(m, photo.jour(), ref.jour(), codes),
+                repository.pointsExclus(m, photo.jour(), ref.jour(), codes),
+                couples.size(),
+                VariationEcarts.sommeAggravations(couples),
+                VariationEcarts.sommeResolutions(couples),
+                VariationEcarts.partCinqPremiers(comptes),
+                comptes, couples);
     }
 
     /** Les jours photographies, pour le selecteur de date de l'ecran. */

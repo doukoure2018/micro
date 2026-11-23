@@ -116,4 +116,94 @@ public final class PhotoEcartDtos {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record SituationJourDto(PointJour photo, List<LignePhotoDto> points) {
     }
+
+    // ======================= Variations entre deux photos (lot 1 « Variations ») =======================
+
+    /**
+     * Un couple (point de service, compte comptable) lu dans deux photos a la fois : la colonne
+     * {@code *Jour} vient de la photo lue, la colonne {@code *Reference} de la photo de reference.
+     * Un cote nul = le couple n'existe pas dans cette photo-la.
+     */
+    public record CoupleDeuxPhotos(
+            String codAgencia,
+            String libellePoint,
+            String libelleAgence,
+            String libelleDelegation,
+            String compteComptable,
+            String produits,
+            BigDecimal ecartJour,
+            BigDecimal soldeClientJour,
+            BigDecimal soldeComptableJour,
+            String etatJour,
+            boolean presentJour,
+            BigDecimal ecartReference,
+            BigDecimal soldeClientReference,
+            BigDecimal soldeComptableReference,
+            String etatReference,
+            boolean presentReference) {
+    }
+
+    /** Une variation : un couple dont l'ecart a change entre les deux photos, classe et explique. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VariationCoupleDto(
+            String codAgencia,
+            String libellePoint,
+            String libelleAgence,
+            String libelleDelegation,
+            String compteComptable,
+            String produits,
+            BigDecimal ecartReference,
+            BigDecimal ecartJour,
+            /** Ecart du jour moins ecart de reference ; une ligne absente compte pour zero. */
+            BigDecimal variation,
+            BigDecimal variationClient,
+            BigDecimal variationComptable,
+            String etatReference,
+            String etatJour,
+            /** Un des {@code STATUT_*} de {@code VariationEcarts}. */
+            String statut,
+            /** Un des {@code COTE_*} de {@code VariationEcarts} : quel solde a bouge. */
+            String cote,
+            String explication) {
+    }
+
+    /** Un compte comptable, tous points de service confondus : la vue ouverte par defaut. */
+    public record VariationCompteDto(
+            String compteComptable,
+            String produits,
+            int nbPoints,
+            /** Somme signee des variations : ce que la courbe du reseau voit. */
+            BigDecimal variationNette,
+            /** Somme des valeurs absolues : ce qui s'est passe, meme quand deux PS se compensent. */
+            BigDecimal variationAbsolue,
+            String coteDominant,
+            int nbApparus,
+            int nbAggraves,
+            int nbReduits,
+            int nbResolus,
+            int nbNouvelles,
+            int nbDisparues,
+            int nbMouvements) {
+    }
+
+    /** Un point de service present dans une seule des deux photos : compare a rien, compte a part. */
+    public record PointExcluDto(String codAgencia, String libellePoint, boolean dansJour, boolean dansReference) {
+    }
+
+    /** La reponse de l'onglet « Variations ». */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VariationsDto(
+            PointJour photo,
+            PointJour reference,
+            BigDecimal seuil,
+            int pointsCompares,
+            List<PointExcluDto> pointsExclus,
+            int nbCouples,
+            BigDecimal sommeAggravations,
+            BigDecimal sommeResolutions,
+            /** Part de la variation absolue portee par les cinq premiers comptes, entre 0 et 1 ; nulle sans variation. */
+            BigDecimal partCinqPremiers,
+            List<VariationCompteDto> comptes,
+            List<VariationCoupleDto> couples) {
+    }
 }

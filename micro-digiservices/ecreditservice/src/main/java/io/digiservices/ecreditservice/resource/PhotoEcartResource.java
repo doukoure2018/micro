@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
 
@@ -86,6 +87,27 @@ public class PhotoEcartResource {
         var serie = service.seriePoint(authentication.getName(), module, codAgencia, jours);
         return ResponseEntity.ok(getResponse(request, Map.of("serie", serie),
                 serie.size() + " jour(s)", OK));
+    }
+
+    /**
+     * Les variations entre deux photos : ce qui a bouge, par compte comptable et par couple
+     * (point de service, compte). Sans reference, la photo precedente ; sans seuil, 1 000 GNF.
+     */
+    @GetMapping("/variations")
+    public ResponseEntity<Response> variations(@NotNull Authentication authentication,
+                                               @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                               @RequestParam(value = "jour", required = false)
+                                               @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+                                               @RequestParam(value = "reference", required = false)
+                                               @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reference,
+                                               @RequestParam(value = "seuil", required = false) BigDecimal seuil,
+                                               HttpServletRequest request) {
+        var variations = service.variations(authentication.getName(), module, jour, reference, seuil);
+        String message = variations.photo() == null ? "Aucune photo enregistree pour ce module"
+                : variations.reference() == null ? "Une seule photo : rien a comparer encore"
+                : variations.nbCouples() + " variation(s) entre le " + variations.reference().jour()
+                  + " et le " + variations.photo().jour();
+        return ResponseEntity.ok(getResponse(request, Map.of("variations", variations), message, OK));
     }
 
     /** Les jours photographies, pour le selecteur de date. */

@@ -1,8 +1,10 @@
 package io.digiservices.ecreditservice.repository;
 
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CoupleDeuxPhotos;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LignePhotoDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LigneRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PhotoRecue;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointExcluDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointJour;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointSerieDto;
 import lombok.RequiredArgsConstructor;
@@ -280,6 +282,144 @@ public class PhotoEcartRepository {
                 .param("limite", limite)
                 .query(LocalDate.class)
                 .list();
+    }
+
+    // ======================= Variations entre deux photos =======================
+
+    /** La photo du meme module juste avant {@code jour}, ou null : c'est la reference par defaut. */
+    public PointJour photoPrecedente(String module, LocalDate jour) {
+        return jdbcClient.sql("""
+                        SELECT jour, module, ecart_total, solde_client, solde_comptable,
+                               nb_lignes, nb_concordantes, nb_ecarts, points_lus,
+                               points_attendus, horodatage
+                        FROM rapprochement_photo
+                        WHERE module = :module AND jour < :jour
+                        ORDER BY jour DESC
+                        LIMIT 1
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .query(PhotoEcartRepository::versPoint)
+                .optional()
+                .orElse(null);
+    }
+
+    /**
+     * Les couples (point de service, compte comptable) de deux photos, joints de part et d'autre.
+     *
+     * <p>Seuls les points de service presents dans LES DEUX photos entrent : un point de service
+     * qu'une des photos n'a pas lu produirait des « disparitions » qui n'en sont pas. Ces points
+     * sont rendus a part par {@link #pointsExclus}. Un couple present d'un seul cote reste : un
+     * compte qui apparait ou disparait sur un point de service lu des deux fois est une vraie
+     * information.</p>
+     */
+    public List<CoupleDeuxPhotos> couplesDeuxPhotos(String module, LocalDate jour, LocalDate reference,
+                                                    List<String> perimetre) {
+        return jdbcClient.sql("""
+                        WITH pj AS (SELECT id FROM rapprochement_photo WHERE module = :module AND jour = :jour),
+                             pr AS (SELECT id FROM rapprochement_photo WHERE module = :module AND jour = :reference),
+                             j AS (SELECT l.* FROM rapprochement_photo_ligne l, pj
+                                    WHERE l.photo_id = pj.id AND l.compte_comptable <> ''),
+                             r AS (SELECT l.* FROM rapprochement_photo_ligne l, pr
+                                    WHERE l.photo_id = pr.id AND l.compte_comptable <> ''),
+                             communs AS (
+                                 SELECT a.cod_agencia
+                                 FROM rapprochement_photo_ligne a, pj, pr
+                                 WHERE a.photo_id = pj.id AND a.compte_comptable = ''
+                                   AND EXISTS (SELECT 1 FROM rapprochement_photo_ligne b
+                                                WHERE b.photo_id = pr.id AND b.compte_comptable = ''
+                                                  AND b.cod_agencia = a.cod_agencia))
+                        SELECT COALESCE(j.cod_agencia, r.cod_agencia)             AS cod_agencia,
+                               COALESCE(j.libelle_point, r.libelle_point)         AS libelle_point,
+                               COALESCE(j.libelle_agence, r.libelle_agence)       AS libelle_agence,
+                               COALESCE(j.libelle_delegation, r.libelle_delegation) AS libelle_delegation,
+                               COALESCE(j.compte_comptable, r.compte_comptable)   AS compte_comptable,
+                               COALESCE(j.produits, r.produits)                   AS produits,
+                               j.ecart AS ecart_jour, j.solde_client AS client_jour,
+                               j.solde_comptable AS comptable_jour, j.etat AS etat_jour,
+                               (j.photo_id IS NOT NULL) AS present_jour,
+                               r.ecart AS ecart_ref, r.solde_client AS client_ref,
+                               r.solde_comptable AS comptable_ref, r.etat AS etat_ref,
+                               (r.photo_id IS NOT NULL) AS present_ref
+                        FROM j
+                        FULL OUTER JOIN r ON r.cod_agencia = j.cod_agencia
+                                         AND r.compte_comptable = j.compte_comptable
+                        WHERE COALESCE(j.cod_agencia, r.cod_agencia) IN (SELECT cod_agencia FROM communs)
+                          AND (:tousLesPoints OR COALESCE(j.cod_agencia, r.cod_agencia) IN (:perimetre))
+                        ORDER BY cod_agencia, compte_comptable
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .param("reference", reference)
+                .param("tousLesPoints", perimetre == null || perimetre.isEmpty())
+                .param("perimetre", perimetre == null || perimetre.isEmpty() ? List.of("") : perimetre)
+                .query((rs, n) -> new CoupleDeuxPhotos(
+                        rs.getString("cod_agencia"),
+                        rs.getString("libelle_point"),
+                        rs.getString("libelle_agence"),
+                        rs.getString("libelle_delegation"),
+                        rs.getString("compte_comptable"),
+                        rs.getString("produits"),
+                        rs.getBigDecimal("ecart_jour"),
+                        rs.getBigDecimal("client_jour"),
+                        rs.getBigDecimal("comptable_jour"),
+                        rs.getString("etat_jour"),
+                        rs.getBoolean("present_jour"),
+                        rs.getBigDecimal("ecart_ref"),
+                        rs.getBigDecimal("client_ref"),
+                        rs.getBigDecimal("comptable_ref"),
+                        rs.getString("etat_ref"),
+                        rs.getBoolean("present_ref")))
+                .list();
+    }
+
+    /** Les points de service presents dans une seule des deux photos, dans le perimetre. */
+    public List<PointExcluDto> pointsExclus(String module, LocalDate jour, LocalDate reference,
+                                            List<String> perimetre) {
+        return jdbcClient.sql("""
+                        WITH pj AS (SELECT id FROM rapprochement_photo WHERE module = :module AND jour = :jour),
+                             pr AS (SELECT id FROM rapprochement_photo WHERE module = :module AND jour = :reference)
+                        SELECT l.cod_agencia, MAX(l.libelle_point) AS libelle_point,
+                               BOOL_OR(l.photo_id = (SELECT id FROM pj)) AS dans_jour,
+                               BOOL_OR(l.photo_id = (SELECT id FROM pr)) AS dans_ref
+                        FROM rapprochement_photo_ligne l
+                        WHERE l.compte_comptable = ''
+                          AND l.photo_id IN ((SELECT id FROM pj), (SELECT id FROM pr))
+                          AND (:tousLesPoints OR l.cod_agencia IN (:perimetre))
+                        GROUP BY l.cod_agencia
+                        HAVING NOT (BOOL_OR(l.photo_id = (SELECT id FROM pj))
+                                    AND BOOL_OR(l.photo_id = (SELECT id FROM pr)))
+                        ORDER BY l.cod_agencia
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .param("reference", reference)
+                .param("tousLesPoints", perimetre == null || perimetre.isEmpty())
+                .param("perimetre", perimetre == null || perimetre.isEmpty() ? List.of("") : perimetre)
+                .query((rs, n) -> new PointExcluDto(rs.getString("cod_agencia"), rs.getString("libelle_point"),
+                        rs.getBoolean("dans_jour"), rs.getBoolean("dans_ref")))
+                .list();
+    }
+
+    /** Le nombre de points de service presents dans les deux photos, dans le perimetre. */
+    public int pointsCompares(String module, LocalDate jour, LocalDate reference, List<String> perimetre) {
+        return jdbcClient.sql("""
+                        WITH pj AS (SELECT id FROM rapprochement_photo WHERE module = :module AND jour = :jour),
+                             pr AS (SELECT id FROM rapprochement_photo WHERE module = :module AND jour = :reference)
+                        SELECT COUNT(*) FROM rapprochement_photo_ligne a, pj, pr
+                        WHERE a.photo_id = pj.id AND a.compte_comptable = ''
+                          AND (:tousLesPoints OR a.cod_agencia IN (:perimetre))
+                          AND EXISTS (SELECT 1 FROM rapprochement_photo_ligne b
+                                       WHERE b.photo_id = pr.id AND b.compte_comptable = ''
+                                         AND b.cod_agencia = a.cod_agencia)
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .param("reference", reference)
+                .param("tousLesPoints", perimetre == null || perimetre.isEmpty())
+                .param("perimetre", perimetre == null || perimetre.isEmpty() ? List.of("") : perimetre)
+                .query(Integer.class)
+                .single();
     }
 
     // ======================= Mappage =======================
