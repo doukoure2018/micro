@@ -2,7 +2,10 @@ package io.digiservices.ecreditservice.resource;
 
 import io.digiservices.ecreditservice.domain.Response;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PhotoRecue;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SuiviChangement;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SuiviCreation;
 import io.digiservices.ecreditservice.service.PhotoEcartService;
+import io.digiservices.ecreditservice.service.SuiviVariationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,6 +43,7 @@ import static org.springframework.http.HttpStatus.OK;
 public class PhotoEcartResource {
 
     private final PhotoEcartService service;
+    private final SuiviVariationService suivis;
 
     /** La courbe du reseau : un module, les N derniers jours. */
     @GetMapping("/courbe")
@@ -118,5 +123,42 @@ public class PhotoEcartResource {
         var jours = service.joursConnus(authentication.getName(), module);
         return ResponseEntity.ok(getResponse(request, Map.of("jours", jours),
                 jours.size() + " jour(s) photographie(s)", OK));
+    }
+
+    // ======================= Suivi de correction (V220) =======================
+
+    /** Les fiches de suivi d'un module : vivantes par defaut, un etat, ou « TOUTES ». */
+    @GetMapping("/suivis")
+    public ResponseEntity<Response> suivis(@NotNull Authentication authentication,
+                                           @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                           @RequestParam(value = "etat", required = false) String etat,
+                                           HttpServletRequest request) {
+        var fiches = suivis.lister(authentication.getName(), module, etat);
+        return ResponseEntity.ok(getResponse(request, Map.of("suivis", fiches), fiches.size() + " fiche(s)", OK));
+    }
+
+    @GetMapping("/suivis/{id}")
+    public ResponseEntity<Response> suivi(@NotNull Authentication authentication, @PathVariable("id") Long id,
+                                          HttpServletRequest request) {
+        var fiche = suivis.fiche(authentication.getName(), id);
+        return ResponseEntity.ok(getResponse(request, Map.of("suivi", fiche), "Fiche " + id, OK));
+    }
+
+    /** Ouvre une fiche sur un couple, ou rafraichit la fiche vivante. */
+    @PostMapping("/suivis")
+    public ResponseEntity<Response> ouvrirSuivi(@NotNull Authentication authentication,
+                                                @RequestBody SuiviCreation creation,
+                                                HttpServletRequest request) {
+        var fiche = suivis.ouvrir(authentication.getName(), creation);
+        return ResponseEntity.ok(getResponse(request, Map.of("suivi", fiche), "Fiche enregistree", OK));
+    }
+
+    /** Fait avancer une fiche. CONFIRMEE est refuse : c'est la photo qui le pose. */
+    @PutMapping("/suivis/{id}")
+    public ResponseEntity<Response> changerSuivi(@NotNull Authentication authentication, @PathVariable("id") Long id,
+                                                 @RequestBody SuiviChangement changement,
+                                                 HttpServletRequest request) {
+        var fiche = suivis.changer(authentication.getName(), id, changement);
+        return ResponseEntity.ok(getResponse(request, Map.of("suivi", fiche), "Fiche mise a jour", OK));
     }
 }

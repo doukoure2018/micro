@@ -87,7 +87,7 @@ public final class VariationEcarts {
                 c.compteComptable(), c.produits(),
                 ecartRef, ecartJour, variation, dClient, dCompta,
                 c.etatReference(), c.etatJour(),
-                statut, cote, expliquer(statut, c, ecartJour, ecartRef, dClient, dCompta));
+                statut, cote, expliquer(statut, c, ecartJour, ecartRef, dClient, dCompta), null, null);
     }
 
     static String statut(CoupleDeuxPhotos c, BigDecimal ecartJour, BigDecimal ecartRef) {

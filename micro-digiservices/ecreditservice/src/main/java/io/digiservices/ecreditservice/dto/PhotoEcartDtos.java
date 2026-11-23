@@ -164,7 +164,16 @@ public final class PhotoEcartDtos {
             String statut,
             /** Un des {@code COTE_*} de {@code VariationEcarts} : quel solde a bouge. */
             String cote,
-            String explication) {
+            String explication,
+            /** La fiche de suivi vivante du couple (V220), ou null. */
+            Long suiviId,
+            String suiviEtat) {
+
+        public VariationCoupleDto avecSuivi(Long id, String etat) {
+            return new VariationCoupleDto(codAgencia, libellePoint, libelleAgence, libelleDelegation,
+                    compteComptable, produits, ecartReference, ecartJour, variation, variationClient,
+                    variationComptable, etatReference, etatJour, statut, cote, explication, id, etat);
+        }
     }
 
     /** Un compte comptable, tous points de service confondus : la vue ouverte par defaut. */
@@ -205,5 +214,67 @@ public final class PhotoEcartDtos {
             BigDecimal partCinqPremiers,
             List<VariationCompteDto> comptes,
             List<VariationCoupleDto> couples) {
+    }
+
+    // ======================= Suivi de correction (V220, lot 2) =======================
+
+    /** Une fiche de suivi : la variation constatee, ou elle en est, qui s'en occupe. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SuiviDto(
+            Long id,
+            String module,
+            String codAgencia,
+            String libellePoint,
+            String compteComptable,
+            LocalDate jourConstat,
+            LocalDate jourReference,
+            BigDecimal ecartReference,
+            BigDecimal ecartConstat,
+            BigDecimal variation,
+            String etat,
+            String explication,
+            String typeOperation,
+            String referenceEcriture,
+            String creePar,
+            LocalDateTime creeLe,
+            String modifiePar,
+            LocalDateTime modifieLe,
+            LocalDateTime corrigeeLe,
+            LocalDate jourDernier,
+            BigDecimal ecartDernier,
+            Integer photosSansEffet,
+            LocalDateTime confirmeeLe,
+            LocalDate jourConfirmation,
+            List<EvenementSuiviDto> evenements) {
+    }
+
+    public record EvenementSuiviDto(Long id, String etat, String commentaire, String auteur, LocalDateTime survenuLe) {
+    }
+
+    /** Ce que l'ecran envoie pour ouvrir une fiche sur un couple. */
+    public record SuiviCreation(
+            String module,
+            String codAgencia,
+            String libellePoint,
+            String compteComptable,
+            LocalDate jourConstat,
+            LocalDate jourReference,
+            BigDecimal ecartReference,
+            BigDecimal ecartConstat,
+            BigDecimal variation,
+            String etat,
+            String explication,
+            String typeOperation,
+            String referenceEcriture,
+            String commentaire) {
+    }
+
+    /** Ce que l'ecran envoie pour faire avancer une fiche. */
+    public record SuiviChangement(
+            String etat,
+            String explication,
+            String typeOperation,
+            String referenceEcriture,
+            String commentaire) {
     }
 }
