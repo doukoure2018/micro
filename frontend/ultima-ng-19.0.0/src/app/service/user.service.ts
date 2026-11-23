@@ -1705,6 +1705,20 @@ export class UserService {
     getAnnulationsADecider$ = () =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-a-decider`).pipe(catchError(this.handleError));
     getAnnulationsAValiderDA$ = () => this.getAnnulationsADecider$();
+    // ===== Evolution des ecarts de rapprochement (V217) =====
+    /** La courbe du reseau : un module, les N derniers jours photographies. */
+    getCourbeEcarts$ = (module: string, jours: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/courbe`, { params: { module, jours } }).pipe(catchError(this.handleError));
+    /** La photo la plus recente et le tableau des points de service, bornes au perimetre. */
+    getSituationEcarts$ = (module: string, jour?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/situation`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
+    /** Les comptes comptables d'un point de service, pour la photo affichee. */
+    getComptesEcarts$ = (module: string, codAgencia: string, jour?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
+    /** La courbe d'un point de service. */
+    getSerieEcartsPoint$ = (module: string, codAgencia: string, jours: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/courbe`, { params: { module, jours } }).pipe(catchError(this.handleError));
+
     getAnnulationsAC$ = () =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/workflow/annulations-ac`).pipe(catchError(this.handleError));
 

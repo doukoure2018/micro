@@ -260,7 +260,8 @@ export class AppMenu {
                     { label: 'Arrêtés de caisse', icon: 'pi pi-fw pi-money-bill', routerLink: ['/dashboards/suivi-arrete-caisse'] },
                     { label: 'Crédits négatifs', icon: 'pi pi-fw pi-exclamation-circle', routerLink: ['/dashboards/credits-negatifs'] },
                     { label: 'Comptes mal adossés', icon: 'pi pi-fw pi-link', routerLink: ['/dashboards/comptes-mal-adosses'] },
-                    { label: 'Comptes hors agence', icon: 'pi pi-fw pi-building', routerLink: ['/dashboards/comptes-hors-agence'] }
+                    { label: 'Comptes hors agence', icon: 'pi pi-fw pi-building', routerLink: ['/dashboards/comptes-hors-agence'] },
+                    { label: 'Évolution des écarts', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboards/evolution-ecarts'] }
                 ]
             });
         }
