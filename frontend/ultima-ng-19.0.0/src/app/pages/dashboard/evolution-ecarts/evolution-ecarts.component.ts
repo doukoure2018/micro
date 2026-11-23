@@ -81,6 +81,19 @@ interface VariationCouple {
     explication?: string;
     suiviId?: number | null;
     suiviEtat?: string | null;
+    /** Le résumé des opérations de la fenêtre, poussé par l'outil (V221), ou absent. */
+    operations?: {
+        fenetreDu?: string;
+        fenetreAu?: string;
+        nbOperations?: number;
+        nbAnomalies?: number;
+        montantAnomalies?: number;
+        nbSansEcriture?: number;
+        montantSansEcriture?: number;
+        nbSansMouvement?: number;
+        montantSansMouvement?: number;
+        operationDominante?: string | null;
+    } | null;
 }
 
 /** Une fiche de suivi de correction (V220). */
@@ -394,7 +407,7 @@ interface Variations {
                                     <tr>
                                         <th>Point de service</th><th>Agence</th>
                                         <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
-                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Explication</th><th>Suivi</th>
+                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Explication</th><th>Opérations de la fenêtre</th><th>Suivi</th>
                                     </tr>
                                 </ng-template>
                                 <ng-template pTemplate="body" let-v>
@@ -407,6 +420,7 @@ interface Variations {
                                         <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
                                         <td class="text-xs">{{ v.cote || '—' }}</td>
                                         <td class="text-xs text-gray-600">{{ v.explication }}</td>
+                                        <td class="text-xs" [pTooltip]="detailOperations(v)" tooltipPosition="top">{{ resumeOperations(v) }}</td>
                                         <td class="whitespace-nowrap">
                                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
@@ -438,7 +452,7 @@ interface Variations {
                         <th>Délégation</th><th>Agence</th><th>Point de service</th><th>Compte comptable</th>
                         <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
                         <th class="text-right">Variation</th><th class="text-right">Δ client</th><th class="text-right">Δ comptabilité</th>
-                        <th>Statut</th><th>Côté</th><th>Suivi</th>
+                        <th>Statut</th><th>Côté</th><th>Opérations de la fenêtre</th><th>Suivi</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-v>
@@ -454,6 +468,7 @@ interface Variations {
                         <td class="text-right text-sm">{{ v.variationComptable === null || v.variationComptable === undefined ? '—' : (v.variationComptable | number: '1.2-2') }}</td>
                         <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
                         <td class="text-xs">{{ v.cote || '—' }}</td>
+                        <td class="text-xs" [pTooltip]="detailOperations(v)" tooltipPosition="top">{{ resumeOperations(v) }}</td>
                         <td class="whitespace-nowrap">
                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
@@ -465,7 +480,7 @@ interface Variations {
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="12" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
+                    <tr><td colspan="13" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
                 </ng-template>
             </p-table>
             } @else {
@@ -577,7 +592,16 @@ interface Variations {
                 <div class="border rounded p-2"><div class="text-xs text-gray-500">Variation</div><div class="font-semibold" [class.text-red-600]="v.variation > 0" [class.text-green-700]="v.variation < 0">{{ v.variation | number: '1.2-2' }}</div></div>
                 <div class="border rounded p-2"><div class="text-xs text-gray-500">Statut · côté</div><div class="text-xs">{{ v.statut }}<br>{{ v.cote || '—' }}</div></div>
             </div>
-            <p class="text-xs text-gray-600 mt-0 mb-3">{{ v.explication }}</p>
+            <p class="text-xs text-gray-600 mt-0 mb-2">{{ v.explication }}</p>
+            @if (v.operations) {
+            <div class="mb-3 p-2 border rounded text-xs bg-gray-50">
+                <b>Opérations de la fenêtre</b> ({{ v.operations.fenetreDu | date: 'dd/MM' }} → veille du {{ v.operations.fenetreAu | date: 'dd/MM' }}) :
+                {{ v.operations.nbOperations ?? 0 }} mouvement(s), {{ v.operations.nbAnomalies ?? 0 }} en anomalie pour {{ (v.operations.montantAnomalies || 0) | number: '1.2-2' }} GNF ·
+                sans écriture : {{ v.operations.nbSansEcriture ?? 0 }} ({{ (v.operations.montantSansEcriture || 0) | number: '1.2-2' }}) ·
+                écritures sans mouvement : {{ v.operations.nbSansMouvement ?? 0 }} ({{ (v.operations.montantSansMouvement || 0) | number: '1.2-2' }})
+                <span *ngIf="v.operations.operationDominante"> · dominante : {{ v.operations.operationDominante }}</span>
+            </div>
+            }
             }
             @if (ficheChoisie(); as f) {
             <div class="mb-3 p-3 border-l-4 rounded text-sm" [class.border-green-500]="f.etat === 'CONFIRMEE'" [class.bg-green-50]="f.etat === 'CONFIRMEE'" [class.border-blue-400]="f.etat !== 'CONFIRMEE'" [class.bg-blue-50]="f.etat !== 'CONFIRMEE'">
@@ -898,6 +922,21 @@ export class EvolutionEcartsComponent {
      * l'outil lit les opérations depuis le réseau interne. On copie la commande prête à coller ;
      * la fenêtre est celle des deux photos comparées.
      */
+    /** Le résumé des opérations poussé par l'outil (lot 4), en une ligne ; « — » quand il n'a pas été lu. */
+    resumeOperations(v: VariationCouple): string {
+        const o = v.operations;
+        if (!o) return '—';
+        if (!o.nbAnomalies) return `${o.nbOperations ?? 0} mvt, aucune anomalie`;
+        return `${o.nbAnomalies} anomalie(s) · ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(o.montantAnomalies || 0)}` + (o.operationDominante ? ` · ${o.operationDominante}` : '');
+    }
+
+    detailOperations(v: VariationCouple): string {
+        const o = v.operations;
+        if (!o) return 'Résumé non lu par l’outil pour ce couple (budget du matin épuisé, ou module sans descente à l’opération) : utilisez la commande copiée.';
+        const n = (x?: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2 }).format(x || 0);
+        return `Fenêtre ${o.fenetreDu} → veille du ${o.fenetreAu} · ${o.nbOperations ?? 0} mouvement(s) · ${o.nbAnomalies ?? 0} en anomalie (${n(o.montantAnomalies)} GNF) · sans écriture ${o.nbSansEcriture ?? 0} (${n(o.montantSansEcriture)}) · écritures sans mouvement ${o.nbSansMouvement ?? 0} (${n(o.montantSansMouvement)})`;
+    }
+
     copierCommande(v: VariationCouple): void {
         const ref = this.variations()?.reference?.jour;
         const jour = this.variations()?.photo?.jour;
