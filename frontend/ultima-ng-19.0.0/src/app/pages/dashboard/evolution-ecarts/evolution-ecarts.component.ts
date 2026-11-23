@@ -7,13 +7,16 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
+import { CheckboxModule } from 'primeng/checkbox';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
@@ -76,6 +79,37 @@ interface VariationCouple {
     statut: string;
     cote?: string | null;
     explication?: string;
+    suiviId?: number | null;
+    suiviEtat?: string | null;
+}
+
+/** Une fiche de suivi de correction (V220). */
+interface Suivi {
+    id: number;
+    module: string;
+    codAgencia: string;
+    libellePoint?: string;
+    compteComptable: string;
+    jourConstat: string;
+    jourReference: string;
+    ecartReference?: number | null;
+    ecartConstat?: number | null;
+    variation: number;
+    etat: string;
+    explication?: string;
+    typeOperation?: string;
+    referenceEcriture?: string;
+    creePar?: string;
+    creeLe?: string;
+    modifiePar?: string;
+    modifieLe?: string;
+    corrigeeLe?: string;
+    jourDernier?: string;
+    ecartDernier?: number | null;
+    photosSansEffet?: number;
+    confirmeeLe?: string;
+    jourConfirmation?: string;
+    evenements?: { id: number; etat: string; commentaire?: string; auteur: string; survenuLe: string }[];
 }
 
 /** Un compte comptable, tous points de service confondus. */
@@ -131,7 +165,7 @@ interface Variations {
 @Component({
     selector: 'app-evolution-ecarts',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, DialogModule, InputNumberModule, ProgressSpinnerModule, SelectModule, SelectButtonModule, TableModule, TagModule, ToastModule, TooltipModule],
+    imports: [CommonModule, FormsModule, ButtonModule, ChartModule, CheckboxModule, DialogModule, InputNumberModule, InputTextModule, ProgressSpinnerModule, SelectModule, SelectButtonModule, TableModule, TagModule, TextareaModule, ToastModule, TooltipModule],
     providers: [MessageService],
     template: `
         <p-toast></p-toast>
@@ -276,7 +310,7 @@ interface Variations {
                         pTooltip="La photo à laquelle comparer le jour lu" tooltipPosition="bottom"></p-select>
                     <p-inputNumber [(ngModel)]="seuil" [min]="0" [useGrouping]="true" suffix=" GNF" inputStyleClass="w-36"
                         (onBlur)="chargerVariations()" pTooltip="Variation en dessous de laquelle un couple ne s'affiche pas" tooltipPosition="bottom"></p-inputNumber>
-                    <p-selectButton [options]="vuesVariations" [(ngModel)]="vueVariations" optionLabel="label" optionValue="value" [allowEmpty]="false"></p-selectButton>
+                    <p-selectButton [options]="vuesVariations" [(ngModel)]="vueVariations" optionLabel="label" optionValue="value" [allowEmpty]="false" (onChange)="changerVueVariations()"></p-selectButton>
                     <button pButton icon="pi pi-refresh" class="p-button-outlined p-button-sm" [loading]="chargementVariations()" (click)="chargerVariations()"></button>
                 </div>
             </div>
@@ -360,7 +394,7 @@ interface Variations {
                                     <tr>
                                         <th>Point de service</th><th>Agence</th>
                                         <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
-                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Explication</th>
+                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Explication</th><th>Suivi</th>
                                     </tr>
                                 </ng-template>
                                 <ng-template pTemplate="body" let-v>
@@ -373,6 +407,11 @@ interface Variations {
                                         <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
                                         <td class="text-xs">{{ v.cote || '—' }}</td>
                                         <td class="text-xs text-gray-600">{{ v.explication }}</td>
+                                        <td class="whitespace-nowrap">
+                                            <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
+                                            <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
+                                                [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
+                                        </td>
                                     </tr>
                                 </ng-template>
                             </p-table>
@@ -383,9 +422,11 @@ interface Variations {
                     <tr><td colspan="9" class="text-center text-gray-500 py-4">Aucun compte comptable n'a bougé au-dessus du seuil entre ces deux photos.</td></tr>
                 </ng-template>
             </p-table>
-            } @else {
+            } @else if (vueVariations === 'COUPLE') {
             <div class="flex items-center gap-2 mb-2">
                 <p-select [options]="statuts" [(ngModel)]="statutFiltre" placeholder="Tous les statuts" [showClear]="true" styleClass="w-56" (onChange)="statutFiltreSignal.set(statutFiltre)"></p-select>
+                <p-checkbox [(ngModel)]="nonTraiteesSeulement" [binary]="true" inputId="nonTraitees" (onChange)="nonTraiteesSignal.set(nonTraiteesSeulement)"></p-checkbox>
+                <label for="nonTraitees" class="text-sm">non traitées seulement</label>
                 <span class="text-xs text-gray-500">{{ couplesFiltres().length }} couple(s) · les plus grosses variations d'abord</span>
             </div>
             <p-table [value]="couplesFiltres()" styleClass="p-datatable-sm" [scrollable]="true" [paginator]="couplesFiltres().length > 25" [rows]="25">
@@ -394,7 +435,7 @@ interface Variations {
                         <th>Délégation</th><th>Agence</th><th>Point de service</th><th>Compte comptable</th>
                         <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
                         <th class="text-right">Variation</th><th class="text-right">Δ client</th><th class="text-right">Δ comptabilité</th>
-                        <th>Statut</th><th>Côté</th>
+                        <th>Statut</th><th>Côté</th><th>Suivi</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-v>
@@ -410,12 +451,59 @@ interface Variations {
                         <td class="text-right text-sm">{{ v.variationComptable === null || v.variationComptable === undefined ? '—' : (v.variationComptable | number: '1.2-2') }}</td>
                         <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
                         <td class="text-xs">{{ v.cote || '—' }}</td>
+                        <td class="whitespace-nowrap">
+                            <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
+                            <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
+                                [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
+                        </td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="11" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
+                    <tr><td colspan="12" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
                 </ng-template>
             </p-table>
+            } @else {
+            <!-- Le suivi des corrections : la liste de travail -->
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                <p-select [options]="filtresSuivi" [(ngModel)]="filtreSuivi" optionLabel="label" optionValue="value" styleClass="w-56" (onChange)="chargerSuivis()"></p-select>
+                <span class="text-xs text-gray-500">{{ suivis().length }} fiche(s) · la photo suivante confirme les corrections, personne ne ferme une fiche à la main</span>
+            </div>
+            @if (chargementSuivis()) {
+            <div class="flex justify-center py-6"><p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner></div>
+            } @else {
+            <p-table [value]="suivis()" styleClass="p-datatable-sm" [scrollable]="true" [paginator]="suivis().length > 25" [rows]="25">
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Point de service</th><th>Compte comptable</th><th>Constat</th>
+                        <th class="text-right">Écart avant</th><th class="text-right">Variation</th>
+                        <th>État</th><th>Explication</th><th>Opération</th><th>Écriture</th><th>Dernière photo</th><th>Par</th><th></th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-f>
+                    <tr>
+                        <td class="text-sm">{{ f.libellePoint || f.codAgencia }}<span class="text-xs text-gray-500"> ({{ f.codAgencia }})</span></td>
+                        <td class="font-mono text-xs">{{ f.compteComptable }}</td>
+                        <td class="text-xs">{{ f.jourConstat | date: 'dd/MM' }} vs {{ f.jourReference | date: 'dd/MM' }}</td>
+                        <td class="text-right text-sm">{{ f.ecartReference === null || f.ecartReference === undefined ? '—' : (f.ecartReference | number: '1.2-2') }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="f.variation > 0" [class.text-green-700]="f.variation < 0">{{ f.variation | number: '1.2-2' }}</td>
+                        <td><p-tag [value]="libelleEtatSuivi(f.etat)" [severity]="severiteSuivi(f.etat)"></p-tag></td>
+                        <td class="text-xs text-gray-600 max-w-xs truncate" [pTooltip]="f.explication">{{ f.explication || '—' }}</td>
+                        <td class="text-xs">{{ f.typeOperation || '—' }}</td>
+                        <td class="text-xs font-mono">{{ f.referenceEcriture || '—' }}</td>
+                        <td class="text-xs">
+                            @if (f.jourDernier) { {{ f.jourDernier | date: 'dd/MM' }} : {{ f.ecartDernier | number: '1.2-2' }}
+                                <span *ngIf="f.photosSansEffet" class="text-orange-700"> · {{ f.photosSansEffet }} sans effet</span> } @else { — }
+                        </td>
+                        <td class="text-xs">{{ f.modifiePar || f.creePar || '—' }}<br><span class="text-gray-500">{{ f.modifieLe | date: 'dd/MM HH:mm' }}</span></td>
+                        <td><button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded" [disabled]="f.etat === 'CONFIRMEE'"
+                                pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="12" class="text-center text-gray-500 py-4">Aucune fiche pour ce filtre. Une fiche s'ouvre depuis une variation, par le bouton « + ».</td></tr>
+                </ng-template>
+            </p-table>
+            }
             }
             <p class="text-xs text-gray-500 mt-3 mb-0">
                 Le côté dit quel solde a bougé : « client seul » oriente vers des mouvements sans écriture, « comptabilité seule » vers une
@@ -473,6 +561,68 @@ interface Variations {
             </p>
             }
         </p-dialog>
+
+        <!-- La fiche de suivi d'une variation (V220) -->
+        <p-dialog [header]="titreSuivi()" [(visible)]="afficherSuivi" [modal]="true" [style]="{ width: '92vw', maxWidth: '860px' }" [dismissableMask]="true">
+            @if (variationChoisie(); as v) {
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 text-sm">
+                <div class="border rounded p-2"><div class="text-xs text-gray-500">Écart de référence</div><div class="font-semibold">{{ v.ecartReference === null || v.ecartReference === undefined ? '—' : (v.ecartReference | number: '1.2-2') }}</div></div>
+                <div class="border rounded p-2"><div class="text-xs text-gray-500">Écart du jour</div><div class="font-semibold">{{ v.ecartJour === null || v.ecartJour === undefined ? '—' : (v.ecartJour | number: '1.2-2') }}</div></div>
+                <div class="border rounded p-2"><div class="text-xs text-gray-500">Variation</div><div class="font-semibold" [class.text-red-600]="v.variation > 0" [class.text-green-700]="v.variation < 0">{{ v.variation | number: '1.2-2' }}</div></div>
+                <div class="border rounded p-2"><div class="text-xs text-gray-500">Statut · côté</div><div class="text-xs">{{ v.statut }}<br>{{ v.cote || '—' }}</div></div>
+            </div>
+            <p class="text-xs text-gray-600 mt-0 mb-3">{{ v.explication }}</p>
+            }
+            @if (ficheChoisie(); as f) {
+            <div class="mb-3 p-3 border-l-4 rounded text-sm" [class.border-green-500]="f.etat === 'CONFIRMEE'" [class.bg-green-50]="f.etat === 'CONFIRMEE'" [class.border-blue-400]="f.etat !== 'CONFIRMEE'" [class.bg-blue-50]="f.etat !== 'CONFIRMEE'">
+                <div class="font-semibold">Fiche n° {{ f.id }} · {{ libelleEtatSuivi(f.etat) }}</div>
+                <div class="text-xs text-gray-600 mt-1">
+                    ouverte le {{ f.creeLe | date: 'dd/MM/yyyy HH:mm' }} par {{ f.creePar || '—' }}
+                    @if (f.jourDernier) { · dernière photo le {{ f.jourDernier | date: 'dd/MM' }} : écart {{ f.ecartDernier | number: '1.2-2' }} }
+                    @if (f.photosSansEffet) { · {{ f.photosSansEffet }} photo(s) sans effet }
+                </div>
+                @if (f.evenements?.length) {
+                <ul class="text-xs mt-2 mb-0 pl-4">
+                    @for (e of f.evenements; track e.id) {
+                    <li>{{ e.survenuLe | date: 'dd/MM HH:mm' }} — <b>{{ libelleEtatSuivi(e.etat) }}</b> par {{ e.auteur }}<span *ngIf="e.commentaire"> : {{ e.commentaire }}</span></li>
+                    }
+                </ul>
+                }
+            </div>
+            }
+            @if (!ficheChoisie() || ficheChoisie()!.etat !== 'CONFIRMEE') {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-gray-600" for="suiviEtat">État</label>
+                    <p-select inputId="suiviEtat" [options]="etatsSuivi" [(ngModel)]="formulaireSuivi.etat" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-gray-600" for="suiviType">Type d'opération en cause</label>
+                    <input pInputText id="suiviType" [(ngModel)]="formulaireSuivi.typeOperation" placeholder="ex. frais de tenue de compte 35/03" />
+                </div>
+                <div class="flex flex-col gap-1 md:col-span-2">
+                    <label class="text-xs text-gray-600" for="suiviExplication">Explication</label>
+                    <textarea pTextarea id="suiviExplication" rows="3" [(ngModel)]="formulaireSuivi.explication" placeholder="Ce qui a été trouvé derrière la variation"></textarea>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-gray-600" for="suiviEcriture">Référence de l'écriture SAF (obligatoire pour « Corrigée dans SAF »)</label>
+                    <input pInputText id="suiviEcriture" [(ngModel)]="formulaireSuivi.referenceEcriture" placeholder="n° d'écriture de régularisation" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-gray-600" for="suiviCommentaire">Commentaire du journal</label>
+                    <input pInputText id="suiviCommentaire" [(ngModel)]="formulaireSuivi.commentaire" />
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3 mb-3">
+                « Confirmée » n'est pas proposé : c'est la photo du lendemain qui le pose, quand l'écart du couple revient au niveau d'avant la variation ou à zéro.
+                Deux photos sans effet renvoient la fiche à « À instruire ».
+            </p>
+            <div class="flex justify-end gap-2">
+                <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherSuivi = false"></button>
+                <button pButton type="button" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementSuivi()" (click)="enregistrerSuivi()"></button>
+            </div>
+            }
+        </p-dialog>
     `
 })
 export class EvolutionEcartsComponent {
@@ -498,14 +648,32 @@ export class EvolutionEcartsComponent {
     ];
     readonly vuesVariations = [
         { label: 'Par compte comptable', value: 'COMPTE' },
-        { label: 'Par point de service', value: 'COUPLE' }
+        { label: 'Par point de service', value: 'COUPLE' },
+        { label: 'Suivi des corrections', value: 'SUIVI' }
+    ];
+    readonly etatsSuivi = [
+        { label: 'À instruire', value: 'A_INSTRUIRE' },
+        { label: 'Expliquée', value: 'EXPLIQUEE' },
+        { label: 'Corrigée dans SAF', value: 'CORRIGEE_SAF' },
+        { label: 'Écart structurel accepté (Direction financière)', value: 'STRUCTUREL' }
+    ];
+    readonly filtresSuivi = [
+        { label: 'Fiches vivantes', value: '' },
+        { label: 'À instruire', value: 'A_INSTRUIRE' },
+        { label: 'Expliquées', value: 'EXPLIQUEE' },
+        { label: 'Corrigées dans SAF', value: 'CORRIGEE_SAF' },
+        { label: 'Confirmées par la photo', value: 'CONFIRMEE' },
+        { label: 'Écarts structurels', value: 'STRUCTUREL' },
+        { label: 'Toutes', value: 'TOUTES' }
     ];
     readonly statuts = ['Écart apparu', 'Écart aggravé', 'Écart réduit', 'Écart résolu', 'Ligne nouvelle', 'Ligne disparue', 'Mouvement'];
 
     module = 'COMPTES';
     jours = 30;
     vue: 'JOUR' | 'VARIATIONS' = 'JOUR';
-    vueVariations: 'COMPTE' | 'COUPLE' = 'COMPTE';
+    vueVariations: 'COMPTE' | 'COUPLE' | 'SUIVI' = 'COMPTE';
+    nonTraiteesSeulement = false;
+    filtreSuivi = '';
     /** Le jour de la photo de référence ; null = la photo précédente. */
     reference: string | null = null;
     /** Variation absolue en dessous de laquelle un couple ne s'affiche pas (seuil d'écart mineur de l'outil). */
@@ -514,6 +682,15 @@ export class EvolutionEcartsComponent {
     comptesDeplies: Record<string, boolean> = {};
 
     readonly chargementVariations = signal(false);
+    readonly suivis = signal<Suivi[]>([]);
+    readonly chargementSuivis = signal(false);
+    afficherSuivi = false;
+    readonly enregistrementSuivi = signal(false);
+    readonly variationChoisie = signal<VariationCouple | null>(null);
+    readonly ficheChoisie = signal<Suivi | null>(null);
+    formulaireSuivi: { etat: string; explication: string; typeOperation: string; referenceEcriture: string; commentaire: string } =
+        { etat: 'A_INSTRUIRE', explication: '', typeOperation: '', referenceEcriture: '', commentaire: '' };
+    readonly nonTraiteesSignal = signal(false);
     readonly variations = signal<Variations | null>(null);
     readonly joursConnus = signal<string[]>([]);
 
@@ -539,7 +716,10 @@ export class EvolutionEcartsComponent {
     readonly couplesFiltres = computed(() => {
         const couples = this.variations()?.couples || [];
         const statut = this.statutFiltreSignal();
-        return statut ? couples.filter((v) => v.statut === statut) : couples;
+        const nonTraitees = this.nonTraiteesSignal();
+        return couples
+            .filter((v) => !statut || v.statut === statut)
+            .filter((v) => !nonTraitees || !v.suiviEtat || v.suiviEtat === 'A_INSTRUIRE');
     });
     readonly statutFiltreSignal = signal<string | null>(null);
 
@@ -677,6 +857,134 @@ export class EvolutionEcartsComponent {
         if (statut === 'Écart résolu' || statut === 'Écart réduit') return 'success';
         if (statut === 'Ligne nouvelle' || statut === 'Ligne disparue') return 'warn';
         return 'secondary';
+    }
+
+    readonly titreSuivi = computed(() => {
+        const v = this.variationChoisie();
+        const f = this.ficheChoisie();
+        const point = v ? `${v.libellePoint || v.codAgencia} (${v.codAgencia}) · ${v.compteComptable}` : f ? `${f.libellePoint || f.codAgencia} (${f.codAgencia}) · ${f.compteComptable}` : '';
+        return `Suivi de correction · ${point}`;
+    });
+
+    libelleEtatSuivi(etat?: string | null): string {
+        switch (etat) {
+            case 'A_INSTRUIRE': return 'À instruire';
+            case 'EXPLIQUEE': return 'Expliquée';
+            case 'CORRIGEE_SAF': return 'Corrigée dans SAF';
+            case 'CONFIRMEE': return 'Confirmée par la photo';
+            case 'STRUCTUREL': return 'Écart structurel accepté';
+            default: return etat || '—';
+        }
+    }
+
+    severiteSuivi(etat?: string | null): 'success' | 'danger' | 'warn' | 'info' | 'secondary' | 'contrast' {
+        switch (etat) {
+            case 'A_INSTRUIRE': return 'warn';
+            case 'EXPLIQUEE': return 'info';
+            case 'CORRIGEE_SAF': return 'contrast';
+            case 'CONFIRMEE': return 'success';
+            default: return 'secondary';
+        }
+    }
+
+    changerVueVariations(): void {
+        if (this.vueVariations === 'SUIVI') {
+            this.chargerSuivis();
+        }
+    }
+
+    chargerSuivis(): void {
+        this.chargementSuivis.set(true);
+        this.userService
+            .getSuivisEcarts$(this.module, this.filtreSuivi || undefined)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.suivis.set((r.data as any)?.suivis || []);
+                    this.chargementSuivis.set(false);
+                },
+                error: (err: any) => {
+                    this.chargementSuivis.set(false);
+                    this.suivis.set([]);
+                    this.messageService.add({ severity: 'error', summary: 'Suivi indisponible', detail: err || '', life: 7000 });
+                }
+            });
+    }
+
+    /** Depuis une variation : la fiche vivante du couple si elle existe, sinon un formulaire vierge. */
+    ouvrirSuivi(v: VariationCouple): void {
+        this.variationChoisie.set(v);
+        this.ficheChoisie.set(null);
+        this.formulaireSuivi = { etat: 'A_INSTRUIRE', explication: '', typeOperation: '', referenceEcriture: '', commentaire: '' };
+        this.afficherSuivi = true;
+        if (v.suiviId) {
+            this.chargerFiche(v.suiviId);
+        }
+    }
+
+    /** Depuis la liste de travail. */
+    ouvrirFiche(f: Suivi): void {
+        this.variationChoisie.set(null);
+        this.ficheChoisie.set(f);
+        this.formulaireSuivi = { etat: f.etat === 'CONFIRMEE' ? 'A_INSTRUIRE' : f.etat, explication: f.explication || '', typeOperation: f.typeOperation || '', referenceEcriture: f.referenceEcriture || '', commentaire: '' };
+        this.afficherSuivi = true;
+        this.chargerFiche(f.id);
+    }
+
+    private chargerFiche(id: number): void {
+        this.userService
+            .getSuiviEcart$(id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    const f = (r.data as any)?.suivi as Suivi | undefined;
+                    if (!f) return;
+                    this.ficheChoisie.set(f);
+                    this.formulaireSuivi = { etat: f.etat === 'CONFIRMEE' ? 'A_INSTRUIRE' : f.etat, explication: f.explication || '', typeOperation: f.typeOperation || '', referenceEcriture: f.referenceEcriture || '', commentaire: '' };
+                },
+                error: (err: any) => this.messageService.add({ severity: 'error', summary: 'Fiche indisponible', detail: err || '', life: 7000 })
+            });
+    }
+
+    enregistrerSuivi(): void {
+        const f = this.ficheChoisie();
+        const v = this.variationChoisie();
+        const form = this.formulaireSuivi;
+        const vide = (s: string) => (s && s.trim() ? s.trim() : null);
+        this.enregistrementSuivi.set(true);
+        const appel = f
+            ? this.userService.changerSuiviEcart$(f.id, { etat: form.etat, explication: vide(form.explication), typeOperation: vide(form.typeOperation), referenceEcriture: vide(form.referenceEcriture), commentaire: vide(form.commentaire) })
+            : this.userService.ouvrirSuiviEcart$({
+                  module: this.module,
+                  codAgencia: v!.codAgencia,
+                  libellePoint: v!.libellePoint,
+                  compteComptable: v!.compteComptable,
+                  jourConstat: this.variations()?.photo?.jour,
+                  jourReference: this.variations()?.reference?.jour,
+                  ecartReference: v!.ecartReference,
+                  ecartConstat: v!.ecartJour,
+                  variation: v!.variation,
+                  etat: form.etat,
+                  explication: vide(form.explication),
+                  typeOperation: vide(form.typeOperation),
+                  referenceEcriture: vide(form.referenceEcriture),
+                  commentaire: vide(form.commentaire)
+              });
+        appel.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+            next: (r: IResponse) => {
+                this.enregistrementSuivi.set(false);
+                this.afficherSuivi = false;
+                this.messageService.add({ severity: 'success', summary: 'Suivi enregistré', detail: r.message || '', life: 4000 });
+                this.chargerVariations();
+                if (this.vueVariations === 'SUIVI') {
+                    this.chargerSuivis();
+                }
+            },
+            error: (err: any) => {
+                this.enregistrementSuivi.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Suivi refusé', detail: err || '', life: 8000 });
+            }
+        });
     }
 
     severiteCote(cote?: string | null): 'info' | 'warn' | 'secondary' | 'contrast' {

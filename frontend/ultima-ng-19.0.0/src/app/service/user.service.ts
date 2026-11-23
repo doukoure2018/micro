@@ -1722,6 +1722,19 @@ export class UserService {
         return <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/variations`, { params }).pipe(catchError(this.handleError));
     };
 
+    /** Le suivi de correction des variations (V220). */
+    getSuivisEcarts$ = (module: string, etat?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/suivis`, { params: etat ? { module, etat } : { module } }).pipe(catchError(this.handleError));
+
+    getSuiviEcart$ = (id: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/suivis/${id}`).pipe(catchError(this.handleError));
+
+    ouvrirSuiviEcart$ = (creation: any) =>
+        <Observable<IResponse>>this.http.post<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/suivis`, creation).pipe(catchError(this.handleError));
+
+    changerSuiviEcart$ = (id: number, changement: any) =>
+        <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/suivis/${id}`, changement).pipe(catchError(this.handleError));
+
     getJoursEcarts$ = (module: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
 
