@@ -1,0 +1,58 @@
+Points de service reprises : 179 / 185 codes du referentiel
+Valeurs saisies            : 196874
+Rapports (PS x mois)       : 1607
+Mois couverts              : [1, 2, 3, 4, 5, 6, 7, 8, 9]
+Rubriques distinctes       : 185
+
+-- Valeurs par mois
+   JANVIER     179 PS    22154 valeurs
+   FEVRIER     179 PS    20707 valeurs
+   MARS        179 PS    25553 valeurs
+   AVRIL       179 PS    20565 valeurs
+   MAI         179 PS    20538 valeurs
+   JUIN        179 PS    25438 valeurs
+   JUILLET     177 PS    19378 valeurs
+   AOUT        177 PS    19290 valeurs
+   SEPTEMBRE   179 PS    23251 valeurs
+
+-- Feuilles remplies qu'aucun nom ne rattache a un point de service : 5
+   (a faire nommer par la delegation : leurs valeurs ne sont pas reprises)
+   DRBG 3 TR 2026/TELIMILE feuille '1' : 1028 valeurs
+   DRBG 3 TR 2026/TELIMILE feuille '2' : 912 valeurs
+   DRBG 3 TR 2026/TELIMILE feuille '3' : 899 valeurs
+   DRBG 3 TR 2026/TELIMILE feuille '4' : 926 valeurs
+   DRBG 3 TR 2026/TELIMILE feuille '5' : 964 valeurs
+
+-- Points de service sans rapport dans les classeurs : 6
+   201 Telimelé (DRBG 3 TR 2026/TELIMILE)
+   208 Sinta (DRBG 3 TR 2026/TELIMILE)
+   220 Ley Miro (DRBG 3 TR 2026/TELIMILE)
+   231 Tarihoye (DRBG 3 TR 2026/TELIMILE)
+   238 Sangareah (DRBG 3 TR 2026/TELIMILE)
+   710 Samana (DRGF 3 TR  2026/SINKO)
+
+-- Points de service qui partagent leur code SAF avec un autre : 0
+
+-- Restes de formules apres septembre, non repris : 262 valeurs sur 173 feuille(s)
+   (cellules de formule du 4e trimestre : cout moyen du credit, ratios de trimestre)
+
+-- Decisions et anomalies
+   11 feuille(s) du gabarit restee(s) vide(s) : DRBG 3 TR 2026/TANENE
+   9 feuille(s) du gabarit restee(s) vide(s) : DRBG 3 TR 2026/TELIMILE
+   consolidation de delegation ignoree : DRBG 3 TR 2026/ZTDRBG
+   7 feuille(s) du gabarit restee(s) vide(s) : DRCKRY 3 TR 2026/KALOUM
+   7 feuille(s) du gabarit restee(s) vide(s) : DRCKRY 3 TR 2026/KOBAYAH
+   consolidation de delegation ignoree : DRCKRY 3 TR 2026/ZTDRCKRY
+   consolidation de delegation ignoree : DRGF 3 TR  2026/ZTDRGF
+   10 feuille(s) du gabarit restee(s) vide(s) : DRHG 3 TR 2026/DINGUIRAYE
+   8 feuille(s) du gabarit restee(s) vide(s) : DRHG 3 TR 2026/KINIERAN
+   consolidation de delegation ignoree : DRHG 3 TR 2026/ZDRHG
+   dossier ignore (copie perimee du rapport au 30/06/2026) : DRMG 3 TR 2026/RAPPORTS ANNUELS AU 30 06 2026
+   consolidation de delegation ignoree : DRMG 3 TR 2026/ZTDRMG
+   taux de remboursement lus en pourcentage et ramenes en fraction : 1720
+   !! taux aberrant conserve tel quel : 816 KOUANKAN, AVRIL, SOC_TAUX_REMB_A1 = 6.58 (658 %)
+   !! taux aberrant conserve tel quel : 816 KOUANKAN, MAI, SOC_TAUX_REMB_A1 = 9.10 (910 %)
+   !! taux aberrant conserve tel quel : 816 KOUANKAN, JUIN, SOC_TAUX_REMB_A1 = 9.11 (911 %)
+   !! taux aberrant conserve tel quel : 816 KOUANKAN, JUILLET, SOC_TAUX_REMB_A1 = 9.12 (912 %)
+   !! taux aberrant conserve tel quel : 816 KOUANKAN, AOUT, SOC_TAUX_REMB_A1 = 9.13 (913 %)
+   !! taux aberrant conserve tel quel : 816 KOUANKAN, SEPTEMBRE, SOC_TAUX_REMB_A1 = 9.14 (914 %)

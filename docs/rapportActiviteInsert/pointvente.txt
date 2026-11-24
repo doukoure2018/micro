@@ -1,0 +1,187 @@
+Basse Guinée|BOFFA|606|Tougnifily
+Basse Guinée|BOFFA|608|Douprou
+Basse Guinée|BOFFA|612|Boffa
+Basse Guinée|BOFFA|613|Kolia
+Basse Guinée|BOFFA|614|Koukoudé
+Basse Guinée|BOKE|601|Kamsar
+Basse Guinée|BOKE|602|Bintimodia
+Basse Guinée|BOKE|603|Kolaboui
+Basse Guinée|BOKE|604|Boké
+Basse Guinée|BOKE|607|Mankountan
+Basse Guinée|FORECARIAH|103|Foracariah
+Basse Guinée|FORECARIAH|115|Moussayah
+Basse Guinée|FORECARIAH|117|Benty
+Basse Guinée|FORECARIAH|118|Sikhourou
+Basse Guinée|FORECARIAH|127|Farmoriaya
+Basse Guinée|KINDIA|120|Mambia
+Basse Guinée|KINDIA|121|Kindia
+Basse Guinée|KINDIA|122|Bangouyah
+Basse Guinée|KINDIA|124|Friguiabé
+Basse Guinée|KINDIA|126|Madina Oula
+Basse Guinée|SANGAREDI|605|Sangaredi
+Basse Guinée|SANGAREDI|609|Wendoubour
+Basse Guinée|SANGAREDI|611|Missira
+Basse Guinée|TELIMELE|201|Telimelé
+Basse Guinée|TELIMELE|208|Sinta
+Basse Guinée|TELIMELE|220|Ley Miro
+Basse Guinée|TELIMELE|231|Tarihoye
+Basse Guinée|TELIMELE|238|Sangareah
+Basse Guinée|Tanene|958|tanene
+Basse Guinée|Tanene|958|tondon
+Basse Guinée|Tanene|959|koba
+Basse Guinée|Tanene|960|Fria
+Conakry|COBAYA|953|Enta
+Conakry|COBAYA|956|Sonfonia
+Conakry|COBAYA|962|kobayah
+Conakry|COYAH|102|Coyah
+Conakry|COYAH|112|Maferinyah
+Conakry|COYAH|128|KM36
+Conakry|COYAH|129|Dubreka
+Conakry|KALOUM|951|Kaloum
+Conakry|KALOUM|952|Matoto
+Conakry|KALOUM|954|Taouyah
+Conakry|KALOUM|955|Madina
+Guinée Forestière|BEYLA|701|Beyla
+Guinée Forestière|BEYLA|702|Boola
+Guinée Forestière|BEYLA|713|Moribadou
+Guinée Forestière|GUECKEDOU|803|Gueckedou
+Guinée Forestière|GUECKEDOU|810|Temessadou
+Guinée Forestière|GUECKEDOU|811|Koundou
+Guinée Forestière|GUECKEDOU|812|Nongoa
+Guinée Forestière|GUECKEDOU|814|Guendembou
+Guinée Forestière|GUECKEDOU|817|Ouendekenema
+Guinée Forestière|LOLA|402|Lola
+Guinée Forestière|LOLA|413|Gamaberema
+Guinée Forestière|LOLA|415|Lainé
+Guinée Forestière|LOLA|416|Tounkarata
+Guinée Forestière|LOLA|417|Kokota
+Guinée Forestière|LOLA|425|N'Zoo
+Guinée Forestière|MACENTA|801|Macenta
+Guinée Forestière|MACENTA|802|Seredou
+Guinée Forestière|MACENTA|808|Koyamah
+Guinée Forestière|MACENTA|809|Fassankony
+Guinée Forestière|MACENTA|813|Boffosou
+Guinée Forestière|MACENTA|815|Gbeunikala
+Guinée Forestière|MACENTA|816|Kouankan
+Guinée Forestière|MACENTA|818|Panziazou
+Guinée Forestière|MACENTA|819|Daro
+Guinée Forestière|NZEREKORE|401|Gouecke
+Guinée Forestière|NZEREKORE|408|Koulé
+Guinée Forestière|NZEREKORE|412|Palé
+Guinée Forestière|NZEREKORE|418|Soulouta
+Guinée Forestière|NZEREKORE|419|N'Zerekoré 1
+Guinée Forestière|NZEREKORE|420|N'Zerekoré 2
+Guinée Forestière|NZEREKORE|421|Samoe
+Guinée Forestière|NZEREKORE|455|Kobela
+Guinée Forestière|SINKO|703|Gbackedou
+Guinée Forestière|SINKO|704|Sinko
+Guinée Forestière|SINKO|708|Gbessoba
+Guinée Forestière|SINKO|709|Fouala
+Guinée Forestière|SINKO|710|Samana
+Guinée Forestière|YOMOU|422|Yomou
+Guinée Forestière|YOMOU|423|Pela
+Guinée Forestière|YOMOU|424|Diecke
+Guinée Forestière|YOMOU|426|Bignamou
+Guinée Forestière|YOMOU|456|Bowé
+Haute Guinée|DABOLA|551|Dabola
+Haute Guinée|DABOLA|552|Dogomet
+Haute Guinée|DABOLA|553|Banko
+Haute Guinée|DABOLA|554|Bissikrima
+Haute Guinée|DABOLA|559|Arfamoussayah
+Haute Guinée|DINGUIRAYE|555|Dialakoro
+Haute Guinée|DINGUIRAYE|556|Kalinko
+Haute Guinée|DINGUIRAYE|558|Dinguiraye
+Haute Guinée|DINGUIRAYE|560|Mbonet
+Haute Guinée|FARANAH|507|Banian
+Haute Guinée|FARANAH|510|Sandenia
+Haute Guinée|FARANAH|513|Faranah
+Haute Guinée|FARANAH|514|Tiro
+Haute Guinée|FARANAH|516|Marela
+Haute Guinée|FARANAH|524|Passayah
+Haute Guinée|FARANAH|533|Kobikoro
+Haute Guinée|FARANAH|536|Hermakono
+Haute Guinée|FARANAH|537|Songoyah
+Haute Guinée|KANKAN|322|Kankan
+Haute Guinée|KANKAN|331|Moribayah
+Haute Guinée|KANKAN|333|Missamana
+Haute Guinée|KANKAN|334|Tintioulen
+Haute Guinée|KANKAN|336|Nafagui
+Haute Guinée|KEROUANE|705|Kerouané
+Haute Guinée|KEROUANE|706|Damaro
+Haute Guinée|KEROUANE|714|Banankoro
+Haute Guinée|KEROUANE|715|Komodou
+Haute Guinée|KINIERAN|323|Kinieran
+Haute Guinée|KINIERAN|330|Dalakoro
+Haute Guinée|KINIERAN|337|Sidikila
+Haute Guinée|KINIERAN|337|Balandougouba
+Haute Guinée|KINIERAN|342|Koundian
+Haute Guinée|KINIERAN|343|Kondianakoro
+Haute Guinée|KINIERAN|344|Loila
+Haute Guinée|KISSIDOUGOU|519|Sangardo
+Haute Guinée|KISSIDOUGOU|523|Kissidougou
+Haute Guinée|KISSIDOUGOU|526|Yende Milimou
+Haute Guinée|KISSIDOUGOU|527|Bardou
+Haute Guinée|KISSIDOUGOU|528|Kondiadou
+Haute Guinée|KISSIDOUGOU|529|Yombiro
+Haute Guinée|KISSIDOUGOU|530|Dandou
+Haute Guinée|KISSIDOUGOU|531|Albadaria
+Haute Guinée|KISSIDOUGOU|532|Kassadou
+Haute Guinée|KISSIDOUGOU|534|Fremessadou
+Haute Guinée|KISSIDOUGOU|535|Tokounou
+Haute Guinée|KOUROUSSA|321|Kouroussa
+Haute Guinée|KOUROUSSA|345|Kaboukaria
+Haute Guinée|KOUROUSSA|346|Komola
+Haute Guinée|KOUROUSSA|347|Saraya
+Haute Guinée|KOUROUSSA|355|Koumana
+Haute Guinée|KOUROUSSA|356|Banfelé
+Haute Guinée|KOUROUSSA|363|Kiniero
+Haute Guinée|MALEAH|354|Maleah
+Haute Guinée|MALEAH|357|Kintinia
+Haute Guinée|MALEAH|358|Franwalia	
+Haute Guinée|MALEAH|361|Siguirini
+Haute Guinée|MANDIANA|324|Mandiana
+Haute Guinée|MANDIANA|335|Sabadoubranama
+Haute Guinée|MANDIANA|338|Ourola
+Haute Guinée|MANDIANA|339|Niantanina	
+Haute Guinée|MANDIANA|340|Kantoumanina
+Haute Guinée|MANDIANA|341|Morodou
+Haute Guinée|SIGUIRI|351|Siguiri
+Haute Guinée|SIGUIRI|352|Norasoba
+Haute Guinée|SIGUIRI|353|Doko
+Haute Guinée|SIGUIRI|359|Noukounkan
+Haute Guinée|SIGUIRI|360|Niandankoro
+Haute Guinée|SIGUIRI|362|Kouremale
+Moyenne Guinée|DALABA|151|Ditinn
+Moyenne Guinée|DALABA|153|Dalaba
+Moyenne Guinée|DALABA|154|Poredaka
+Moyenne Guinée|DALABA|162|Gongoré
+Moyenne Guinée|GAOUAL|213|Kakoni
+Moyenne Guinée|GAOUAL|234|Gaoual
+Moyenne Guinée|GAOUAL|235|Koumbia
+Moyenne Guinée|GAOUAL|237|Touba
+Moyenne Guinée|KOUNDARA|232|Koundara
+Moyenne Guinée|KOUNDARA|233|Sareboido
+Moyenne Guinée|KOUNDARA|236|Termessé
+Moyenne Guinée|LABE|907|Kouramangui
+Moyenne Guinée|LABE|908|Thianguel Bory
+Moyenne Guinée|LABE|909|Popodara
+Moyenne Guinée|LABE|910|Labé
+Moyenne Guinée|LABE|911|Lelouma
+Moyenne Guinée|LABE|913|Mali
+Moyenne Guinée|LABE|920|Yembering
+Moyenne Guinée|LABE|921|Sanou
+Moyenne Guinée|LABE|922|Diountou
+Moyenne Guinée|MAMOU|152|Dounet
+Moyenne Guinée|MAMOU|155|Mamou
+Moyenne Guinée|MAMOU|160|Linsan
+Moyenne Guinée|MAMOU|161|Ouré Kaba
+Moyenne Guinée|MAMOU|163|Saramoussayah
+Moyenne Guinée|PITA|916|Pita
+Moyenne Guinée|PITA|917|Timbi Touni
+Moyenne Guinée|PITA|918|Donghol Touma
+Moyenne Guinée|PITA|919|Timbi Madina
+Moyenne Guinée|TOUGUE|912|Koubia
+Moyenne Guinée|TOUGUE|914|Tougué
+Moyenne Guinée|TOUGUE|915|Konah
+Moyenne Guinée|TOUGUE|923|Kankalabé
+Moyenne Guinée|TOUGUE|924|Koin
