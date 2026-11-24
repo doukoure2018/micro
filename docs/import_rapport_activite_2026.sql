@@ -12,9 +12,11 @@
 -- recalcule a l'affichage, et beaucoup sont fausses dans les classeurs (formules etirees
 -- sur les mois a venir, #DIV/0!, #REF!).
 --
--- Rien n'est efface : un point de service dont un rapport d'activite existe deja dans digi
--- pour un mois donne (une agence a commence sa saisie) est laisse tel quel et liste a
--- l'etape 3. Les sauvegardes zz_sauv_*_20261124 permettent le retour arriere.
+-- Rien n'est ecrase : une rubrique qu'une agence a deja renseignee dans digi est retiree
+-- de la reprise (etape 3), rubrique par rubrique, et le reste du mois est quand meme repris.
+-- Les rapports deja ouverts a l'ecran mais vides sont remplis et consolides ; ceux qui
+-- portent une saisie restent des brouillons, a finir par l'agence et a consolider par la DE.
+-- Les sauvegardes zz_sauv_*_20261124 permettent le retour arriere.
 --
 -- A executer sur la base de production, dans une seule transaction :
 --   docker exec -i postgrecontainer sh -c 'psql -U $POSTGRES_USER -d $POSTGRES_DB -v ON_ERROR_STOP=1' < import_rapport_activite_2026.sql
@@ -196943,23 +196945,36 @@ BEGIN
     IF n > 0 THEN RAISE EXCEPTION 'Points de service absents de digi : %', n; END IF;
 END $$;
 
--- 3. Rapports deja presents dans digi : on ne les touche pas. La liste doit rester vide
---    ou etre connue avant de valider la transaction.
-SELECT r.cod_agencia, p.libele AS point_service, r.mois, r.etat,
-       (SELECT count(*) FROM rapport_mensuel_valeur v WHERE v.rapport_id = r.id) AS deja_saisies
+-- 3. Ce que les agences ont deja tape dans digi est intouchable.
+--
+--    Attention : ouvrir un mois a l'ecran cree un rapport BROUILLON et une ligne par
+--    rubrique avec valeur NULL. Le nombre de lignes ne mesure donc PAS la saisie ; seules
+--    les lignes dont la valeur est renseignee comptent. Au 24/11/2026 la production porte
+--    175 rapports ACTIVITE (septembre et octobre) pour 484 valeurs reellement renseignees,
+--    dont 5 seulement sur janvier-septembre (Kaloum, septembre).
+--
+--    Regle : on ne remplit que ce qui est vide. Une rubrique deja renseignee par une
+--    agence est retiree de la reprise, rubrique par rubrique et non rapport par rapport,
+--    pour que le reste du mois soit quand meme repris. L'etat du rapport ne change pas
+--    pour ces rapports-la : ils restent des brouillons que leur agence finit et que la DE
+--    consolide depuis l'ecran.
+SELECT r.cod_agencia, r.mois, v.code, v.valeur AS valeur_dans_digi,
+       i.valeur AS valeur_du_classeur
   FROM rapport_mensuel r
-  JOIN pointvente p ON p.code = r.cod_agencia
- WHERE r.module = 'ACTIVITE' AND r.annee = 2026
-   AND EXISTS (SELECT 1 FROM import_activite i
-                WHERE i.cod_agencia = r.cod_agencia AND i.annee = r.annee AND i.mois = r.mois)
- ORDER BY 1, 3;
+  JOIN rapport_mensuel_valeur v ON v.rapport_id = r.id AND v.valeur IS NOT NULL
+  JOIN import_activite i ON i.cod_agencia = r.cod_agencia AND i.annee = r.annee
+                        AND i.mois = r.mois AND i.code = v.code
+ WHERE r.module = 'ACTIVITE'
+ ORDER BY 1, 2, 3;
 
 DELETE FROM import_activite i
  WHERE EXISTS (SELECT 1 FROM rapport_mensuel r
+                 JOIN rapport_mensuel_valeur v ON v.rapport_id = r.id
                 WHERE r.module = 'ACTIVITE' AND r.cod_agencia = i.cod_agencia
-                  AND r.annee = i.annee AND r.mois = i.mois);
+                  AND r.annee = i.annee AND r.mois = i.mois
+                  AND v.code = i.code AND v.valeur IS NOT NULL);
 
--- 4. Un rapport par point de service et par mois.
+-- 4. Un rapport par point de service et par mois, pour ceux qui n'existent pas encore.
 INSERT INTO rapport_mensuel (module, cod_agencia, annee, mois, etat,
                              date_creation, date_saisie, date_soumission, date_validation,
                              date_consolidation, commentaire)
@@ -196967,35 +196982,61 @@ SELECT DISTINCT 'ACTIVITE', i.cod_agencia, i.annee, i.mois, 'CONSOLIDE',
        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
        CURRENT_TIMESTAMP,
        'Reprise des classeurs des delegations (rapport d''activite au 30/09/2026), import DSIG du 24/11/2026'
-  FROM import_activite i;
+  FROM import_activite i
+  WHERE NOT EXISTS (SELECT 1 FROM rapport_mensuel r
+                     WHERE r.module = 'ACTIVITE' AND r.cod_agencia = i.cod_agencia
+                       AND r.annee = i.annee AND r.mois = i.mois);
+
+-- 4 bis. Les rapports deja ouverts a l'ecran mais ou rien n'a ete tape sont repris et
+--        consolides comme les autres ; ceux qui portent une saisie restent des brouillons.
+UPDATE rapport_mensuel r
+   SET etat = 'CONSOLIDE',
+       date_saisie = CURRENT_TIMESTAMP, date_soumission = CURRENT_TIMESTAMP,
+       date_validation = CURRENT_TIMESTAMP, date_consolidation = CURRENT_TIMESTAMP,
+       commentaire = 'Reprise des classeurs des delegations (rapport d''activite au 30/09/2026), import DSIG du 24/11/2026'
+ WHERE r.module = 'ACTIVITE' AND r.etat = 'BROUILLON'
+   AND EXISTS (SELECT 1 FROM import_activite i
+                WHERE i.cod_agencia = r.cod_agencia AND i.annee = r.annee
+                  AND i.mois = r.mois)
+   AND NOT EXISTS (SELECT 1 FROM rapport_mensuel_valeur v
+                    WHERE v.rapport_id = r.id AND v.valeur IS NOT NULL);
 
 -- 5. Les valeurs saisies ; totaux, moyennes et taux restent calcules par digi.
+--    ON CONFLICT : les lignes creees vides par l'ecran sont remplies, et la clause
+--    « WHERE valeur IS NULL » garantit qu'aucune valeur tapee par une agence ne peut
+--    etre ecrasee, meme si le DELETE de l'etape 3 en avait laisse passer une.
 INSERT INTO rapport_mensuel_valeur (rapport_id, code, valeur)
 SELECT r.id, i.code, i.valeur
   FROM import_activite i
   JOIN rapport_mensuel r ON r.module = 'ACTIVITE' AND r.cod_agencia = i.cod_agencia
-                        AND r.annee = i.annee AND r.mois = i.mois;
+                        AND r.annee = i.annee AND r.mois = i.mois
+    ON CONFLICT (rapport_id, code) DO UPDATE SET valeur = excluded.valeur
+       WHERE rapport_mensuel_valeur.valeur IS NULL;
 
 -- 6. Journal : d'ou vient chaque rapport.
 INSERT INTO rapport_mensuel_historique (rapport_id, ancien_etat, nouvel_etat, motif)
-SELECT DISTINCT r.id, NULL, 'CONSOLIDE',
+SELECT DISTINCT r.id, NULL, r.etat,
        'Reprise du classeur de la delegation (rapport d''activite 2026) par la DSIG'
   FROM rapport_mensuel r
   JOIN import_activite i ON i.cod_agencia = r.cod_agencia AND i.annee = r.annee
                         AND i.mois = r.mois
  WHERE r.module = 'ACTIVITE';
 
--- 7. Controle avant validation de la transaction.
-SELECT r.mois, count(*) AS rapports, sum(x.nb) AS valeurs
+-- 7. Controle avant validation de la transaction : les valeurs comptees sont celles qui
+--    sont renseignees, pas les lignes vides que l'ecran cree a l'ouverture d'un mois.
+SELECT r.mois, r.etat, count(*) AS rapports,
+       coalesce(sum(x.nb), 0) AS valeurs_renseignees
   FROM rapport_mensuel r
-  JOIN (SELECT rapport_id, count(*) nb FROM rapport_mensuel_valeur GROUP BY rapport_id) x
+  LEFT JOIN (SELECT rapport_id, count(*) AS nb FROM rapport_mensuel_valeur
+              WHERE valeur IS NOT NULL GROUP BY rapport_id) x
     ON x.rapport_id = r.id
  WHERE r.module = 'ACTIVITE' AND r.annee = 2026
- GROUP BY 1 ORDER BY 1;
+ GROUP BY r.mois, r.etat ORDER BY r.mois, r.etat;
 
 COMMIT;
 
--- Retour arriere eventuel :
+-- Retour arriere eventuel (rend aussi leur etat et leurs lignes vides aux 175 rapports
+-- que les agences avaient deja ouverts) :
 --   BEGIN;
 --   DELETE FROM rapport_mensuel WHERE module = 'ACTIVITE';
 --   INSERT INTO rapport_mensuel SELECT * FROM zz_sauv_activite_mensuel_20261124;
