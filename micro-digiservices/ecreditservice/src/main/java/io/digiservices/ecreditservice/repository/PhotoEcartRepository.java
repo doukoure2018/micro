@@ -3,6 +3,7 @@ package io.digiservices.ecreditservice.repository;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CompteClientRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CoupleDeuxPhotos;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.DivergenceRecue;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.EcritureSansMouvementRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.ExplicationRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LignePhotoDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LigneRecue;
@@ -109,14 +110,14 @@ public class PhotoEcartRepository {
                                 fenetre_du, fenetre_au, nb_operations, nb_anomalies, montant_anomalies,
                                 nb_sans_ecriture, montant_sans_ecriture, nb_sans_mouvement,
                                 montant_sans_mouvement, operation_dominante, nb_comptes_clients, montant_net_flux,
-                                nb_divergences, montant_divergences)
+                                nb_divergences, montant_divergences, reste_soldes, non_explique, verdict)
                             VALUES (:photoId, :codAgencia, :libellePoint, :codAgence, :libelleAgence,
                                     :codDelegation, :libelleDelegation, COALESCE(:compte, ''), :produits,
                                     :nbComptes, :ecart, :soldeClient, :soldeComptable, :etat,
                                     :fenetreDu, :fenetreAu, :nbOperations, :nbAnomalies, :montantAnomalies,
                                     :nbSansEcriture, :montantSansEcriture, :nbSansMouvement,
                                     :montantSansMouvement, :operationDominante, :nbComptesClients, :montantNetFlux,
-                                    :nbDivergences, :montantDivergences)
+                                    :nbDivergences, :montantDivergences, :resteSoldes, :nonExplique, :verdict)
                             ON CONFLICT (photo_id, cod_agencia, compte_comptable) DO NOTHING
                             RETURNING id
                             """)
@@ -149,6 +150,10 @@ public class PhotoEcartRepository {
                     .param("montantNetFlux", e == null ? null : e.montantNetFlux())
                     .param("nbDivergences", e == null ? null : e.nbDivergences())
                     .param("montantDivergences", e == null ? null : e.montantDivergences())
+                    .param("resteSoldes", e == null ? null : e.resteSoldes())
+                    .param("nonExplique", e == null ? null : e.nonExplique())
+                    .param("verdict", e == null || e.verdict() == null ? null
+                            : e.verdict().length() > 400 ? e.verdict().substring(0, 400) : e.verdict())
                     .query(Long.class)
                     .optional();
             // Les comptes clients touches (V222) : enfants de la ligne, les anomalies d'abord.
@@ -173,6 +178,36 @@ public class PhotoEcartRepository {
                             .param("montantNet", c.montantNet())
                             .param("nbAnomalies", c.nbAnomalies())
                             .param("montantAnomalies", c.montantAnomalies())
+                            .update();
+                }
+            }
+            // Les ecritures comptables sans mouvement client (V224) : les corrections.
+            if (ligneId.isPresent() && e != null && e.ecrituresSansMouvement() != null) {
+                int rang = 0;
+                for (EcritureSansMouvementRecue ec : e.ecrituresSansMouvement()) {
+                    if (ec == null) {
+                        continue;
+                    }
+                    jdbcClient.sql("""
+                                    INSERT INTO rapprochement_photo_ecriture_sans_mouvement (
+                                        photo_ligne_id, rang, numero_ecriture, ligne, date_ecriture, systeme, type_ecriture,
+                                        libelle_type, libelle, sens, montant, usager, classe)
+                                    VALUES (:ligneId, :rang, :numero, :ligne, :date, :systeme, :type,
+                                            :libelleType, :libelle, :sens, COALESCE(:montant, 0), :usager, :classe)
+                                    """)
+                            .param("ligneId", ligneId.get())
+                            .param("rang", ++rang)
+                            .param("numero", ec.numeroEcriture())
+                            .param("ligne", ec.ligne())
+                            .param("date", ec.date())
+                            .param("systeme", tronque(ec.systeme(), 5))
+                            .param("type", tronque(ec.type(), 20))
+                            .param("libelleType", tronque(ec.libelleType(), 120))
+                            .param("libelle", tronque(ec.libelle(), 200))
+                            .param("sens", tronque(ec.sens(), 1))
+                            .param("montant", ec.montant())
+                            .param("usager", tronque(ec.usager(), 40))
+                            .param("classe", tronque(ec.classe(), 60))
                             .update();
                 }
             }
@@ -427,7 +462,8 @@ public class PhotoEcartRepository {
                                j.fenetre_du, j.fenetre_au, j.nb_operations, j.nb_anomalies, j.montant_anomalies,
                                j.nb_sans_ecriture, j.montant_sans_ecriture, j.nb_sans_mouvement,
                                j.montant_sans_mouvement, j.operation_dominante, j.nb_comptes_clients,
-                               j.montant_net_flux, j.nb_divergences, j.montant_divergences
+                               j.montant_net_flux, j.nb_divergences, j.montant_divergences,
+                               j.reste_soldes, j.non_explique, j.verdict
                         FROM j
                         FULL OUTER JOIN r ON r.cod_agencia = j.cod_agencia
                                          AND r.compte_comptable = j.compte_comptable
@@ -473,7 +509,38 @@ public class PhotoEcartRepository {
                 entier(rs, "nb_sans_mouvement"), rs.getBigDecimal("montant_sans_mouvement"),
                 rs.getString("operation_dominante"), entier(rs, "nb_comptes_clients"),
                 rs.getBigDecimal("montant_net_flux"), null,
-                entier(rs, "nb_divergences"), rs.getBigDecimal("montant_divergences"), null);
+                entier(rs, "nb_divergences"), rs.getBigDecimal("montant_divergences"), null,
+                rs.getBigDecimal("reste_soldes"), rs.getBigDecimal("non_explique"), rs.getString("verdict"), null);
+    }
+
+    private static String tronque(String s, int n) {
+        return s == null || s.length() <= n ? s : s.substring(0, n);
+    }
+
+    /** Les ecritures comptables sans mouvement client d'un couple, pour la photo d'un jour (V224). */
+    public List<EcritureSansMouvementRecue> ecrituresSansMouvement(String module, LocalDate jour, String codAgencia, String compte) {
+        return jdbcClient.sql("""
+                        WITH p AS (SELECT id FROM rapprochement_photo WHERE module = :module
+                                      AND (CAST(:jour AS DATE) IS NULL OR jour = CAST(:jour AS DATE))
+                                    ORDER BY jour DESC LIMIT 1)
+                        SELECT e.numero_ecriture, e.ligne, e.date_ecriture, e.systeme, e.type_ecriture, e.libelle_type,
+                               e.libelle, e.sens, e.montant, e.usager, e.classe
+                          FROM rapprochement_photo_ecriture_sans_mouvement e
+                          JOIN rapprochement_photo_ligne l ON l.id = e.photo_ligne_id
+                          JOIN p ON p.id = l.photo_id
+                         WHERE l.cod_agencia = :cod AND l.compte_comptable = :compte
+                         ORDER BY e.rang
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .param("cod", codAgencia)
+                .param("compte", compte)
+                .query((rs, n) -> new EcritureSansMouvementRecue(
+                        rs.getObject("numero_ecriture") == null ? null : rs.getLong("numero_ecriture"),
+                        entier(rs, "ligne"), rs.getObject("date_ecriture", LocalDateTime.class), rs.getString("systeme"),
+                        rs.getString("type_ecriture"), rs.getString("libelle_type"), rs.getString("libelle"),
+                        rs.getString("sens"), rs.getBigDecimal("montant"), rs.getString("usager"), rs.getString("classe")))
+                .list();
     }
 
     /** Les comptes clients dont le solde ne suit pas ses mouvements, pour un couple et un jour (V223). */

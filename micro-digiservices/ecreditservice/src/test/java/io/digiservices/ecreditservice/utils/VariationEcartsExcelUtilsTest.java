@@ -36,7 +36,8 @@ class VariationEcartsExcelUtilsTest {
                 new ExplicationRecue(LocalDate.of(2026, 11, 25), LocalDate.of(2026, 11, 26), 40, 3,
                         new BigDecimal("-9195000"), 3, new BigDecimal("-9195000"), 0, BigDecimal.ZERO,
                         "3 × FRAIS DE TENUE DE COMPTE (9 195 000,00)", 48, new BigDecimal("303318361.33"), null,
-                        3, new BigDecimal("-183745000"), null));
+                        3, new BigDecimal("-183745000"), null, new BigDecimal("-183745000"), BigDecimal.ZERO,
+                        "Baisse de l'écart de 183 745 000,00 : soldes de comptes clients qui ne suivent pas leurs mouvements", null));
         VariationCoupleDto sans = new VariationCoupleDto("208", "CAISSE DE SINTA", "TELIMELE", "BASSE GUINEE",
                 "24100000002", "CC011", new BigDecimal("11572395"), new BigDecimal("-12764105"), new BigDecimal("-24336500"),
                 new BigDecimal("-25111659.82"), new BigDecimal("775159.82"), "Écart", "Écart", "Écart aggravé",
@@ -61,6 +62,7 @@ class VariationEcartsExcelUtilsTest {
             assertEquals(3d, couples.getRow(1).getCell(18).getNumericCellValue(), 0.001);
             assertEquals("non lu", couples.getRow(2).getCell(17).getStringCellValue());
             assertEquals("951", wb.getSheet("Points exclus").getRow(2).getCell(0).getStringCellValue());
+            assertTrue(couples.getRow(1).getCell(31).getStringCellValue().startsWith("Baisse de l'écart"));
         }
     }
 

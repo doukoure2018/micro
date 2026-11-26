@@ -56,7 +56,8 @@ public final class VariationEcartsExcelUtils {
             "Suivi", "Opérations de la fenêtre", "Anomalies", "Poids des anomalies (GNF)",
             "Sans écriture", "Montant sans écriture (GNF)", "Écritures sans mouvement",
             "Montant sans mouvement (GNF)", "Opération dominante", "Comptes clients touchés",
-            "Mouvements nets du flux (GNF)", "Δ client − mouvements nets (GNF)", "Soldes divergents", "Somme des restes (GNF)"
+            "Mouvements nets du flux (GNF)", "Δ client − mouvements nets (GNF)", "Soldes divergents", "Somme des restes (GNF)",
+            "Non expliqué (GNF)", "Cause (verdict)"
     };
 
     public static byte[] classeur(String module, VariationsDto v) throws IOException {
@@ -149,6 +150,8 @@ public final class VariationEcartsExcelUtils {
                     }
                     num(r, 28, o.nbDivergences(), entier);
                     num(r, 29, o.montantDivergences(), signe);
+                    num(r, 30, o.nonExplique(), signe);
+                    cel(r, 31, nvl(o.verdict()), texte);
                 }
             }
             ExcelLargeurs.ajuster(g, ENTETES_COUPLE.length);
