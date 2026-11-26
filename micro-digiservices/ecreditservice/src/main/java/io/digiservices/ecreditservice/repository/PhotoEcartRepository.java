@@ -4,6 +4,7 @@ import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CompteClientRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CoupleDeuxPhotos;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.DivergenceRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.EcritureSansMouvementRecue;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.JourCoupleDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.ExplicationRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LignePhotoDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LigneRecue;
@@ -22,6 +23,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * La photo quotidienne des ecarts de rapprochement (V217) : ecriture par l'outil de bureau,
@@ -637,6 +639,73 @@ public class PhotoEcartRepository {
                 .param("perimetre", perimetre == null || perimetre.isEmpty() ? List.of("") : perimetre)
                 .query(Integer.class)
                 .single();
+    }
+
+    /**
+     * La vie d'un couple sur les N derniers jours photographies, du plus recent au plus ancien,
+     * chaque jour avec sa cause (V221-V224) et sa variation face au jour precedent du couple.
+     */
+    public List<JourCoupleDto> historiqueCouple(String module, String codAgencia, String compte, int jours) {
+        List<JourCoupleDto> bruts = jdbcClient.sql("""
+                        SELECT * FROM (
+                            SELECT p.jour, p.date_donnees, l.ecart, l.solde_client, l.solde_comptable, l.etat,
+                                   l.fenetre_du, l.fenetre_au, l.nb_operations, l.nb_anomalies, l.montant_anomalies,
+                                   l.nb_sans_ecriture, l.montant_sans_ecriture, l.nb_sans_mouvement,
+                                   l.montant_sans_mouvement, l.operation_dominante, l.nb_comptes_clients,
+                                   l.montant_net_flux, l.nb_divergences, l.montant_divergences,
+                                   l.reste_soldes, l.non_explique, l.verdict
+                            FROM rapprochement_photo_ligne l
+                            JOIN rapprochement_photo p ON p.id = l.photo_id
+                            WHERE p.module = :module AND l.cod_agencia = :cod AND l.compte_comptable = :compte
+                            ORDER BY p.jour DESC
+                            LIMIT :jours
+                        ) t ORDER BY jour
+                        """)
+                .param("module", module)
+                .param("cod", codAgencia)
+                .param("compte", compte)
+                .param("jours", jours)
+                .query((rs, n) -> new JourCoupleDto(
+                        rs.getObject("jour", LocalDate.class), rs.getObject("date_donnees", LocalDateTime.class),
+                        rs.getBigDecimal("ecart"), rs.getBigDecimal("solde_client"), rs.getBigDecimal("solde_comptable"),
+                        rs.getString("etat"), null, null, null, explication(rs)))
+                .list();
+        // La variation se calcule ici, d'un jour photographie au suivant : un lundi se compare au
+        // vendredi, et un couple absent d'une photo n'a pas de jour pour ce jour-la.
+        List<JourCoupleDto> avecVariation = new java.util.ArrayList<>(bruts.size());
+        JourCoupleDto precedent = null;
+        for (JourCoupleDto j : bruts) {
+            BigDecimal variation = null, dClient = null, dCompta = null;
+            if (precedent != null) {
+                variation = soustraire(j.ecart(), precedent.ecart());
+                dClient = soustraire(j.soldeClient(), precedent.soldeClient());
+                dCompta = soustraire(j.soldeComptable(), precedent.soldeComptable());
+            }
+            avecVariation.add(new JourCoupleDto(j.jour(), j.dateDonnees(), j.ecart(), j.soldeClient(), j.soldeComptable(),
+                    j.etat(), variation, dClient, dCompta, j.operations()));
+            precedent = j;
+        }
+        java.util.Collections.reverse(avecVariation);
+        return avecVariation;
+    }
+
+    /** Les libelles d'un couple, pris sur sa ligne la plus recente. */
+    public Optional<LignePhotoDto> derniereLigne(String module, String codAgencia, String compte) {
+        return jdbcClient.sql("""
+                        SELECT l.cod_agencia, l.libelle_point, l.cod_agence, l.libelle_agence, l.cod_delegation,
+                               l.libelle_delegation, l.compte_comptable, l.produits, l.nb_comptes, l.ecart,
+                               l.solde_client, l.solde_comptable, l.etat, NULL AS ecart_veille
+                        FROM rapprochement_photo_ligne l JOIN rapprochement_photo p ON p.id = l.photo_id
+                        WHERE p.module = :module AND l.cod_agencia = :cod AND l.compte_comptable = :compte
+                        ORDER BY p.jour DESC LIMIT 1
+                        """)
+                .param("module", module).param("cod", codAgencia).param("compte", compte)
+                .query(PhotoEcartRepository::versLigne)
+                .optional();
+    }
+
+    private static BigDecimal soustraire(BigDecimal a, BigDecimal b) {
+        return a == null || b == null ? null : a.subtract(b);
     }
 
     // ======================= Mappage =======================

@@ -127,6 +127,19 @@ public class PhotoEcartResource {
                 ecritures.isEmpty() ? "Aucune ecriture sans mouvement pour ce couple" : ecritures.size() + " ecriture(s)", OK));
     }
 
+    /** La fiche d'un couple dans le temps : chaque jour photographie avec sa cause, et ses fiches de suivi. */
+    @GetMapping("/points/{codAgencia}/comptes/{compte}/historique")
+    public ResponseEntity<Response> historiqueCouple(@NotNull Authentication authentication,
+                                                     @PathVariable("codAgencia") String codAgencia,
+                                                     @PathVariable("compte") String compte,
+                                                     @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                                     @RequestParam(value = "jours", required = false) Integer jours,
+                                                     HttpServletRequest request) {
+        var historique = service.historiqueCouple(authentication.getName(), module, codAgencia, compte, jours);
+        return ResponseEntity.ok(getResponse(request, Map.of("historique", historique),
+                historique.jours().size() + " jour(s) photographie(s)", OK));
+    }
+
     /** La courbe d'un point de service. */
     @GetMapping("/points/{codAgencia}/courbe")
     public ResponseEntity<Response> seriePoint(@NotNull Authentication authentication,

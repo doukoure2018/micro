@@ -185,6 +185,21 @@ class PhotoEcartServiceTest {
     }
 
     @Test
+    @DisplayName("la fiche d'un couple exige le perimetre et un compte, et assemble jours et suivis")
+    void historiqueCouple() {
+        agence("612");
+        assertThrows(ApiException.class, () -> service.historiqueCouple("uuid-da", "COMPTES", "951", "241", 30));
+        assertThrows(ApiException.class, () -> service.historiqueCouple("uuid-da", "COMPTES", "612", " ", 30));
+        when(repository.derniereLigne("COMPTES", "612", "241")).thenReturn(java.util.Optional.empty());
+        when(repository.historiqueCouple("COMPTES", "612", "241", PhotoEcartService.JOURS_COURBE)).thenReturn(List.of());
+        when(suivi.fichesDuCouple("COMPTES", "612", "241")).thenReturn(List.of());
+        var fiche = service.historiqueCouple("uuid-da", "COMPTES", "612", "241", null);
+        assertEquals("241", fiche.compteComptable());
+        assertTrue(fiche.jours().isEmpty());
+        verify(repository).historiqueCouple("COMPTES", "612", "241", PhotoEcartService.JOURS_COURBE);
+    }
+
+    @Test
     @DisplayName("un point de service hors perimetre ne se lit pas, et un point vide non plus")
     void pointHorsPerimetre() {
         agence("612");
