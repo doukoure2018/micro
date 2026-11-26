@@ -1744,6 +1744,10 @@ export class UserService {
         return this.http.get(`${this.server}/ecredit/rapprochement/ecarts/variations/export`, { params, responseType: 'blob', observe: 'response' });
     };
 
+    /** Les comptes clients touchés par un couple (PS, compte comptable) dans la photo d'un jour (V222). */
+    getComptesClientsEcarts$ = (module: string, codAgencia: string, compte: string, jour?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/clients`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
+
     getJoursEcarts$ = (module: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
 
