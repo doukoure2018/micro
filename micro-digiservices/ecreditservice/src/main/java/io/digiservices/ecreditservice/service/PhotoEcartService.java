@@ -153,6 +153,16 @@ public class PhotoEcartService {
         return repository.divergences(verifierModule(module), jour, codAgencia, compte.trim());
     }
 
+    /** Les ecritures comptables sans mouvement client d'un couple (V224) : les corrections. */
+    public List<io.digiservices.ecreditservice.dto.PhotoEcartDtos.EcritureSansMouvementRecue> ecrituresSansMouvement(
+            String uuid, String module, LocalDate jour, String codAgencia, String compte) {
+        exigerDansLePerimetre(uuid, codAgencia);
+        if (compte == null || compte.isBlank()) {
+            throw new ApiException("Compte comptable non precise");
+        }
+        return repository.ecrituresSansMouvement(verifierModule(module), jour, codAgencia, compte.trim());
+    }
+
     /** La courbe d'un point de service. */
     public List<PointSerieDto> seriePoint(String uuid, String module, String codAgencia,
                                            Integer jours) {

@@ -98,14 +98,30 @@ public final class PhotoEcartDtos {
             /** V223 : somme de leurs restes (delta solde - mouvements nets). */
             BigDecimal montantDivergences,
             /** V223 : les comptes divergents, 30 au plus ; absent dans les listes. */
-            List<DivergenceRecue> divergences) {
+            List<DivergenceRecue> divergences,
+            /** V224 : la part de la variation portee par des soldes clients qui ne suivent pas leurs mouvements. */
+            BigDecimal resteSoldes,
+            /** V224 : ce que la fenetre n'explique pas. */
+            BigDecimal nonExplique,
+            /** V224 : la cause en une phrase. */
+            String verdict,
+            /** V224 : les ecritures comptables sans mouvement client, 20 au plus ; absent dans les listes. */
+            List<EcritureSansMouvementRecue> ecrituresSansMouvement) {
 
         public ExplicationRecue sansLaListe() {
-            return comptesClients == null && divergences == null ? this : new ExplicationRecue(fenetreDu, fenetreAu,
-                    nbOperations, nbAnomalies, montantAnomalies, nbSansEcriture, montantSansEcriture, nbSansMouvement,
-                    montantSansMouvement, operationDominante, nbComptesClients, montantNetFlux, null,
-                    nbDivergences, montantDivergences, null);
+            return comptesClients == null && divergences == null && ecrituresSansMouvement == null ? this
+                    : new ExplicationRecue(fenetreDu, fenetreAu, nbOperations, nbAnomalies, montantAnomalies,
+                    nbSansEcriture, montantSansEcriture, nbSansMouvement, montantSansMouvement, operationDominante,
+                    nbComptesClients, montantNetFlux, null, nbDivergences, montantDivergences, null,
+                    resteSoldes, nonExplique, verdict, null);
         }
+    }
+
+    /** Une ecriture comptable de la fenetre sans mouvement de compte client en face (V224). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record EcritureSansMouvementRecue(Long numeroEcriture, Integer ligne, LocalDateTime date, String systeme,
+                                             String type, String libelleType, String libelle, String sens,
+                                             BigDecimal montant, String usager, String classe) {
     }
 
     /** Un compte client dont le solde ne suit pas ses mouvements (V223). */

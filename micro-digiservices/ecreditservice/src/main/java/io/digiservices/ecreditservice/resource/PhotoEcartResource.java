@@ -113,6 +113,20 @@ public class PhotoEcartResource {
                 divergences.isEmpty() ? "Aucun compte divergent emporte par la photo pour ce couple" : divergences.size() + " compte(s) divergent(s)", OK));
     }
 
+    /** Les ecritures comptables passees sans mouvement client : les corrections derriere une variation. */
+    @GetMapping("/points/{codAgencia}/comptes/{compte}/ecritures")
+    public ResponseEntity<Response> ecrituresSansMouvement(@NotNull Authentication authentication,
+                                                           @PathVariable("codAgencia") String codAgencia,
+                                                           @PathVariable("compte") String compte,
+                                                           @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                                           @RequestParam(value = "jour", required = false)
+                                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+                                                           HttpServletRequest request) {
+        var ecritures = service.ecrituresSansMouvement(authentication.getName(), module, jour, codAgencia, compte);
+        return ResponseEntity.ok(getResponse(request, Map.of("ecritures", ecritures),
+                ecritures.isEmpty() ? "Aucune ecriture sans mouvement pour ce couple" : ecritures.size() + " ecriture(s)", OK));
+    }
+
     /** La courbe d'un point de service. */
     @GetMapping("/points/{codAgencia}/courbe")
     public ResponseEntity<Response> seriePoint(@NotNull Authentication authentication,
