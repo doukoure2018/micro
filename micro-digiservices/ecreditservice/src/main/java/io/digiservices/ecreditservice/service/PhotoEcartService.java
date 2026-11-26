@@ -143,6 +143,16 @@ public class PhotoEcartService {
         return repository.comptesClients(verifierModule(module), jour, codAgencia, compte.trim());
     }
 
+    /** Les comptes clients dont le solde ne suit pas ses mouvements, pour un couple et un jour (V223). */
+    public List<io.digiservices.ecreditservice.dto.PhotoEcartDtos.DivergenceRecue> divergences(
+            String uuid, String module, LocalDate jour, String codAgencia, String compte) {
+        exigerDansLePerimetre(uuid, codAgencia);
+        if (compte == null || compte.isBlank()) {
+            throw new ApiException("Compte comptable non precise");
+        }
+        return repository.divergences(verifierModule(module), jour, codAgencia, compte.trim());
+    }
+
     /** La courbe d'un point de service. */
     public List<PointSerieDto> seriePoint(String uuid, String module, String codAgencia,
                                            Integer jours) {

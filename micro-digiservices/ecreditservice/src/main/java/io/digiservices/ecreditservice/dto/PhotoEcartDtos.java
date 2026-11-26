@@ -92,13 +92,26 @@ public final class PhotoEcartDtos {
             /** V222 : ce que les mouvements du flux ont fait au solde client, signe ; a comparer a la variation du solde client. */
             BigDecimal montantNetFlux,
             /** V222 : les comptes clients touches, 30 au plus, anomalies d'abord ; absent dans les listes. */
-            List<CompteClientRecue> comptesClients) {
+            List<CompteClientRecue> comptesClients,
+            /** V223 : combien de comptes clients ont un solde qui ne suit pas ses mouvements ; null = non calcule. */
+            Integer nbDivergences,
+            /** V223 : somme de leurs restes (delta solde - mouvements nets). */
+            BigDecimal montantDivergences,
+            /** V223 : les comptes divergents, 30 au plus ; absent dans les listes. */
+            List<DivergenceRecue> divergences) {
 
         public ExplicationRecue sansLaListe() {
-            return comptesClients == null ? this : new ExplicationRecue(fenetreDu, fenetreAu, nbOperations, nbAnomalies,
-                    montantAnomalies, nbSansEcriture, montantSansEcriture, nbSansMouvement, montantSansMouvement,
-                    operationDominante, nbComptesClients, montantNetFlux, null);
+            return comptesClients == null && divergences == null ? this : new ExplicationRecue(fenetreDu, fenetreAu,
+                    nbOperations, nbAnomalies, montantAnomalies, nbSansEcriture, montantSansEcriture, nbSansMouvement,
+                    montantSansMouvement, operationDominante, nbComptesClients, montantNetFlux, null,
+                    nbDivergences, montantDivergences, null);
         }
+    }
+
+    /** Un compte client dont le solde ne suit pas ses mouvements (V223). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record DivergenceRecue(String compteClient, String produit, BigDecimal soldeAvant, BigDecimal soldeApres,
+                                  BigDecimal deltaSolde, BigDecimal mouvementsNet, BigDecimal reste, String note) {
     }
 
     /** Un compte client touche dans la fenetre d'une variation (V222). */

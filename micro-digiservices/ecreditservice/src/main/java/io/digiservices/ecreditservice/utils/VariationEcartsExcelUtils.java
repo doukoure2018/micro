@@ -56,7 +56,7 @@ public final class VariationEcartsExcelUtils {
             "Suivi", "Opérations de la fenêtre", "Anomalies", "Poids des anomalies (GNF)",
             "Sans écriture", "Montant sans écriture (GNF)", "Écritures sans mouvement",
             "Montant sans mouvement (GNF)", "Opération dominante", "Comptes clients touchés",
-            "Mouvements nets du flux (GNF)", "Δ client − mouvements nets (GNF)"
+            "Mouvements nets du flux (GNF)", "Δ client − mouvements nets (GNF)", "Soldes divergents", "Somme des restes (GNF)"
     };
 
     public static byte[] classeur(String module, VariationsDto v) throws IOException {
@@ -147,6 +147,8 @@ public final class VariationEcartsExcelUtils {
                         // clients qui ne suivent pas leurs mouvements (Sinko, 25→26/11/2026).
                         num(r, 27, c.variationClient().subtract(o.montantNetFlux()), signe);
                     }
+                    num(r, 28, o.nbDivergences(), entier);
+                    num(r, 29, o.montantDivergences(), signe);
                 }
             }
             ExcelLargeurs.ajuster(g, ENTETES_COUPLE.length);
