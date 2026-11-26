@@ -1735,6 +1735,15 @@ export class UserService {
     changerSuiviEcart$ = (id: number, changement: any) =>
         <Observable<IResponse>>this.http.put<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/suivis/${id}`, changement).pipe(catchError(this.handleError));
 
+    /** Les variations en classeur Excel, sur la même comparaison que l'écran. */
+    exportVariationsEcarts$ = (module: string, jour?: string, reference?: string, seuil?: number) => {
+        const params: Record<string, string> = { module };
+        if (jour) params['jour'] = jour;
+        if (reference) params['reference'] = reference;
+        if (seuil !== undefined && seuil !== null) params['seuil'] = String(seuil);
+        return this.http.get(`${this.server}/ecredit/rapprochement/ecarts/variations/export`, { params, responseType: 'blob', observe: 'response' });
+    };
+
     getJoursEcarts$ = (module: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
 
