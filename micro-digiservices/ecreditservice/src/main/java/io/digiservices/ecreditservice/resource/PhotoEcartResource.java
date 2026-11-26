@@ -85,6 +85,20 @@ public class PhotoEcartResource {
                 comptes.size() + " compte(s) comptable(s)", OK));
     }
 
+    /** Les comptes clients touches par un couple dans la photo d'un jour : le niveau sous le compte comptable. */
+    @GetMapping("/points/{codAgencia}/comptes/{compte}/clients")
+    public ResponseEntity<Response> comptesClients(@NotNull Authentication authentication,
+                                                   @PathVariable("codAgencia") String codAgencia,
+                                                   @PathVariable("compte") String compte,
+                                                   @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                                   @RequestParam(value = "jour", required = false)
+                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+                                                   HttpServletRequest request) {
+        var clients = service.comptesClients(authentication.getName(), module, jour, codAgencia, compte);
+        return ResponseEntity.ok(getResponse(request, Map.of("clients", clients),
+                clients.isEmpty() ? "Aucun compte client emporte par la photo pour ce couple" : clients.size() + " compte(s) client(s)", OK));
+    }
+
     /** La courbe d'un point de service. */
     @GetMapping("/points/{codAgencia}/courbe")
     public ResponseEntity<Response> seriePoint(@NotNull Authentication authentication,

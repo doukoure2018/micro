@@ -55,7 +55,8 @@ public final class VariationEcartsExcelUtils {
             "Δ solde comptable (GNF)", "État référence", "État du jour", "Statut", "Côté", "Explication",
             "Suivi", "Opérations de la fenêtre", "Anomalies", "Poids des anomalies (GNF)",
             "Sans écriture", "Montant sans écriture (GNF)", "Écritures sans mouvement",
-            "Montant sans mouvement (GNF)", "Opération dominante"
+            "Montant sans mouvement (GNF)", "Opération dominante", "Comptes clients touchés",
+            "Mouvements nets du flux (GNF)", "Δ client − mouvements nets (GNF)"
     };
 
     public static byte[] classeur(String module, VariationsDto v) throws IOException {
@@ -139,6 +140,13 @@ public final class VariationEcartsExcelUtils {
                     num(r, 22, o.nbSansMouvement(), entier);
                     num(r, 23, o.montantSansMouvement(), signe);
                     cel(r, 24, nvl(o.operationDominante()), texte);
+                    num(r, 25, o.nbComptesClients(), entier);
+                    num(r, 26, o.montantNetFlux(), signe);
+                    if (o.montantNetFlux() != null && c.variationClient() != null) {
+                        // Quand tout est apparie et que ce reste n'est pas nul, ce sont les soldes
+                        // clients qui ne suivent pas leurs mouvements (Sinko, 25→26/11/2026).
+                        num(r, 27, c.variationClient().subtract(o.montantNetFlux()), signe);
+                    }
                 }
             }
             ExcelLargeurs.ajuster(g, ENTETES_COUPLE.length);

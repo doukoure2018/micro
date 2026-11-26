@@ -43,7 +43,9 @@ public final class PhotoEcartDtos {
             Integer pointsAttendus,
             LocalDateTime horodatage,
             String auteur,
-            List<LigneRecue> lignes) {
+            List<LigneRecue> lignes,
+            /** V222 : l'instant de la sauvegarde de production dont la copie lue est issue. */
+            LocalDateTime dateDonnees) {
     }
 
     /**
@@ -84,7 +86,25 @@ public final class PhotoEcartDtos {
             BigDecimal montantSansEcriture,
             Integer nbSansMouvement,
             BigDecimal montantSansMouvement,
-            String operationDominante) {
+            String operationDominante,
+            /** V222 : combien de comptes clients ont bouge dans la fenetre (tous). */
+            Integer nbComptesClients,
+            /** V222 : ce que les mouvements du flux ont fait au solde client, signe ; a comparer a la variation du solde client. */
+            BigDecimal montantNetFlux,
+            /** V222 : les comptes clients touches, 30 au plus, anomalies d'abord ; absent dans les listes. */
+            List<CompteClientRecue> comptesClients) {
+
+        public ExplicationRecue sansLaListe() {
+            return comptesClients == null ? this : new ExplicationRecue(fenetreDu, fenetreAu, nbOperations, nbAnomalies,
+                    montantAnomalies, nbSansEcriture, montantSansEcriture, nbSansMouvement, montantSansMouvement,
+                    operationDominante, nbComptesClients, montantNetFlux, null);
+        }
+    }
+
+    /** Un compte client touche dans la fenetre d'une variation (V222). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CompteClientRecue(String compteClient, String produit, Integer nbMouvements, BigDecimal montantNet,
+                                    Integer nbAnomalies, BigDecimal montantAnomalies) {
     }
 
     /** Un point de la courbe : le reseau, un jour, un module. */
@@ -103,7 +123,9 @@ public final class PhotoEcartDtos {
             /** Faux quand tous les points de service attendus n'ont pas ete lus : a ne pas lire
              *  comme une amelioration. */
             boolean complete,
-            LocalDateTime horodatage) {
+            LocalDateTime horodatage,
+            /** V222 : l'instant des donnees (sauvegarde de production) ; null avant l'outil v1.14.0. */
+            LocalDateTime dateDonnees) {
     }
 
     /** Une ligne du tableau du jour : un point de service, avec sa variation. */

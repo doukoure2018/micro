@@ -1,5 +1,6 @@
 package io.digiservices.ecreditservice.repository;
 
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CompteClientRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CoupleDeuxPhotos;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.ExplicationRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LignePhotoDto;
@@ -52,11 +53,12 @@ public class PhotoEcartRepository {
                         INSERT INTO rapprochement_photo (
                             jour, module, periode_annee, periode_mois, ecart_total, solde_client,
                             solde_comptable, nb_lignes, nb_concordantes, nb_ecarts,
-                            points_lus, points_attendus, horodatage, auteur, recue_le)
+                            points_lus, points_attendus, horodatage, auteur, recue_le, date_donnees)
                         VALUES (:jour, :module, :annee, :mois, :ecart, :soldeClient,
                                 :soldeComptable, :nbLignes, :nbConcordantes, :nbEcarts,
-                                :pointsLus, :pointsAttendus, COALESCE(:horodatage, NOW()), :auteur, NOW())
+                                :pointsLus, :pointsAttendus, COALESCE(:horodatage, NOW()), :auteur, NOW(), :dateDonnees)
                         ON CONFLICT (jour, module) DO UPDATE SET
+                            date_donnees = EXCLUDED.date_donnees,
                             periode_annee = EXCLUDED.periode_annee,
                             periode_mois = EXCLUDED.periode_mois,
                             ecart_total = EXCLUDED.ecart_total,
@@ -86,6 +88,7 @@ public class PhotoEcartRepository {
                 .param("pointsAttendus", photo.pointsAttendus())
                 .param("horodatage", photo.horodatage())
                 .param("auteur", photo.auteur())
+                .param("dateDonnees", photo.dateDonnees())
                 .query(Long.class)
                 .single();
 
@@ -97,21 +100,22 @@ public class PhotoEcartRepository {
         List<LigneRecue> lignes = photo.lignes() == null ? List.of() : photo.lignes();
         for (LigneRecue l : lignes) {
             ExplicationRecue e = l.explication();
-            jdbcClient.sql("""
+            java.util.Optional<Long> ligneId = jdbcClient.sql("""
                             INSERT INTO rapprochement_photo_ligne (
                                 photo_id, cod_agencia, libelle_point, cod_agence, libelle_agence,
                                 cod_delegation, libelle_delegation, compte_comptable, produits,
                                 nb_comptes, ecart, solde_client, solde_comptable, etat,
                                 fenetre_du, fenetre_au, nb_operations, nb_anomalies, montant_anomalies,
                                 nb_sans_ecriture, montant_sans_ecriture, nb_sans_mouvement,
-                                montant_sans_mouvement, operation_dominante)
+                                montant_sans_mouvement, operation_dominante, nb_comptes_clients, montant_net_flux)
                             VALUES (:photoId, :codAgencia, :libellePoint, :codAgence, :libelleAgence,
                                     :codDelegation, :libelleDelegation, COALESCE(:compte, ''), :produits,
                                     :nbComptes, :ecart, :soldeClient, :soldeComptable, :etat,
                                     :fenetreDu, :fenetreAu, :nbOperations, :nbAnomalies, :montantAnomalies,
                                     :nbSansEcriture, :montantSansEcriture, :nbSansMouvement,
-                                    :montantSansMouvement, :operationDominante)
+                                    :montantSansMouvement, :operationDominante, :nbComptesClients, :montantNetFlux)
                             ON CONFLICT (photo_id, cod_agencia, compte_comptable) DO NOTHING
+                            RETURNING id
                             """)
                     .param("photoId", id)
                     .param("codAgencia", l.codAgencia())
@@ -138,7 +142,35 @@ public class PhotoEcartRepository {
                     .param("montantSansMouvement", e == null ? null : e.montantSansMouvement())
                     .param("operationDominante", e == null || e.operationDominante() == null ? null
                             : e.operationDominante().length() > 120 ? e.operationDominante().substring(0, 120) : e.operationDominante())
-                    .update();
+                    .param("nbComptesClients", e == null ? null : e.nbComptesClients())
+                    .param("montantNetFlux", e == null ? null : e.montantNetFlux())
+                    .query(Long.class)
+                    .optional();
+            // Les comptes clients touches (V222) : enfants de la ligne, les anomalies d'abord.
+            if (ligneId.isPresent() && e != null && e.comptesClients() != null) {
+                int rang = 0;
+                for (CompteClientRecue c : e.comptesClients()) {
+                    if (c == null || c.compteClient() == null || c.compteClient().isBlank()) {
+                        continue;
+                    }
+                    jdbcClient.sql("""
+                                    INSERT INTO rapprochement_photo_compte_client (
+                                        photo_ligne_id, rang, compte_client, produit, nb_mouvements, montant_net,
+                                        nb_anomalies, montant_anomalies)
+                                    VALUES (:ligneId, :rang, :compte, :produit, COALESCE(:nbMouvements, 0),
+                                            COALESCE(:montantNet, 0), COALESCE(:nbAnomalies, 0), COALESCE(:montantAnomalies, 0))
+                                    """)
+                            .param("ligneId", ligneId.get())
+                            .param("rang", ++rang)
+                            .param("compte", c.compteClient().length() > 30 ? c.compteClient().substring(0, 30) : c.compteClient())
+                            .param("produit", c.produit() == null || c.produit().length() <= 20 ? c.produit() : c.produit().substring(0, 20))
+                            .param("nbMouvements", c.nbMouvements())
+                            .param("montantNet", c.montantNet())
+                            .param("nbAnomalies", c.nbAnomalies())
+                            .param("montantAnomalies", c.montantAnomalies())
+                            .update();
+                }
+            }
         }
         log.info("[PHOTO ECARTS] {} {} : ecart {} sur {}/{} point(s) de service, {} ligne(s) de detail",
                 photo.jour(), photo.module(), photo.ecartTotal(), photo.pointsLus(),
@@ -154,7 +186,7 @@ public class PhotoEcartRepository {
                         SELECT * FROM (
                             SELECT jour, module, ecart_total, solde_client, solde_comptable,
                                    nb_lignes, nb_concordantes, nb_ecarts, points_lus,
-                                   points_attendus, horodatage
+                                   points_attendus, horodatage, date_donnees
                             FROM rapprochement_photo
                             WHERE module = :module
                             ORDER BY jour DESC
@@ -172,7 +204,7 @@ public class PhotoEcartRepository {
         return jdbcClient.sql("""
                         SELECT jour, module, ecart_total, solde_client, solde_comptable,
                                nb_lignes, nb_concordantes, nb_ecarts, points_lus,
-                               points_attendus, horodatage
+                               points_attendus, horodatage, date_donnees
                         FROM rapprochement_photo
                         WHERE module = :module
                           AND (CAST(:jour AS DATE) IS NULL OR jour = CAST(:jour AS DATE))
@@ -310,7 +342,7 @@ public class PhotoEcartRepository {
         return jdbcClient.sql("""
                         SELECT jour, module, ecart_total, solde_client, solde_comptable,
                                nb_lignes, nb_concordantes, nb_ecarts, points_lus,
-                               points_attendus, horodatage
+                               points_attendus, horodatage, date_donnees
                         FROM rapprochement_photo
                         WHERE module = :module AND jour < :jour
                         ORDER BY jour DESC
@@ -362,7 +394,8 @@ public class PhotoEcartRepository {
                                (r.photo_id IS NOT NULL) AS present_ref,
                                j.fenetre_du, j.fenetre_au, j.nb_operations, j.nb_anomalies, j.montant_anomalies,
                                j.nb_sans_ecriture, j.montant_sans_ecriture, j.nb_sans_mouvement,
-                               j.montant_sans_mouvement, j.operation_dominante
+                               j.montant_sans_mouvement, j.operation_dominante, j.nb_comptes_clients,
+                               j.montant_net_flux
                         FROM j
                         FULL OUTER JOIN r ON r.cod_agencia = j.cod_agencia
                                          AND r.compte_comptable = j.compte_comptable
@@ -406,7 +439,31 @@ public class PhotoEcartRepository {
                 entier(rs, "nb_operations"), entier(rs, "nb_anomalies"), rs.getBigDecimal("montant_anomalies"),
                 entier(rs, "nb_sans_ecriture"), rs.getBigDecimal("montant_sans_ecriture"),
                 entier(rs, "nb_sans_mouvement"), rs.getBigDecimal("montant_sans_mouvement"),
-                rs.getString("operation_dominante"));
+                rs.getString("operation_dominante"), entier(rs, "nb_comptes_clients"),
+                rs.getBigDecimal("montant_net_flux"), null);
+    }
+
+    /** Les comptes clients touches par un couple dans la photo d'un jour (V222), anomalies d'abord. */
+    public List<CompteClientRecue> comptesClients(String module, LocalDate jour, String codAgencia, String compte) {
+        return jdbcClient.sql("""
+                        WITH p AS (SELECT id FROM rapprochement_photo WHERE module = :module
+                                      AND (CAST(:jour AS DATE) IS NULL OR jour = CAST(:jour AS DATE))
+                                    ORDER BY jour DESC LIMIT 1)
+                        SELECT c.compte_client, c.produit, c.nb_mouvements, c.montant_net, c.nb_anomalies, c.montant_anomalies
+                          FROM rapprochement_photo_compte_client c
+                          JOIN rapprochement_photo_ligne l ON l.id = c.photo_ligne_id
+                          JOIN p ON p.id = l.photo_id
+                         WHERE l.cod_agencia = :cod AND l.compte_comptable = :compte
+                         ORDER BY c.rang
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .param("cod", codAgencia)
+                .param("compte", compte)
+                .query((rs, n) -> new CompteClientRecue(rs.getString("compte_client"), rs.getString("produit"),
+                        entier(rs, "nb_mouvements"), rs.getBigDecimal("montant_net"),
+                        entier(rs, "nb_anomalies"), rs.getBigDecimal("montant_anomalies")))
+                .list();
     }
 
     /** Les points de service presents dans une seule des deux photos, dans le perimetre. */
@@ -474,7 +531,8 @@ public class PhotoEcartRepository {
                 entier(rs, "nb_ecarts"),
                 lus, attendus,
                 lus == null || attendus == null || lus.intValue() >= attendus.intValue(),
-                rs.getObject("horodatage", LocalDateTime.class));
+                rs.getObject("horodatage", LocalDateTime.class),
+                rs.getObject("date_donnees", LocalDateTime.class));
     }
 
     private static LignePhotoDto versLigne(ResultSet rs, int n) throws SQLException {
