@@ -1756,6 +1756,10 @@ export class UserService {
     getEcrituresSansMouvementEcarts$ = (module: string, codAgencia: string, compte: string, jour?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/ecritures`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
 
+    /** La fiche d'un couple (PS, compte comptable) dans le temps : ses jours, leurs causes, ses fiches de suivi. */
+    getHistoriqueCoupleEcarts$ = (module: string, codAgencia: string, compte: string, jours: number) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/historique`, { params: { module, jours } }).pipe(catchError(this.handleError));
+
     getJoursEcarts$ = (module: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
 

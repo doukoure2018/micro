@@ -109,6 +109,31 @@ interface VariationCouple {
     } | null;
 }
 
+interface JourCouple {
+    jour: string;
+    dateDonnees?: string | null;
+    ecart: number;
+    soldeClient?: number;
+    soldeComptable?: number;
+    etat?: string;
+    variation?: number | null;
+    variationClient?: number | null;
+    variationComptable?: number | null;
+    operations?: VariationCouple['operations'];
+}
+
+interface HistoriqueCouple {
+    module: string;
+    codAgencia: string;
+    libellePoint?: string;
+    libelleAgence?: string;
+    libelleDelegation?: string;
+    compteComptable: string;
+    produits?: string;
+    jours: JourCouple[];
+    suivis: Suivi[];
+}
+
 interface EcritureSansMouvement {
     numeroEcriture?: number;
     ligne?: number;
@@ -479,6 +504,8 @@ interface Variations {
                                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
+                                                                                    <button pButton type="button" icon="pi pi-history" class="p-button-text p-button-sm p-button-rounded"
+                                                                                        pTooltip="La fiche du couple dans le temps : chaque jour, sa cause, ses fiches de suivi" (click)="ouvrirHistorique(v.codAgencia, v.compteComptable)"></button>
                                                                                     <button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
                                                                                         [disabled]="!v.operations?.nbComptesClients && !v.operations?.nbSansMouvement" pTooltip="Le détail : écritures sans mouvement, soldes divergents, comptes clients touchés" (click)="ouvrirClients(v)"></button>
                                                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
@@ -530,6 +557,8 @@ interface Variations {
                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
+                                                    <button pButton type="button" icon="pi pi-history" class="p-button-text p-button-sm p-button-rounded"
+                                                        pTooltip="La fiche du couple dans le temps : chaque jour, sa cause, ses fiches de suivi" (click)="ouvrirHistorique(v.codAgencia, v.compteComptable)"></button>
                                                     <button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
                                                         [disabled]="!v.operations?.nbComptesClients && !v.operations?.nbSansMouvement" pTooltip="Le détail : écritures sans mouvement, soldes divergents, comptes clients touchés" (click)="ouvrirClients(v)"></button>
                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
@@ -575,8 +604,9 @@ interface Variations {
                                 <span *ngIf="f.photosSansEffet" class="text-orange-700"> · {{ f.photosSansEffet }} sans effet</span> } @else { — }
                         </td>
                         <td class="text-xs">{{ f.modifiePar || f.creePar || '—' }}<br><span class="text-gray-500">{{ f.modifieLe | date: 'dd/MM HH:mm' }}</span></td>
-                        <td><button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded" [disabled]="f.etat === 'CONFIRMEE'"
-                                pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button></td>
+                        <td class="whitespace-nowrap"><button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded" [disabled]="f.etat === 'CONFIRMEE'"
+                                pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button><button pButton type="button" icon="pi pi-history" class="p-button-text p-button-sm p-button-rounded"
+                                pTooltip="La fiche du couple dans le temps" (click)="ouvrirHistorique(f.codAgencia, f.compteComptable)"></button></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
@@ -731,6 +761,67 @@ interface Variations {
                 <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherSuivi = false"></button>
                 <button pButton type="button" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementSuivi()" (click)="enregistrerSuivi()"></button>
             </div>
+            }
+        </p-dialog>
+
+        <!-- La fiche d'un couple dans le temps -->
+        <p-dialog [header]="titreHistorique()" [(visible)]="afficherHistorique" [modal]="true" [style]="{ width: '94vw', maxWidth: '1300px' }" [dismissableMask]="true">
+            @if (chargementHistorique()) {
+            <div class="flex justify-center py-6"><p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner></div>
+            } @else {
+            @if (historique(); as h) {
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <div class="text-xs text-gray-600">{{ h.libelleDelegation || '—' }} · {{ h.libelleAgence || '—' }} · produits {{ h.produits || '—' }} · {{ h.jours.length }} jour(s) photographié(s)</div>
+                <p-select [options]="fenetres" [(ngModel)]="joursHistorique" optionLabel="label" optionValue="value" styleClass="w-36" (onChange)="rechargerHistorique()"></p-select>
+            </div>
+            <div class="border rounded p-3 mb-3">
+                <div class="text-sm font-medium mb-1">Écart du couple, jour par jour</div>
+                <p-chart type="line" [data]="graphHistorique()" [options]="optionsPoint" height="200px"></p-chart>
+            </div>
+            <p-table [value]="h.jours" styleClass="p-datatable-sm" [scrollable]="true" [paginator]="h.jours.length > 15" [rows]="15">
+                <ng-template pTemplate="header">
+                    <tr><th>Jour</th><th>Données SAF</th><th class="text-right">Écart (GNF)</th><th class="text-right">Variation</th><th class="text-right">Δ client</th><th class="text-right">Δ comptabilité</th><th>Cause</th><th>Opérations</th><th></th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-j>
+                    <tr>
+                        <td class="whitespace-nowrap font-medium">{{ j.jour | date: 'dd/MM/yyyy' }}</td>
+                        <td class="text-xs text-gray-500 whitespace-nowrap">{{ j.dateDonnees ? (j.dateDonnees | date: 'dd/MM HH:mm') : '—' }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="j.ecart !== 0">{{ j.ecart | number: '1.2-2' }}</td>
+                        <td class="text-right" [class.text-red-600]="(j.variation || 0) > 0" [class.text-green-700]="(j.variation || 0) < 0">{{ j.variation === null || j.variation === undefined ? '—' : (j.variation | number: '1.2-2') }}</td>
+                        <td class="text-right text-sm">{{ j.variationClient === null || j.variationClient === undefined ? '—' : (j.variationClient | number: '1.2-2') }}</td>
+                        <td class="text-right text-sm">{{ j.variationComptable === null || j.variationComptable === undefined ? '—' : (j.variationComptable | number: '1.2-2') }}</td>
+                        <td class="text-xs max-w-md">{{ j.operations?.verdict || (j.variation ? 'cause non calculée pour ce jour' : '') }}</td>
+                        <td class="text-xs">{{ resumeOperationsJour(j) }}</td>
+                        <td><button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
+                                [disabled]="!j.operations?.nbComptesClients && !j.operations?.nbSansMouvement" pTooltip="Le détail de ce jour" (click)="ouvrirClientsDuJour(h, j)"></button></td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="9" class="text-center text-gray-500 py-4">Aucune photo pour ce couple.</td></tr>
+                </ng-template>
+            </p-table>
+            <div class="text-sm font-semibold mt-4 mb-1">Fiches de suivi du couple</div>
+            @if (!h.suivis.length) {
+            <p class="text-xs text-gray-500 mt-0">Aucune fiche de suivi n'a été ouverte sur ce couple.</p>
+            } @else {
+            @for (f of h.suivis; track f.id) {
+            <div class="mb-2 p-3 border rounded text-sm" [class.bg-green-50]="f.etat === 'CONFIRMEE'">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-semibold">Fiche n° {{ f.id }}</span>
+                    <p-tag [value]="libelleEtatSuivi(f.etat)" [severity]="severiteSuivi(f.etat)"></p-tag>
+                    <span class="text-xs text-gray-600">constat du {{ f.jourConstat | date: 'dd/MM/yyyy' }} (réf. {{ f.jourReference | date: 'dd/MM' }}) · variation {{ f.variation | number: '1.2-2' }} · ouverte par {{ f.creePar || '—' }}</span>
+                    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded ml-auto" [disabled]="f.etat === 'CONFIRMEE'" pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button>
+                </div>
+                <div class="text-xs text-gray-700 mt-1" *ngIf="f.explication">{{ f.explication }}</div>
+                <ul class="text-xs mt-1 mb-0 pl-4" *ngIf="f.evenements?.length">
+                    @for (e of f.evenements; track e.id) {
+                    <li>{{ e.survenuLe | date: 'dd/MM HH:mm' }} — <b>{{ libelleEtatSuivi(e.etat) }}</b> par {{ e.auteur }}<span *ngIf="e.commentaire"> : {{ e.commentaire }}</span></li>
+                    }
+                </ul>
+            </div>
+            }
+            }
+            }
             }
         </p-dialog>
 
@@ -1147,17 +1238,83 @@ export class EvolutionEcartsComponent {
         return v ? `Comptes clients touchés · ${v.libellePoint || v.codAgencia} (${v.codAgencia}) · ${v.compteComptable}` : 'Comptes clients touchés';
     });
 
+    afficherHistorique = false;
+    joursHistorique = 30;
+    readonly chargementHistorique = signal(false);
+    readonly historique = signal<HistoriqueCouple | null>(null);
+    readonly titreHistorique = computed(() => {
+        const h = this.historique();
+        return h ? `Fiche du couple · ${h.libellePoint || h.codAgencia} (${h.codAgencia}) · ${h.compteComptable}` : 'Fiche du couple';
+    });
+    readonly graphHistorique = computed(() => {
+        const jours = [...(this.historique()?.jours || [])].reverse();
+        return {
+            labels: jours.map((j) => this.jourCourt(j.jour)),
+            datasets: [{ label: 'Écart du couple (GNF)', data: jours.map((j) => j.ecart), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.08)', fill: true, tension: 0.25 }]
+        };
+    });
+    private coupleHistorique: { cod: string; compte: string } | null = null;
+
+    /** La fiche d'un couple dans le temps : depuis quand, et quel jour a-t-il décroché. */
+    ouvrirHistorique(codAgencia: string, compte: string): void {
+        this.coupleHistorique = { cod: codAgencia, compte };
+        this.historique.set(null);
+        this.afficherHistorique = true;
+        this.rechargerHistorique();
+    }
+
+    rechargerHistorique(): void {
+        const c = this.coupleHistorique;
+        if (!c) return;
+        this.chargementHistorique.set(true);
+        this.userService
+            .getHistoriqueCoupleEcarts$(this.module, c.cod, c.compte, this.joursHistorique)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.historique.set((r.data as any)?.historique || null);
+                    this.chargementHistorique.set(false);
+                },
+                error: (err: any) => {
+                    this.chargementHistorique.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Fiche indisponible', detail: err || '', life: 7000 });
+                }
+            });
+    }
+
+    resumeOperationsJour(j: JourCouple): string {
+        const o = j.operations;
+        if (!o) return '—';
+        const parts: string[] = [`${o.nbOperations ?? 0} mvt`];
+        if (o.nbAnomalies) parts.push(`${o.nbAnomalies} anomalie(s)`);
+        if (o.nbSansMouvement) parts.push(`${o.nbSansMouvement} écriture(s) sans mouvement`);
+        if (o.nbDivergences) parts.push(`${o.nbDivergences} solde(s) divergent(s)`);
+        return parts.join(' · ');
+    }
+
+    /** Le détail d'un jour de la fiche : le dialogue des comptes clients, sur la photo de ce jour-là. */
+    ouvrirClientsDuJour(h: HistoriqueCouple, j: JourCouple): void {
+        const v: VariationCouple = {
+            codAgencia: h.codAgencia, libellePoint: h.libellePoint, libelleAgence: h.libelleAgence, libelleDelegation: h.libelleDelegation,
+            compteComptable: h.compteComptable, produits: h.produits, variation: j.variation || 0,
+            variationClient: j.variationClient ?? undefined, variationComptable: j.variationComptable ?? undefined,
+            ecartJour: j.ecart, statut: '', operations: j.operations
+        };
+        this.ouvrirClients(v, j.jour);
+    }
+
     /** Le niveau sous le compte comptable : les comptes clients qui ont bougé dans la fenêtre (V222). */
-    ouvrirClients(v: VariationCouple): void {
+    ouvrirClients(v: VariationCouple, jour?: string): void {
         this.coupleClients.set(v);
         this.clients.set([]);
         this.divergences.set([]);
         this.ecritures.set([]);
         this.afficherClients = true;
         this.chargementClients.set(true);
+        const jourPhoto = jour || this.variations()?.photo?.jour;
         if (v.operations?.nbSansMouvement) {
             this.userService
-                .getEcrituresSansMouvementEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
+                .getEcrituresSansMouvementEcarts$(this.module, v.codAgencia, v.compteComptable, jourPhoto)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                     next: (r: IResponse) => this.ecritures.set((r.data as any)?.ecritures || []),
@@ -1165,14 +1322,14 @@ export class EvolutionEcartsComponent {
                 });
         }
         this.userService
-            .getDivergencesEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
+            .getDivergencesEcarts$(this.module, v.codAgencia, v.compteComptable, jourPhoto)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => this.divergences.set((r.data as any)?.divergences || []),
                 error: () => this.divergences.set([])
             });
         this.userService
-            .getComptesClientsEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
+            .getComptesClientsEcarts$(this.module, v.codAgencia, v.compteComptable, jourPhoto)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
                 next: (r: IResponse) => {
