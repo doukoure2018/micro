@@ -1,4 +1,5 @@
 import { IResponse } from '@/interface/response';
+import { HabilitationService } from '@/service/habilitation.service';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
@@ -502,7 +503,7 @@ interface Variations {
                                         <td class="text-xs" [pTooltip]="detailOperations(v)" tooltipPosition="top">{{ resumeOperations(v) }}</td>
                                         <td class="whitespace-nowrap">
                                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
-                                            <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
+                                            <button *ngIf="peutEcrireSuivi" pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
                                                                                     <button pButton type="button" icon="pi pi-history" class="p-button-text p-button-sm p-button-rounded"
                                                                                         pTooltip="La fiche du couple dans le temps : chaque jour, sa cause, ses fiches de suivi" (click)="ouvrirHistorique(v.codAgencia, v.compteComptable)"></button>
@@ -555,7 +556,7 @@ interface Variations {
                         <td class="text-xs" [pTooltip]="detailOperations(v)" tooltipPosition="top">{{ resumeOperations(v) }}</td>
                         <td class="whitespace-nowrap">
                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
-                            <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
+                            <button *ngIf="peutEcrireSuivi" pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
                                                     <button pButton type="button" icon="pi pi-history" class="p-button-text p-button-sm p-button-rounded"
                                                         pTooltip="La fiche du couple dans le temps : chaque jour, sa cause, ses fiches de suivi" (click)="ouvrirHistorique(v.codAgencia, v.compteComptable)"></button>
@@ -604,13 +605,13 @@ interface Variations {
                                 <span *ngIf="f.photosSansEffet" class="text-orange-700"> · {{ f.photosSansEffet }} sans effet</span> } @else { — }
                         </td>
                         <td class="text-xs">{{ f.modifiePar || f.creePar || '—' }}<br><span class="text-gray-500">{{ f.modifieLe | date: 'dd/MM HH:mm' }}</span></td>
-                        <td class="whitespace-nowrap"><button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded" [disabled]="f.etat === 'CONFIRMEE'"
+                        <td class="whitespace-nowrap"><button *ngIf="peutEcrireSuivi" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded" [disabled]="f.etat === 'CONFIRMEE'"
                                 pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button><button pButton type="button" icon="pi pi-history" class="p-button-text p-button-sm p-button-rounded"
                                 pTooltip="La fiche du couple dans le temps" (click)="ouvrirHistorique(f.codAgencia, f.compteComptable)"></button></td>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="12" class="text-center text-gray-500 py-4">Aucune fiche pour ce filtre. Une fiche s'ouvre depuis une variation, par le bouton « + ».</td></tr>
+                    <tr><td colspan="12" class="text-center text-gray-500 py-4">Aucune fiche pour ce filtre.{{ peutEcrireSuivi ? ' Une fiche s\'ouvre depuis une variation, par le bouton « + ».' : ' Le suivi est écrit par la DSIG et la comptabilité ; vous le lisez sur votre périmètre.' }}</td></tr>
                 </ng-template>
             </p-table>
             }
@@ -810,7 +811,7 @@ interface Variations {
                     <span class="font-semibold">Fiche n° {{ f.id }}</span>
                     <p-tag [value]="libelleEtatSuivi(f.etat)" [severity]="severiteSuivi(f.etat)"></p-tag>
                     <span class="text-xs text-gray-600">constat du {{ f.jourConstat | date: 'dd/MM/yyyy' }} (réf. {{ f.jourReference | date: 'dd/MM' }}) · variation {{ f.variation | number: '1.2-2' }} · ouverte par {{ f.creePar || '—' }}</span>
-                    <button pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded ml-auto" [disabled]="f.etat === 'CONFIRMEE'" pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button>
+                    <button *ngIf="peutEcrireSuivi" pButton type="button" icon="pi pi-pencil" class="p-button-text p-button-sm p-button-rounded ml-auto" [disabled]="f.etat === 'CONFIRMEE'" pTooltip="Faire avancer la fiche" (click)="ouvrirFiche(f)"></button>
                 </div>
                 <div class="text-xs text-gray-700 mt-1" *ngIf="f.explication">{{ f.explication }}</div>
                 <ul class="text-xs mt-1 mb-0 pl-4" *ngIf="f.evenements?.length">
@@ -927,7 +928,17 @@ interface Variations {
 })
 export class EvolutionEcartsComponent {
     private readonly userService = inject(UserService);
+    private readonly habilitations = inject(HabilitationService);
     private readonly messageService = inject(MessageService);
+
+    /**
+     * Ecrire le suivi de correction demande la rubrique SUIVI_ECARTS (DSIG operationnel,
+     * comptabilite). Les DR, DA et RA lisent l'ecran sur leur perimetre (V225) sans ces boutons :
+     * le serveur refuserait de toute facon, mais un bouton qui echoue est un bouton de trop.
+     */
+    get peutEcrireSuivi(): boolean {
+        return this.habilitations.peut('SUIVI_ECARTS');
+    }
     private readonly destroyRef = inject(DestroyRef);
 
     readonly modules = [
