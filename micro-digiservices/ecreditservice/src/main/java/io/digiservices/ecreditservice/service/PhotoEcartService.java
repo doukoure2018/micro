@@ -12,6 +12,7 @@ import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationsDto;
 import io.digiservices.ecreditservice.exception.ApiException;
 import io.digiservices.ecreditservice.repository.PhotoEcartRepository;
 import io.digiservices.ecreditservice.service.PerimetreSafService.Perimetre;
+import io.digiservices.ecreditservice.utils.VariationEcartsExcelUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -186,6 +187,18 @@ public class PhotoEcartService {
                 VariationEcarts.sommeResolutions(couples),
                 VariationEcarts.partCinqPremiers(comptes),
                 comptes, couples);
+    }
+
+    /** Le meme tableau des variations en classeur Excel : nom de fichier et contenu. */
+    public ClasseurVariations exporterVariations(String uuid, String module, LocalDate jour, LocalDate reference,
+                                                 BigDecimal seuil) throws java.io.IOException {
+        String m = verifierModule(module);
+        VariationsDto variations = variations(uuid, m, jour, reference, seuil);
+        return new ClasseurVariations(VariationEcartsExcelUtils.nomFichier(m, variations),
+                VariationEcartsExcelUtils.classeur(m, variations));
+    }
+
+    public record ClasseurVariations(String nomFichier, byte[] contenu) {
     }
 
     /** Les jours photographies, pour le selecteur de date de l'ecran. */

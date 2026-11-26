@@ -11,6 +11,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
@@ -113,6 +116,23 @@ public class PhotoEcartResource {
                 : variations.nbCouples() + " variation(s) entre le " + variations.reference().jour()
                   + " et le " + variations.photo().jour();
         return ResponseEntity.ok(getResponse(request, Map.of("variations", variations), message, OK));
+    }
+
+    /** Les variations en classeur Excel : par compte, par point de service, points exclus. */
+    @GetMapping("/variations/export")
+    public ResponseEntity<byte[]> exporterVariations(@NotNull Authentication authentication,
+                                                     @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                                     @RequestParam(value = "jour", required = false)
+                                                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+                                                     @RequestParam(value = "reference", required = false)
+                                                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate reference,
+                                                     @RequestParam(value = "seuil", required = false) BigDecimal seuil)
+            throws IOException {
+        var classeur = service.exporterVariations(authentication.getName(), module, jour, reference, seuil);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + classeur.nomFichier() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(classeur.contenu());
     }
 
     /** Les jours photographies, pour le selecteur de date. */
