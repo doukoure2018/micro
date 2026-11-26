@@ -1053,8 +1053,14 @@ export class EvolutionEcartsComponent {
         if (!o) return '—';
         const clients = (o.nbComptesClients ? ` · ${o.nbComptesClients} compte(s) client(s)` : '')
             + (o.nbDivergences ? ` · ${o.nbDivergences} solde(s) divergent(s)` : '');
-        if (!o.nbAnomalies) return `${o.nbOperations ?? 0} mvt, aucune anomalie${clients}${this.soldesNeSuiventPas(v) ? ' · soldes clients ≠ mouvements' : ''}`;
-        return `${o.nbAnomalies} anomalie(s) · ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(o.montantAnomalies || 0)}` + (o.operationDominante ? ` · ${o.operationDominante}` : '') + clients;
+        const fmt = (x?: number | null) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(x || 0);
+        // Une écriture passée par la comptabilité sans mouvement de compte client est une anomalie
+        // au même titre qu'un mouvement sans écriture : Mali, 25/11/2026, « annulation d'une
+        // correction » de 10 M qui réduit l'écart de 10 M et n'apparaissait pas dans ce résumé.
+        const sansMouvement = o.nbSansMouvement ? ` · ${o.nbSansMouvement} écriture(s) sans mouvement (${fmt(o.montantSansMouvement)})` : '';
+        if (!o.nbAnomalies && !o.nbSansMouvement) return `${o.nbOperations ?? 0} mvt, aucune anomalie${clients}${this.soldesNeSuiventPas(v) ? ' · soldes clients ≠ mouvements' : ''}`;
+        if (!o.nbAnomalies) return `${o.nbOperations ?? 0} mvt appariés${sansMouvement}${clients}${this.soldesNeSuiventPas(v) ? ' · soldes clients ≠ mouvements' : ''}`;
+        return `${o.nbAnomalies} anomalie(s) · ${fmt(o.montantAnomalies)}` + (o.operationDominante ? ` · ${o.operationDominante}` : '') + sansMouvement + clients;
     }
 
     /**
