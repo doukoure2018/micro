@@ -1752,6 +1752,10 @@ export class UserService {
     getDivergencesEcarts$ = (module: string, codAgencia: string, compte: string, jour?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/divergences`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
 
+    /** Les écritures comptables sans mouvement client d'un couple (V224) : les corrections. */
+    getEcrituresSansMouvementEcarts$ = (module: string, codAgencia: string, compte: string, jour?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/ecritures`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
+
     getJoursEcarts$ = (module: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
 
