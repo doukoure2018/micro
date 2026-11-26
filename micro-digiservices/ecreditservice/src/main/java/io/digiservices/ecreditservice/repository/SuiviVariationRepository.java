@@ -96,6 +96,17 @@ public class SuiviVariationRepository {
                 .list();
     }
 
+    /** Toutes les fiches d'un couple, confirmees comprises, la plus recente d'abord. */
+    public List<SuiviDto> parCouple(String module, String codAgencia, String compte) {
+        return jdbcClient.sql("SELECT " + COLONNES + """
+                         WHERE s.module = :module AND s.cod_agencia = :cod AND s.compte_comptable = :compte
+                         ORDER BY s.cree_le DESC
+                        """)
+                .param("module", module).param("cod", codAgencia).param("compte", compte)
+                .query(SuiviVariationRepository::vers)
+                .list();
+    }
+
     /** Les fiches « corrigee dans SAF » d'un module : celles que la prochaine photo doit verifier. */
     public List<SuiviDto> aVerifier(String module) {
         return jdbcClient.sql("SELECT " + COLONNES + " WHERE s.module = :module AND s.etat = 'CORRIGEE_SAF'")

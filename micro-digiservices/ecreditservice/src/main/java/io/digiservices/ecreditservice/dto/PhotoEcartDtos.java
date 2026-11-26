@@ -353,4 +353,36 @@ public final class PhotoEcartDtos {
             String referenceEcriture,
             String commentaire) {
     }
+
+    // ======================= La fiche d'un couple dans le temps =======================
+
+    /** Un jour de la vie d'un couple (point de service, compte comptable) : la photo et sa cause. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record JourCoupleDto(
+            LocalDate jour,
+            LocalDateTime dateDonnees,
+            BigDecimal ecart,
+            BigDecimal soldeClient,
+            BigDecimal soldeComptable,
+            String etat,
+            /** Face a la photo precedente du couple ; null pour la premiere. */
+            BigDecimal variation,
+            BigDecimal variationClient,
+            BigDecimal variationComptable,
+            ExplicationRecue operations) {
+    }
+
+    /** La fiche d'un couple : ses jours, du plus recent au plus ancien, et ses fiches de suivi. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record HistoriqueCoupleDto(
+            String module,
+            String codAgencia,
+            String libellePoint,
+            String libelleAgence,
+            String libelleDelegation,
+            String compteComptable,
+            String produits,
+            List<JourCoupleDto> jours,
+            List<SuiviDto> suivis) {
+    }
 }

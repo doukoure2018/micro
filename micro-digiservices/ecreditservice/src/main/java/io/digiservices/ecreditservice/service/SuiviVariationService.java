@@ -71,6 +71,11 @@ public class SuiviVariationService {
         return avecJournal(s);
     }
 
+    /** Les fiches d'un couple avec leur journal, pour la fiche du couple dans le temps ; perimetre verifie par l'appelant. */
+    public List<SuiviDto> fichesDuCouple(String module, String codAgencia, String compte) {
+        return repository.parCouple(module, codAgencia, compte).stream().map(this::avecJournal).toList();
+    }
+
     /** Les fiches vivantes d'un module, pour marquer les variations de l'onglet. */
     public Map<String, SuiviDto> vivantesParCouple(String module) {
         return repository.vivantesParCouple(module);

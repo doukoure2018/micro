@@ -5,6 +5,7 @@ import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PhotoRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointJour;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.PointSerieDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SituationJourDto;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.HistoriqueCoupleDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.SuiviDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationCompteDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.VariationCoupleDto;
@@ -161,6 +162,28 @@ public class PhotoEcartService {
             throw new ApiException("Compte comptable non precise");
         }
         return repository.ecrituresSansMouvement(verifierModule(module), jour, codAgencia, compte.trim());
+    }
+
+    /**
+     * La fiche d'un couple dans le temps : ses jours photographies avec la cause de chacun, et ses
+     * fiches de suivi. Repond a « depuis quand, et quel jour a-t-il decroche ».
+     */
+    public HistoriqueCoupleDto historiqueCouple(String uuid, String module, String codAgencia, String compte,
+                                                Integer jours) {
+        exigerDansLePerimetre(uuid, codAgencia);
+        if (compte == null || compte.isBlank()) {
+            throw new ApiException("Compte comptable non precise");
+        }
+        String m = verifierModule(module);
+        String c = compte.trim();
+        var derniere = repository.derniereLigne(m, codAgencia, c);
+        return new HistoriqueCoupleDto(m, codAgencia,
+                derniere.map(LignePhotoDto::libellePoint).orElse(null),
+                derniere.map(LignePhotoDto::libelleAgence).orElse(null),
+                derniere.map(LignePhotoDto::libelleDelegation).orElse(null),
+                c, derniere.map(LignePhotoDto::produits).orElse(null),
+                repository.historiqueCouple(m, codAgencia, c, borner(jours)),
+                suivi.fichesDuCouple(m, codAgencia, c));
     }
 
     /** La courbe d'un point de service. */
