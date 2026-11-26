@@ -35,6 +35,8 @@ interface PointJour {
     pointsAttendus?: number;
     complete: boolean;
     horodatage?: string;
+    /** L'instant des données (sauvegarde de production), V222. */
+    dateDonnees?: string | null;
 }
 
 /** Une ligne du tableau : un point de service, ou un compte comptable d'un point de service. */
@@ -94,7 +96,19 @@ interface VariationCouple {
         nbSansMouvement?: number;
         montantSansMouvement?: number;
         operationDominante?: string | null;
+        nbComptesClients?: number | null;
+        /** Ce que les mouvements du flux ont fait au solde client : à comparer à Δ client. */
+        montantNetFlux?: number | null;
     } | null;
+}
+
+interface CompteClientTouche {
+    compteClient: string;
+    produit?: string;
+    nbMouvements?: number;
+    montantNet?: number;
+    nbAnomalies?: number;
+    montantAnomalies?: number;
 }
 
 /** Une fiche de suivi de correction (V220). */
@@ -311,6 +325,10 @@ interface Variations {
                     <div class="text-xs text-gray-500 mt-1">
                         @if (variations()?.reference) {
                         du {{ variations()!.reference!.jour | date: 'dd/MM/yyyy' }} au {{ variations()!.photo!.jour | date: 'dd/MM/yyyy' }}
+                        @if (variations()!.reference!.dateDonnees && variations()!.photo!.dateDonnees) {
+                        <span pTooltip="Les opérations de la fenêtre sont lues entre ces deux instants de sauvegarde de la production, pas entre deux jours calendaires" tooltipPosition="bottom">
+                            (données SAF du {{ variations()!.reference!.dateDonnees | date: 'dd/MM HH:mm' }} au {{ variations()!.photo!.dateDonnees | date: 'dd/MM HH:mm' }})</span>
+                        }
                         · {{ variations()!.pointsCompares }} point(s) de service comparés
                         · variations sous {{ variations()!.seuil | number: '1.0-0' }} GNF masquées
                         } @else {
@@ -429,6 +447,8 @@ interface Variations {
                                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
+                                                                                    <button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
+                                                                                        [disabled]="!v.operations?.nbComptesClients" pTooltip="Les comptes clients touchés dans la fenêtre" (click)="ouvrirClients(v)"></button>
                                                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
                                                 pTooltip="Copier la commande qui ouvre les opérations dans l’outil de rapprochement"
                                                 (click)="copierCommande(v)"></button>
@@ -477,6 +497,8 @@ interface Variations {
                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
+                                                    <button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
+                                                        [disabled]="!v.operations?.nbComptesClients" pTooltip="Les comptes clients touchés dans la fenêtre" (click)="ouvrirClients(v)"></button>
                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
                                 pTooltip="Copier la commande qui ouvre les opérations dans l’outil de rapprochement"
                                 (click)="copierCommande(v)"></button>
@@ -604,6 +626,14 @@ interface Variations {
                 sans écriture : {{ v.operations.nbSansEcriture ?? 0 }} ({{ (v.operations.montantSansEcriture || 0) | number: '1.2-2' }}) ·
                 écritures sans mouvement : {{ v.operations.nbSansMouvement ?? 0 }} ({{ (v.operations.montantSansMouvement || 0) | number: '1.2-2' }})
                 <span *ngIf="v.operations.operationDominante"> · dominante : {{ v.operations.operationDominante }}</span>
+                <span *ngIf="v.operations.nbComptesClients"> · {{ v.operations.nbComptesClients }} compte(s) client(s) touché(s)</span>
+                @if (resteSoldes(v) !== null) {
+                <div class="mt-1" [class.text-red-700]="soldesNeSuiventPas(v)">
+                    Mouvements nets du flux : {{ v.operations.montantNetFlux | number: '1.2-2' }} · Δ solde client : {{ v.variationClient | number: '1.2-2' }}
+                    · reste : <b>{{ resteSoldes(v)! | number: '1.2-2' }}</b>
+                    <span *ngIf="soldesNeSuiventPas(v)"> — les soldes des comptes clients ne suivent pas leurs mouvements : à instruire côté SAF (soldes non recalculés, comptes rattachés ailleurs)</span>
+                </div>
+                }
             </div>
             }
             }
@@ -655,6 +685,40 @@ interface Variations {
                 <button pButton type="button" label="Annuler" class="p-button-text" (click)="afficherSuivi = false"></button>
                 <button pButton type="button" label="Enregistrer" icon="pi pi-check" [loading]="enregistrementSuivi()" (click)="enregistrerSuivi()"></button>
             </div>
+            }
+        </p-dialog>
+
+        <!-- Les comptes clients touchés (V222) -->
+        <p-dialog [header]="titreClients()" [(visible)]="afficherClients" [modal]="true" [style]="{ width: '92vw', maxWidth: '900px' }" [dismissableMask]="true">
+            @if (chargementClients()) {
+            <div class="flex justify-center py-6"><p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner></div>
+            } @else {
+            @if (coupleClients(); as v) {
+            <p class="text-xs text-gray-600 mt-0 mb-2">
+                Fenêtre {{ v.operations?.fenetreDu | date: 'dd/MM HH:mm' }} → {{ v.operations?.fenetreAu | date: 'dd/MM HH:mm' }} ·
+                {{ v.operations?.nbComptesClients ?? 0 }} compte(s) client(s) touché(s), les {{ clients().length }} premiers emportés par la photo, anomalies d'abord.
+                Montants signés dans le sens du solde client.
+            </p>
+            }
+            <p-table [value]="clients()" styleClass="p-datatable-sm" [scrollable]="true" [paginator]="clients().length > 15" [rows]="15">
+                <ng-template pTemplate="header">
+                    <tr><th>Compte client</th><th>Produit</th><th class="text-right">Mouvements</th><th class="text-right">Net (GNF)</th><th class="text-right">Anomalies</th><th class="text-right">Montant anomalies (GNF)</th></tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-c>
+                    <tr [class.bg-orange-50]="c.nbAnomalies">
+                        <td class="font-mono text-xs">{{ c.compteClient }}</td>
+                        <td class="text-xs">{{ c.produit || '—' }}</td>
+                        <td class="text-right text-sm">{{ c.nbMouvements ?? 0 }}</td>
+                        <td class="text-right font-semibold" [class.text-red-600]="(c.montantNet || 0) < 0" [class.text-green-700]="(c.montantNet || 0) > 0">{{ c.montantNet | number: '1.2-2' }}</td>
+                        <td class="text-right text-sm">{{ c.nbAnomalies ?? 0 }}</td>
+                        <td class="text-right text-sm">{{ c.montantAnomalies | number: '1.2-2' }}</td>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                    <tr><td colspan="6" class="text-center text-gray-500 py-4">La photo de ce jour n'a pas emporté de comptes clients pour ce couple (outil antérieur à la v1.14.0, ou couple non lu).</td></tr>
+                </ng-template>
+            </p-table>
+            <p class="text-xs text-gray-500 mt-3 mb-0">Pour le détail mouvement par mouvement d'un compte client, ouvrez la commande copiée dans l'outil de rapprochement.</p>
             }
         </p-dialog>
     `
@@ -933,8 +997,55 @@ export class EvolutionEcartsComponent {
     resumeOperations(v: VariationCouple): string {
         const o = v.operations;
         if (!o) return '—';
-        if (!o.nbAnomalies) return `${o.nbOperations ?? 0} mvt, aucune anomalie`;
-        return `${o.nbAnomalies} anomalie(s) · ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(o.montantAnomalies || 0)}` + (o.operationDominante ? ` · ${o.operationDominante}` : '');
+        const clients = o.nbComptesClients ? ` · ${o.nbComptesClients} compte(s) client(s)` : '';
+        if (!o.nbAnomalies) return `${o.nbOperations ?? 0} mvt, aucune anomalie${clients}${this.soldesNeSuiventPas(v) ? ' · soldes clients ≠ mouvements' : ''}`;
+        return `${o.nbAnomalies} anomalie(s) · ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(o.montantAnomalies || 0)}` + (o.operationDominante ? ` · ${o.operationDominante}` : '') + clients;
+    }
+
+    /**
+     * Δ client − mouvements nets du flux : quand tout est apparié et que ce reste n'est pas nul,
+     * ce sont les soldes des comptes clients qui ne suivent pas leurs mouvements (Sinko, 25→26/11 :
+     * 303,3 M de mouvements, 119,6 M de variation du solde client).
+     */
+    resteSoldes(v: VariationCouple): number | null {
+        const o = v.operations;
+        if (!o || o.montantNetFlux === null || o.montantNetFlux === undefined || v.variationClient === null || v.variationClient === undefined) return null;
+        return v.variationClient - o.montantNetFlux;
+    }
+
+    soldesNeSuiventPas(v: VariationCouple): boolean {
+        const r = this.resteSoldes(v);
+        return r !== null && Math.abs(r) >= (this.seuil ?? 1000);
+    }
+
+    afficherClients = false;
+    readonly chargementClients = signal(false);
+    readonly clients = signal<CompteClientTouche[]>([]);
+    readonly coupleClients = signal<VariationCouple | null>(null);
+    readonly titreClients = computed(() => {
+        const v = this.coupleClients();
+        return v ? `Comptes clients touchés · ${v.libellePoint || v.codAgencia} (${v.codAgencia}) · ${v.compteComptable}` : 'Comptes clients touchés';
+    });
+
+    /** Le niveau sous le compte comptable : les comptes clients qui ont bougé dans la fenêtre (V222). */
+    ouvrirClients(v: VariationCouple): void {
+        this.coupleClients.set(v);
+        this.clients.set([]);
+        this.afficherClients = true;
+        this.chargementClients.set(true);
+        this.userService
+            .getComptesClientsEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => {
+                    this.clients.set((r.data as any)?.clients || []);
+                    this.chargementClients.set(false);
+                },
+                error: (err: any) => {
+                    this.chargementClients.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Comptes clients indisponibles', detail: err || '', life: 7000 });
+                }
+            });
     }
 
     detailOperations(v: VariationCouple): string {
