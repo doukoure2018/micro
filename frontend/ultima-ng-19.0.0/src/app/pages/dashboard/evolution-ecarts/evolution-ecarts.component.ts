@@ -1,6 +1,7 @@
 import { IResponse } from '@/interface/response';
 import { UserService } from '@/service/user.service';
 import { CommonModule } from '@angular/common';
+import { HttpResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -325,6 +326,9 @@ interface Variations {
                         (onBlur)="chargerVariations()" pTooltip="Variation en dessous de laquelle un couple ne s'affiche pas" tooltipPosition="bottom"></p-inputNumber>
                     <p-selectButton [options]="vuesVariations" [(ngModel)]="vueVariations" optionLabel="label" optionValue="value" [allowEmpty]="false" (onChange)="changerVueVariations()"></p-selectButton>
                     <button pButton icon="pi pi-refresh" class="p-button-outlined p-button-sm" [loading]="chargementVariations()" (click)="chargerVariations()"></button>
+                    <button pButton icon="pi pi-file-excel" label="Exporter en Excel" class="p-button-success p-button-outlined p-button-sm"
+                        [loading]="exportVariationsEnCours()" [disabled]="!variations()?.reference" (click)="exporterVariations()"
+                        pTooltip="Le classeur de cette comparaison : par compte, par point de service, points exclus, suivi et opérations" tooltipPosition="bottom"></button>
                 </div>
             </div>
 
@@ -712,6 +716,7 @@ export class EvolutionEcartsComponent {
     comptesDeplies: Record<string, boolean> = {};
 
     readonly chargementVariations = signal(false);
+    readonly exportVariationsEnCours = signal(false);
     readonly suivis = signal<Suivi[]>([]);
     readonly chargementSuivis = signal(false);
     afficherSuivi = false;
@@ -949,6 +954,34 @@ export class EvolutionEcartsComponent {
         } else {
             this.messageService.add({ severity: 'warn', summary: 'À saisir dans l’outil', detail: commande, life: 12000 });
         }
+    }
+
+    /** Le classeur de la comparaison affichée : même module, même référence, même seuil. */
+    exporterVariations(): void {
+        this.exportVariationsEnCours.set(true);
+        this.userService
+            .exportVariationsEcarts$(this.module, undefined, this.reference || undefined, this.seuil ?? 1000)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (res: HttpResponse<Blob>) => {
+                    this.exportVariationsEnCours.set(false);
+                    const blob = res.body;
+                    if (!blob) return;
+                    const disposition = res.headers.get('content-disposition') || '';
+                    const nom = /filename="?([^";]+)"?/.exec(disposition)?.[1]
+                        || `Variations_ecarts_${this.module}_${this.variations()?.photo?.jour || ''}.xlsx`;
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = nom;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                },
+                error: () => {
+                    this.exportVariationsEnCours.set(false);
+                    this.messageService.add({ severity: 'error', summary: 'Export', detail: 'Export impossible', life: 7000 });
+                }
+            });
     }
 
     changerVueVariations(): void {
