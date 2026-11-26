@@ -102,7 +102,25 @@ interface VariationCouple {
         /** V223 : comptes clients dont le solde ne suit pas ses mouvements ; null = non calculé. */
         nbDivergences?: number | null;
         montantDivergences?: number | null;
+        /** V224 : la décomposition de la variation et la cause en une phrase. */
+        resteSoldes?: number | null;
+        nonExplique?: number | null;
+        verdict?: string | null;
     } | null;
+}
+
+interface EcritureSansMouvement {
+    numeroEcriture?: number;
+    ligne?: number;
+    date?: string;
+    systeme?: string;
+    type?: string;
+    libelleType?: string;
+    libelle?: string;
+    sens?: string;
+    montant: number;
+    usager?: string;
+    classe?: string;
 }
 
 interface DivergenceSolde {
@@ -443,7 +461,7 @@ interface Variations {
                                     <tr>
                                         <th>Point de service</th><th>Agence</th>
                                         <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
-                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Explication</th><th>Opérations de la fenêtre</th><th>Suivi</th>
+                                        <th class="text-right">Variation</th><th>Statut</th><th>Côté</th><th>Cause</th><th>Opérations de la fenêtre</th><th>Suivi</th>
                                     </tr>
                                 </ng-template>
                                 <ng-template pTemplate="body" let-v>
@@ -455,14 +473,14 @@ interface Variations {
                                         <td class="text-right font-semibold" [class.text-red-600]="v.variation > 0" [class.text-green-700]="v.variation < 0">{{ v.variation | number: '1.2-2' }}</td>
                                         <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
                                         <td class="text-xs">{{ v.cote || '—' }}</td>
-                                        <td class="text-xs text-gray-600">{{ v.explication }}</td>
+                                        <td class="text-xs" [class.font-medium]="v.operations?.verdict" [pTooltip]="v.explication" tooltipPosition="top">{{ v.operations?.verdict || v.explication }}</td>
                                         <td class="text-xs" [pTooltip]="detailOperations(v)" tooltipPosition="top">{{ resumeOperations(v) }}</td>
                                         <td class="whitespace-nowrap">
                                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
                                                                                     <button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
-                                                                                        [disabled]="!v.operations?.nbComptesClients" pTooltip="Les comptes clients touchés dans la fenêtre" (click)="ouvrirClients(v)"></button>
+                                                                                        [disabled]="!v.operations?.nbComptesClients && !v.operations?.nbSansMouvement" pTooltip="Le détail : écritures sans mouvement, soldes divergents, comptes clients touchés" (click)="ouvrirClients(v)"></button>
                                                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
                                                 pTooltip="Copier la commande qui ouvre les opérations dans l’outil de rapprochement"
                                                 (click)="copierCommande(v)"></button>
@@ -490,11 +508,11 @@ interface Variations {
                         <th>Délégation</th><th>Agence</th><th>Point de service</th><th>Compte comptable</th>
                         <th class="text-right">Écart réf. (GNF)</th><th class="text-right">Écart du jour (GNF)</th>
                         <th class="text-right">Variation</th><th class="text-right">Δ client</th><th class="text-right">Δ comptabilité</th>
-                        <th>Statut</th><th>Côté</th><th>Opérations de la fenêtre</th><th>Suivi</th>
+                        <th>Statut</th><th>Côté</th><th>Cause</th><th>Opérations de la fenêtre</th><th>Suivi</th>
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-v>
-                    <tr [pTooltip]="v.explication" tooltipPosition="top">
+                    <tr>
                         <td class="text-xs">{{ v.libelleDelegation || '—' }}</td>
                         <td class="text-xs">{{ v.libelleAgence || '—' }}</td>
                         <td class="text-sm font-medium">{{ v.libellePoint || v.codAgencia }}<span class="text-xs text-gray-500"> ({{ v.codAgencia }})</span></td>
@@ -506,13 +524,14 @@ interface Variations {
                         <td class="text-right text-sm">{{ v.variationComptable === null || v.variationComptable === undefined ? '—' : (v.variationComptable | number: '1.2-2') }}</td>
                         <td><p-tag [value]="v.statut" [severity]="severiteStatut(v.statut)"></p-tag></td>
                         <td class="text-xs">{{ v.cote || '—' }}</td>
+                        <td class="text-xs max-w-md" [class.font-medium]="v.operations?.verdict" [pTooltip]="v.explication" tooltipPosition="top">{{ v.operations?.verdict || v.explication }}</td>
                         <td class="text-xs" [pTooltip]="detailOperations(v)" tooltipPosition="top">{{ resumeOperations(v) }}</td>
                         <td class="whitespace-nowrap">
                             <p-tag *ngIf="v.suiviEtat" [value]="libelleEtatSuivi(v.suiviEtat)" [severity]="severiteSuivi(v.suiviEtat)" class="mr-1"></p-tag>
                             <button pButton type="button" [icon]="v.suiviId ? 'pi pi-pencil' : 'pi pi-plus'" class="p-button-text p-button-sm p-button-rounded"
                                 [pTooltip]="v.suiviId ? 'Faire avancer la fiche' : 'Prendre en charge'" (click)="ouvrirSuivi(v)"></button>
                                                     <button pButton type="button" icon="pi pi-users" class="p-button-text p-button-sm p-button-rounded"
-                                                        [disabled]="!v.operations?.nbComptesClients" pTooltip="Les comptes clients touchés dans la fenêtre" (click)="ouvrirClients(v)"></button>
+                                                        [disabled]="!v.operations?.nbComptesClients && !v.operations?.nbSansMouvement" pTooltip="Le détail : écritures sans mouvement, soldes divergents, comptes clients touchés" (click)="ouvrirClients(v)"></button>
                                                     <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm p-button-rounded"
                                 pTooltip="Copier la commande qui ouvre les opérations dans l’outil de rapprochement"
                                 (click)="copierCommande(v)"></button>
@@ -520,7 +539,7 @@ interface Variations {
                     </tr>
                 </ng-template>
                 <ng-template pTemplate="emptymessage">
-                    <tr><td colspan="13" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
+                    <tr><td colspan="14" class="text-center text-gray-500 py-4">Aucune variation au-dessus du seuil entre ces deux photos.</td></tr>
                 </ng-template>
             </p-table>
             } @else {
@@ -633,6 +652,19 @@ interface Variations {
                 <div class="border rounded p-2"><div class="text-xs text-gray-500">Statut · côté</div><div class="text-xs">{{ v.statut }}<br>{{ v.cote || '—' }}</div></div>
             </div>
             <p class="text-xs text-gray-600 mt-0 mb-2">{{ v.explication }}</p>
+            @if (v.operations?.verdict) {
+            <div class="mb-3 p-3 border-l-4 border-blue-500 bg-blue-50 rounded text-sm">
+                <div class="font-semibold">Cause</div>
+                <div>{{ v.operations!.verdict }}</div>
+                <div class="text-xs text-gray-600 mt-2">
+                    Décomposition de la variation ({{ v.variation | number: '1.2-2' }}) :
+                    mouvements sans écriture {{ (v.operations!.montantSansEcriture || 0) | number: '1.2-2' }} ·
+                    écritures sans mouvement {{ (v.operations!.montantSansMouvement || 0) | number: '1.2-2' }} ·
+                    soldes clients qui ne suivent pas {{ (v.operations!.resteSoldes || 0) | number: '1.2-2' }} ·
+                    non expliqué {{ (v.operations!.nonExplique || 0) | number: '1.2-2' }}
+                </div>
+            </div>
+            }
             @if (v.operations) {
             <div class="mb-3 p-2 border rounded text-xs bg-gray-50">
                 <b>Opérations de la fenêtre</b> ({{ v.operations.fenetreDu | date: 'dd/MM' }} → veille du {{ v.operations.fenetreAu | date: 'dd/MM' }}) :
@@ -746,6 +778,31 @@ interface Variations {
             </div>
             } @else if (soldesNeSuiventPas(v)) {
             <p class="text-xs text-orange-700 mt-0 mb-3">Les soldes ne suivent pas les mouvements (reste {{ resteSoldes(v)! | number: '1.2-2' }} GNF), mais la photo de référence ne portait pas encore les soldes par compte client : les comptes divergents seront nommés à partir de la prochaine photo.</p>
+            }
+            @if (v.operations?.nbSansMouvement) {
+            <div class="mb-4">
+                <div class="text-sm font-semibold mb-1 text-orange-800">Écritures comptables sans mouvement client : {{ v.operations!.nbSansMouvement }} · {{ (v.operations!.montantSansMouvement || 0) | number: '1.2-2' }} GNF</div>
+                <p class="text-xs text-gray-600 mt-0 mb-2">Les corrections et régularisations passées par la comptabilité sur ce compte dans la fenêtre, sans opération de compte client en face. Montant signé dans le sens de l'écart.</p>
+                <p-table [value]="ecritures()" styleClass="p-datatable-sm" [scrollable]="true">
+                    <ng-template pTemplate="header">
+                        <tr><th>Date</th><th>N° écriture</th><th>Système / type</th><th>Libellé</th><th>Sens</th><th class="text-right">Montant (GNF)</th><th>Usager</th></tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-e>
+                        <tr>
+                            <td class="text-xs whitespace-nowrap">{{ e.date | date: 'dd/MM HH:mm' }}</td>
+                            <td class="font-mono text-xs">{{ e.numeroEcriture }}<span *ngIf="e.ligne"> / {{ e.ligne }}</span></td>
+                            <td class="text-xs">{{ e.systeme }} {{ e.type }} <span class="text-gray-500">{{ e.libelleType }}</span></td>
+                            <td class="text-xs">{{ e.libelle }}</td>
+                            <td class="text-xs text-center">{{ e.sens }}</td>
+                            <td class="text-right font-semibold">{{ e.montant | number: '1.2-2' }}</td>
+                            <td class="text-xs">{{ e.usager }}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr><td colspan="7" class="text-center text-gray-500 py-3">Chargement…</td></tr>
+                    </ng-template>
+                </p-table>
+            </div>
             }
             <div class="text-sm font-semibold mb-1">Comptes clients touchés par les mouvements de la fenêtre</div>
             <p class="text-xs text-gray-600 mt-0 mb-2">
@@ -1083,6 +1140,7 @@ export class EvolutionEcartsComponent {
     readonly chargementClients = signal(false);
     readonly clients = signal<CompteClientTouche[]>([]);
     readonly divergences = signal<DivergenceSolde[]>([]);
+    readonly ecritures = signal<EcritureSansMouvement[]>([]);
     readonly coupleClients = signal<VariationCouple | null>(null);
     readonly titreClients = computed(() => {
         const v = this.coupleClients();
@@ -1094,8 +1152,18 @@ export class EvolutionEcartsComponent {
         this.coupleClients.set(v);
         this.clients.set([]);
         this.divergences.set([]);
+        this.ecritures.set([]);
         this.afficherClients = true;
         this.chargementClients.set(true);
+        if (v.operations?.nbSansMouvement) {
+            this.userService
+                .getEcrituresSansMouvementEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                    next: (r: IResponse) => this.ecritures.set((r.data as any)?.ecritures || []),
+                    error: () => this.ecritures.set([])
+                });
+        }
         this.userService
             .getDivergencesEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
             .pipe(takeUntilDestroyed(this.destroyRef))
