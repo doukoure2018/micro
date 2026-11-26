@@ -99,7 +99,21 @@ interface VariationCouple {
         nbComptesClients?: number | null;
         /** Ce que les mouvements du flux ont fait au solde client : à comparer à Δ client. */
         montantNetFlux?: number | null;
+        /** V223 : comptes clients dont le solde ne suit pas ses mouvements ; null = non calculé. */
+        nbDivergences?: number | null;
+        montantDivergences?: number | null;
     } | null;
+}
+
+interface DivergenceSolde {
+    compteClient: string;
+    produit?: string;
+    soldeAvant?: number | null;
+    soldeApres?: number | null;
+    deltaSolde?: number;
+    mouvementsNet?: number;
+    reste: number;
+    note?: string;
 }
 
 interface CompteClientTouche {
@@ -694,6 +708,46 @@ interface Variations {
             <div class="flex justify-center py-6"><p-progressSpinner styleClass="w-2rem h-2rem"></p-progressSpinner></div>
             } @else {
             @if (coupleClients(); as v) {
+            @if (v.operations?.nbDivergences !== null && v.operations?.nbDivergences !== undefined) {
+            <div class="mb-4">
+                <div class="text-sm font-semibold mb-1" [class.text-red-700]="v.operations!.nbDivergences">
+                    Soldes qui ne suivent pas leurs mouvements : {{ v.operations!.nbDivergences }} compte(s)
+                    <span *ngIf="v.operations!.nbDivergences"> · somme des restes {{ v.operations!.montantDivergences | number: '1.2-2' }} GNF</span>
+                </div>
+                <p class="text-xs text-gray-600 mt-0 mb-2">
+                    Pour chaque compte : solde à la photo de référence, solde à la photo du jour, variation, mouvements nets de la fenêtre,
+                    et le reste que les mouvements n'expliquent pas. C'est la réponse à « lequel des comptes n'a pas suivi ».
+                    Les 30 plus gros restes sont emportés.
+                </p>
+                @if (v.operations!.nbDivergences) {
+                <p-table [value]="divergences()" styleClass="p-datatable-sm" [scrollable]="true" [paginator]="divergences().length > 10" [rows]="10">
+                    <ng-template pTemplate="header">
+                        <tr><th>Compte client</th><th>Produit</th><th class="text-right">Solde avant</th><th class="text-right">Solde après</th><th class="text-right">Δ solde</th><th class="text-right">Mouvements nets</th><th class="text-right">Reste (GNF)</th><th>Lecture</th></tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-d>
+                        <tr>
+                            <td class="font-mono text-xs">{{ d.compteClient }}</td>
+                            <td class="text-xs">{{ d.produit || '—' }}</td>
+                            <td class="text-right text-sm">{{ d.soldeAvant === null || d.soldeAvant === undefined ? '—' : (d.soldeAvant | number: '1.2-2') }}</td>
+                            <td class="text-right text-sm">{{ d.soldeApres === null || d.soldeApres === undefined ? '—' : (d.soldeApres | number: '1.2-2') }}</td>
+                            <td class="text-right text-sm">{{ d.deltaSolde | number: '1.2-2' }}</td>
+                            <td class="text-right text-sm">{{ d.mouvementsNet | number: '1.2-2' }}</td>
+                            <td class="text-right font-semibold text-red-700">{{ d.reste | number: '1.2-2' }}</td>
+                            <td class="text-xs">{{ d.note }}</td>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="emptymessage">
+                        <tr><td colspan="8" class="text-center text-gray-500 py-3">Chargement…</td></tr>
+                    </ng-template>
+                </p-table>
+                } @else {
+                <p class="text-xs text-green-700 mb-0">Tous les soldes de ce couple ont bougé du montant de leurs mouvements.</p>
+                }
+            </div>
+            } @else if (soldesNeSuiventPas(v)) {
+            <p class="text-xs text-orange-700 mt-0 mb-3">Les soldes ne suivent pas les mouvements (reste {{ resteSoldes(v)! | number: '1.2-2' }} GNF), mais la photo de référence ne portait pas encore les soldes par compte client : les comptes divergents seront nommés à partir de la prochaine photo.</p>
+            }
+            <div class="text-sm font-semibold mb-1">Comptes clients touchés par les mouvements de la fenêtre</div>
             <p class="text-xs text-gray-600 mt-0 mb-2">
                 Fenêtre {{ v.operations?.fenetreDu | date: 'dd/MM HH:mm' }} → {{ v.operations?.fenetreAu | date: 'dd/MM HH:mm' }} ·
                 {{ v.operations?.nbComptesClients ?? 0 }} compte(s) client(s) touché(s), les {{ clients().length }} premiers emportés par la photo, anomalies d'abord.
@@ -997,7 +1051,8 @@ export class EvolutionEcartsComponent {
     resumeOperations(v: VariationCouple): string {
         const o = v.operations;
         if (!o) return '—';
-        const clients = o.nbComptesClients ? ` · ${o.nbComptesClients} compte(s) client(s)` : '';
+        const clients = (o.nbComptesClients ? ` · ${o.nbComptesClients} compte(s) client(s)` : '')
+            + (o.nbDivergences ? ` · ${o.nbDivergences} solde(s) divergent(s)` : '');
         if (!o.nbAnomalies) return `${o.nbOperations ?? 0} mvt, aucune anomalie${clients}${this.soldesNeSuiventPas(v) ? ' · soldes clients ≠ mouvements' : ''}`;
         return `${o.nbAnomalies} anomalie(s) · ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(o.montantAnomalies || 0)}` + (o.operationDominante ? ` · ${o.operationDominante}` : '') + clients;
     }
@@ -1021,6 +1076,7 @@ export class EvolutionEcartsComponent {
     afficherClients = false;
     readonly chargementClients = signal(false);
     readonly clients = signal<CompteClientTouche[]>([]);
+    readonly divergences = signal<DivergenceSolde[]>([]);
     readonly coupleClients = signal<VariationCouple | null>(null);
     readonly titreClients = computed(() => {
         const v = this.coupleClients();
@@ -1031,8 +1087,16 @@ export class EvolutionEcartsComponent {
     ouvrirClients(v: VariationCouple): void {
         this.coupleClients.set(v);
         this.clients.set([]);
+        this.divergences.set([]);
         this.afficherClients = true;
         this.chargementClients.set(true);
+        this.userService
+            .getDivergencesEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+                next: (r: IResponse) => this.divergences.set((r.data as any)?.divergences || []),
+                error: () => this.divergences.set([])
+            });
         this.userService
             .getComptesClientsEcarts$(this.module, v.codAgencia, v.compteComptable, this.variations()?.photo?.jour)
             .pipe(takeUntilDestroyed(this.destroyRef))

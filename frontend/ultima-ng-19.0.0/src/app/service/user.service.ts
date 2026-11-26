@@ -1748,6 +1748,10 @@ export class UserService {
     getComptesClientsEcarts$ = (module: string, codAgencia: string, compte: string, jour?: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/clients`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
 
+    /** Les comptes clients dont le solde ne suit pas ses mouvements, pour un couple et un jour (V223). */
+    getDivergencesEcarts$ = (module: string, codAgencia: string, compte: string, jour?: string) =>
+        <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/points/${codAgencia}/comptes/${encodeURIComponent(compte)}/divergences`, { params: jour ? { module, jour } : { module } }).pipe(catchError(this.handleError));
+
     getJoursEcarts$ = (module: string) =>
         <Observable<IResponse>>this.http.get<IResponse>(`${this.server}/ecredit/rapprochement/ecarts/jours`, { params: { module } }).pipe(catchError(this.handleError));
 
