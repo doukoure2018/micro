@@ -2,6 +2,7 @@ package io.digiservices.ecreditservice.repository;
 
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CompteClientRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.CoupleDeuxPhotos;
+import io.digiservices.ecreditservice.dto.PhotoEcartDtos.DivergenceRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.ExplicationRecue;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LignePhotoDto;
 import io.digiservices.ecreditservice.dto.PhotoEcartDtos.LigneRecue;
@@ -107,13 +108,15 @@ public class PhotoEcartRepository {
                                 nb_comptes, ecart, solde_client, solde_comptable, etat,
                                 fenetre_du, fenetre_au, nb_operations, nb_anomalies, montant_anomalies,
                                 nb_sans_ecriture, montant_sans_ecriture, nb_sans_mouvement,
-                                montant_sans_mouvement, operation_dominante, nb_comptes_clients, montant_net_flux)
+                                montant_sans_mouvement, operation_dominante, nb_comptes_clients, montant_net_flux,
+                                nb_divergences, montant_divergences)
                             VALUES (:photoId, :codAgencia, :libellePoint, :codAgence, :libelleAgence,
                                     :codDelegation, :libelleDelegation, COALESCE(:compte, ''), :produits,
                                     :nbComptes, :ecart, :soldeClient, :soldeComptable, :etat,
                                     :fenetreDu, :fenetreAu, :nbOperations, :nbAnomalies, :montantAnomalies,
                                     :nbSansEcriture, :montantSansEcriture, :nbSansMouvement,
-                                    :montantSansMouvement, :operationDominante, :nbComptesClients, :montantNetFlux)
+                                    :montantSansMouvement, :operationDominante, :nbComptesClients, :montantNetFlux,
+                                    :nbDivergences, :montantDivergences)
                             ON CONFLICT (photo_id, cod_agencia, compte_comptable) DO NOTHING
                             RETURNING id
                             """)
@@ -144,6 +147,8 @@ public class PhotoEcartRepository {
                             : e.operationDominante().length() > 120 ? e.operationDominante().substring(0, 120) : e.operationDominante())
                     .param("nbComptesClients", e == null ? null : e.nbComptesClients())
                     .param("montantNetFlux", e == null ? null : e.montantNetFlux())
+                    .param("nbDivergences", e == null ? null : e.nbDivergences())
+                    .param("montantDivergences", e == null ? null : e.montantDivergences())
                     .query(Long.class)
                     .optional();
             // Les comptes clients touches (V222) : enfants de la ligne, les anomalies d'abord.
@@ -168,6 +173,33 @@ public class PhotoEcartRepository {
                             .param("montantNet", c.montantNet())
                             .param("nbAnomalies", c.nbAnomalies())
                             .param("montantAnomalies", c.montantAnomalies())
+                            .update();
+                }
+            }
+            // Les soldes qui ne suivent pas leurs mouvements (V223).
+            if (ligneId.isPresent() && e != null && e.divergences() != null) {
+                int rang = 0;
+                for (DivergenceRecue d : e.divergences()) {
+                    if (d == null || d.compteClient() == null || d.compteClient().isBlank()) {
+                        continue;
+                    }
+                    jdbcClient.sql("""
+                                    INSERT INTO rapprochement_photo_divergence_solde (
+                                        photo_ligne_id, rang, compte_client, produit, solde_avant, solde_apres,
+                                        delta_solde, mouvements_net, reste, note)
+                                    VALUES (:ligneId, :rang, :compte, :produit, :avant, :apres,
+                                            COALESCE(:delta, 0), COALESCE(:mvt, 0), COALESCE(:reste, 0), :note)
+                                    """)
+                            .param("ligneId", ligneId.get())
+                            .param("rang", ++rang)
+                            .param("compte", d.compteClient().length() > 30 ? d.compteClient().substring(0, 30) : d.compteClient())
+                            .param("produit", d.produit() == null || d.produit().length() <= 20 ? d.produit() : d.produit().substring(0, 20))
+                            .param("avant", d.soldeAvant())
+                            .param("apres", d.soldeApres())
+                            .param("delta", d.deltaSolde())
+                            .param("mvt", d.mouvementsNet())
+                            .param("reste", d.reste())
+                            .param("note", d.note() == null || d.note().length() <= 80 ? d.note() : d.note().substring(0, 80))
                             .update();
                 }
             }
@@ -395,7 +427,7 @@ public class PhotoEcartRepository {
                                j.fenetre_du, j.fenetre_au, j.nb_operations, j.nb_anomalies, j.montant_anomalies,
                                j.nb_sans_ecriture, j.montant_sans_ecriture, j.nb_sans_mouvement,
                                j.montant_sans_mouvement, j.operation_dominante, j.nb_comptes_clients,
-                               j.montant_net_flux
+                               j.montant_net_flux, j.nb_divergences, j.montant_divergences
                         FROM j
                         FULL OUTER JOIN r ON r.cod_agencia = j.cod_agencia
                                          AND r.compte_comptable = j.compte_comptable
@@ -440,7 +472,32 @@ public class PhotoEcartRepository {
                 entier(rs, "nb_sans_ecriture"), rs.getBigDecimal("montant_sans_ecriture"),
                 entier(rs, "nb_sans_mouvement"), rs.getBigDecimal("montant_sans_mouvement"),
                 rs.getString("operation_dominante"), entier(rs, "nb_comptes_clients"),
-                rs.getBigDecimal("montant_net_flux"), null);
+                rs.getBigDecimal("montant_net_flux"), null,
+                entier(rs, "nb_divergences"), rs.getBigDecimal("montant_divergences"), null);
+    }
+
+    /** Les comptes clients dont le solde ne suit pas ses mouvements, pour un couple et un jour (V223). */
+    public List<DivergenceRecue> divergences(String module, LocalDate jour, String codAgencia, String compte) {
+        return jdbcClient.sql("""
+                        WITH p AS (SELECT id FROM rapprochement_photo WHERE module = :module
+                                      AND (CAST(:jour AS DATE) IS NULL OR jour = CAST(:jour AS DATE))
+                                    ORDER BY jour DESC LIMIT 1)
+                        SELECT d.compte_client, d.produit, d.solde_avant, d.solde_apres, d.delta_solde,
+                               d.mouvements_net, d.reste, d.note
+                          FROM rapprochement_photo_divergence_solde d
+                          JOIN rapprochement_photo_ligne l ON l.id = d.photo_ligne_id
+                          JOIN p ON p.id = l.photo_id
+                         WHERE l.cod_agencia = :cod AND l.compte_comptable = :compte
+                         ORDER BY d.rang
+                        """)
+                .param("module", module)
+                .param("jour", jour)
+                .param("cod", codAgencia)
+                .param("compte", compte)
+                .query((rs, n) -> new DivergenceRecue(rs.getString("compte_client"), rs.getString("produit"),
+                        rs.getBigDecimal("solde_avant"), rs.getBigDecimal("solde_apres"), rs.getBigDecimal("delta_solde"),
+                        rs.getBigDecimal("mouvements_net"), rs.getBigDecimal("reste"), rs.getString("note")))
+                .list();
     }
 
     /** Les comptes clients touches par un couple dans la photo d'un jour (V222), anomalies d'abord. */

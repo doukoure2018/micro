@@ -99,6 +99,20 @@ public class PhotoEcartResource {
                 clients.isEmpty() ? "Aucun compte client emporte par la photo pour ce couple" : clients.size() + " compte(s) client(s)", OK));
     }
 
+    /** Les comptes clients dont le solde ne suit pas ses mouvements : la reponse a « lequel des 209 comptes ». */
+    @GetMapping("/points/{codAgencia}/comptes/{compte}/divergences")
+    public ResponseEntity<Response> divergences(@NotNull Authentication authentication,
+                                                @PathVariable("codAgencia") String codAgencia,
+                                                @PathVariable("compte") String compte,
+                                                @RequestParam(value = "module", defaultValue = "COMPTES") String module,
+                                                @RequestParam(value = "jour", required = false)
+                                                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jour,
+                                                HttpServletRequest request) {
+        var divergences = service.divergences(authentication.getName(), module, jour, codAgencia, compte);
+        return ResponseEntity.ok(getResponse(request, Map.of("divergences", divergences),
+                divergences.isEmpty() ? "Aucun compte divergent emporte par la photo pour ce couple" : divergences.size() + " compte(s) divergent(s)", OK));
+    }
+
     /** La courbe d'un point de service. */
     @GetMapping("/points/{codAgencia}/courbe")
     public ResponseEntity<Response> seriePoint(@NotNull Authentication authentication,
