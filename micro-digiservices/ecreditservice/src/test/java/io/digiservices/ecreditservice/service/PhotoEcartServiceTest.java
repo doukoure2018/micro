@@ -58,7 +58,7 @@ class PhotoEcartServiceTest {
                 new BigDecimal("1641471534"), new BigDecimal("-1565971664"),
                 13, 5, 8, 185, 185, null, "tache planifiee",
                 List.of(new LigneRecue("612", "CAISSE DE BOFFA", "61", "BOFFA", "6", "BASSE GUINEE",
-                        "", null, 3688, ecart, null, null, "ECART", null)));
+                        "", null, 3688, ecart, null, null, "ECART", null)), null);
     }
 
     @Test
@@ -157,7 +157,7 @@ class PhotoEcartServiceTest {
     @DisplayName("le reseau voit toutes les lignes, une agence seulement les siennes")
     void perimetreApplique() {
         PointJour jour = new PointJour(LocalDate.now(), "COMPTES", new BigDecimal("134477192.19"),
-                null, null, 13, 5, 8, 185, 185, true, null);
+                null, null, 13, 5, 8, 185, 185, true, null, null);
         when(repository.photo(eq("COMPTES"), any())).thenReturn(jour);
         when(repository.pointsDuJour(anyString(), any(), any())).thenReturn(List.of());
 
