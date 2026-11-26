@@ -133,7 +133,9 @@ public class PerimetreSafService {
             codes = perimetreRepository.codesParDelegation(user.getDelegationId());
             rattachement = "votre delegation";
             niveau = "DELEGATION";
-        } else if ("DA".equals(role)) {
+        } else if ("DA".equals(role) || "RA".equals(role)) {
+            // Le responsable d'agence (RA) voit son agence comme le DA : decision du 11/09/2026
+            // (DA = RA = agence), appliquee ici le 26/11/2026 pour ouvrir « Evolution des ecarts ».
             codes = perimetreRepository.codesParAgence(user.getAgenceId());
             rattachement = "votre agence";
             niveau = "AGENCE";
